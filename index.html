@@ -2878,10 +2878,124 @@ select.form-control {
     color: var(--primary-blue) !important;
 }
 
+/* ===== PUBLIC VIEW MODE ===== */
+body.public-view-mode .sidebar,
+body.public-view-mode .topbar .profile-area,
+body.public-view-mode #role-switcher-wrapper,
+body.public-view-mode .hide-pm,
+body.public-view-mode .add-project-btn,
+body.public-view-mode [id^="add-task-btn"],
+body.public-view-mode [id^="add-plan-btn"],
+body.public-view-mode [id^="add-report-btn"],
+body.public-view-mode [id^="add-media-btn"],
+body.public-view-mode [id^="add-doc-btn"],
+body.public-view-mode .delete-btn,
+body.public-view-mode .btn-delete,
+body.public-view-mode .action-btn-delete {
+    display: none !important;
+}
+
+body.public-view-mode .main-content {
+    margin-left: 0 !important;
+    padding-top: 0 !important;
+}
+
+body.public-view-mode .app-container {
+    grid-template-columns: 1fr !important;
+}
+
+#public-view-header {
+    display: none;
+    background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%);
+    padding: 14px 28px;
+    align-items: center;
+    gap: 14px;
+    box-shadow: 0 2px 12px rgba(29,78,216,0.15);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+#public-view-header img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+}
+
+#public-view-header .pub-title {
+    font-size: 15px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.3px;
+}
+
+#public-view-header .pub-subtitle {
+    font-size: 11px;
+    color: rgba(255,255,255,0.7);
+    margin-top: 1px;
+}
+
+body.public-view-mode #public-view-header {
+    display: flex !important;
+}
 
 </style>
 </head>
 <body class="role-pm">
+    <!-- Login Overlay -->
+    <div id="login-overlay" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: radial-gradient(circle at 10% 20%, rgba(90, 142, 233, 0.15) 0%, rgba(104, 128, 207, 0.15) 90%), url('https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=1950&q=80') no-repeat center center/cover; z-index: 9999; display: flex; align-items: center; justify-content: center; font-family: 'Prompt', sans-serif;">
+        <div style="background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(16px) saturate(180%); -webkit-backdrop-filter: blur(16px) saturate(180%); border: 1px solid rgba(209, 213, 219, 0.3); border-radius: 16px; padding: 40px; width: 100%; max-width: 420px; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15); display: flex; flex-direction: column; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 24px;">
+                <img src="logo.png" alt="Logo" style="width: 50px; height: 50px; object-fit: contain;">
+                <div style="display: flex; flex-direction: column;">
+                    <span style="font-size: 16px; font-weight: 800; color: #1e3a8a; letter-spacing: -0.4px;">TECHNICAL WATER</span>
+                    <span style="font-size: 9px; font-weight: 700; color: #475569; letter-spacing: 0.1px; text-transform: uppercase;">ENGINEERING & FACILITY</span>
+                </div>
+            </div>
+            <h3 style="font-size: 18px; font-weight: 700; color: #1e293b; margin: 0 0 8px 0; text-align: center;">เข้าสู่ระบบจัดการโครงการ</h3>
+            <p style="font-size: 12px; color: #64748b; margin: 0 0 24px 0; text-align: center; line-height: 1.5;">กรุณากรอกชื่อผู้ใช้และรหัสผ่านเพื่อเข้าใช้งาน</p>
+            
+            <form id="login-form" style="width: 100%; display: flex; flex-direction: column; gap: 16px;">
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <label style="font-size: 12px; font-weight: 600; color: #475569;">ชื่อผู้ใช้งาน (Username)</label>
+                    <input type="text" id="login-username" required style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; font-family: inherit; background: rgba(255, 255, 255, 0.85); outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='#1d4ed8'" onblur="this.style.borderColor='#cbd5e1'" placeholder="เช่น pm, accounting, customer">
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px;">
+                    <label style="font-size: 12px; font-weight: 600; color: #475569;">รหัสผ่าน (Password)</label>
+                    <input type="password" id="login-password" required style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; font-family: inherit; background: rgba(255, 255, 255, 0.85); outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='#1d4ed8'" onblur="this.style.borderColor='#cbd5e1'" placeholder="กรอกรหัสผ่าน">
+                </div>
+                <button type="submit" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%); color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer; box-shadow: 0 4px 12px rgba(29, 78, 216, 0.2); transition: transform 0.1s, opacity 0.2s;" onmousedown="this.style.transform='scale(0.98)'" onmouseup="this.style.transform='scale(1)'" onmouseover="this.style.opacity='0.95'" onmouseout="this.style.opacity='1'">เข้าสู่ระบบ</button>
+            </form>
+            
+            <div style="border-top: 1px solid rgba(0,0,0,0.06); width: 100%; margin-top: 24px; padding-top: 16px;">
+                <span style="font-size: 11px; font-weight: 600; color: #64748b; display: block; margin-bottom: 8px; text-align: center;">ข้อมูลล็อกอินสาธิต (Demo Accounts)</span>
+                <div style="display: flex; flex-direction: column; gap: 6px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.4); padding: 4px 8px; border-radius: 6px; font-size: 11.5px; border: 1px dashed rgba(0,0,0,0.05);">
+                        <span style="font-weight: 600; color: #1e3a8a;"><i class="fa-solid fa-user-gear"></i> PM (ผู้จัดการ)</span>
+                        <code style="background: rgba(0,0,0,0.05); padding: 2px 4px; border-radius: 4px; font-size: 10px; font-weight: 600;">pm / 1234</code>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.4); padding: 4px 8px; border-radius: 6px; font-size: 11.5px; border: 1px dashed rgba(0,0,0,0.05);">
+                        <span style="font-weight: 600; color: #0d9488;"><i class="fa-solid fa-file-invoice-dollar"></i> บัญชี (Accounting)</span>
+                        <code style="background: rgba(0,0,0,0.05); padding: 2px 4px; border-radius: 4px; font-size: 10px; font-weight: 600;">accounting / 1234</code>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.4); padding: 4px 8px; border-radius: 6px; font-size: 11.5px; border: 1px dashed rgba(0,0,0,0.05);">
+                        <span style="font-weight: 600; color: #0284c7;"><i class="fa-solid fa-user-tie"></i> ลูกค้า (Customer)</span>
+                        <code style="background: rgba(0,0,0,0.05); padding: 2px 4px; border-radius: 4px; font-size: 10px; font-weight: 600;">customer / 1234</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Public View Header (shown when ?project=xxx is in URL) -->
+    <div id="public-view-header">
+        <img src="logo.png" alt="TECHNICAL WATER Logo">
+        <div>
+            <div class="pub-title">TECHNICAL WATER ENGINEERING & FACILITY</div>
+            <div class="pub-subtitle" id="public-proj-subtitle">รายงานความคืบหน้าโครงการ</div>
+        </div>
+    </div>
+
     <div class="app-container">
         <!-- Sidebar Navigation -->
         <aside class="sidebar">
@@ -2945,6 +3059,10 @@ select.form-control {
                         <!-- Edit Project Button -->
                         <button class="btn btn-sm btn-outline btn-block hide-accounting hide-customer" id="open-edit-project-btn" style="width: 100%; font-size: 11px; padding: 5px; height: auto; border-radius: var(--radius-sm); margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 5px;">
                             <i class="fa-solid fa-pen-to-square"></i> แก้ไข/ลบโครงการนี้
+                        </button>
+                        <!-- Copy Share Link Button - PM only -->
+                        <button class="btn btn-sm hide-accounting hide-customer" id="copy-share-link-btn" style="width: 100%; font-size: 11px; padding: 5px; height: auto; border-radius: var(--radius-sm); margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 5px; background: linear-gradient(135deg, #0d9488, #0891b2); color: #fff; border: none; cursor: pointer;">
+                            <i class="fa-solid fa-share-nodes"></i> คัดลอกลิงก์แชร์โครงการ
                         </button>
                     </div>
                     
@@ -3075,9 +3193,12 @@ select.form-control {
                                     <div class="role-desc">เข้าถึงได้เฉพาะสิทธิ์โครงการตนเอง ไม่เห็นต้นทุน</div>
                                 </div>
                             </a>
-                            <div style="border-top: 1px solid var(--border-color); margin-top: 8px; padding-top: 8px;">
+                            <div style="border-top: 1px solid var(--border-color); margin-top: 8px; padding-top: 8px; display: flex; flex-direction: column; gap: 6px;">
                                 <button type="button" class="btn btn-sm btn-outline-red" id="reset-system-data-btn" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; font-family: 'Prompt'; font-size: 11px; background: #fee2e2; color: #ef4444; border: 1px solid #fca5a5; padding: 6px; border-radius: 4px; cursor: pointer;">
                                     <i class="fa-solid fa-trash-arrow-up"></i> ล้างข้อมูลในระบบทั้งหมด (Reset to 0)
+                                </button>
+                                <button type="button" id="logout-btn" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; font-family: 'Prompt'; font-size: 11px; background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; padding: 6px; border-radius: 4px; cursor: pointer;">
+                                    <i class="fa-solid fa-right-from-bracket"></i> ออกจากระบบ (Logout)
                                 </button>
                             </div>
                         </div>
@@ -7789,6 +7910,164 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 });
+
+// ============================================================
+// AUTH SYSTEM - Login, Session, Public View, Share Link
+// ============================================================
+
+const USERS = {
+    "pm":         { password: "1234", role: "pm",         displayName: "Admin Project",    roleLabel: "Project Manager" },
+    "accounting": { password: "1234", role: "accounting", displayName: "Account System",   roleLabel: "Accountant" },
+    "customer":   { password: "1234", role: "customer",   displayName: "BKK Hospital Rep", roleLabel: "Customer View" }
+};
+
+const SESSION_KEY = "tw_session";
+
+function getSession() {
+    try { return JSON.parse(localStorage.getItem(SESSION_KEY)) || null; } catch { return null; }
+}
+
+function saveSession(username, role) {
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ username, role, ts: Date.now() }));
+}
+
+function clearSession() {
+    localStorage.removeItem(SESSION_KEY);
+}
+
+function applyLoginSuccess(username, role) {
+    const overlay = document.getElementById("login-overlay");
+    if (overlay) overlay.style.display = "none";
+    switchRole(role);
+    // Update display name
+    const usernameDisplay = document.getElementById("username-display");
+    if (usernameDisplay) usernameDisplay.textContent = USERS[username].displayName;
+    saveSession(username, role);
+}
+
+function showLoginError(msg) {
+    let errEl = document.getElementById("login-error-msg");
+    if (!errEl) {
+        errEl = document.createElement("p");
+        errEl.id = "login-error-msg";
+        errEl.style.cssText = "color: #ef4444; font-size: 12px; text-align: center; margin: -8px 0 0 0; font-weight: 600;";
+        const form = document.getElementById("login-form");
+        if (form) form.appendChild(errEl);
+    }
+    errEl.textContent = msg;
+}
+
+// ---- Public View Mode Init ----
+function initPublicView(projectCode) {
+    document.body.classList.add("public-view-mode");
+    // Hide login overlay unconditionally
+    const overlay = document.getElementById("login-overlay");
+    if (overlay) overlay.style.display = "none";
+
+    // Set default role to pm so all project detail tabs render correctly
+    appState.currentRole = "pm";
+    document.body.classList.add("role-pm");
+
+    appState.selectedDetailProject = projectCode;
+
+    // Navigate to projects-list view (which shows project detail workspace)
+    switchView("projects-list");
+
+    // Wait for Supabase data to load, then render project detail
+    const waitAndRender = () => {
+        const p = projectsData[projectCode];
+        if (p) {
+            const subtitle = document.getElementById("public-proj-subtitle");
+            if (subtitle) subtitle.textContent = `รายงานความคืบหน้า: ${p.name}`;
+            renderSubnavProjectWorkspace();
+        } else {
+            setTimeout(waitAndRender, 400);
+        }
+    };
+    waitAndRender();
+}
+
+// ---- On Page Load ----
+(function initAuth() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const sharedCode = urlParams.get("project");
+
+    if (sharedCode) {
+        // Public share link - bypass login
+        initPublicView(sharedCode);
+        return;
+    }
+
+    // Normal login flow
+    const session = getSession();
+    if (session && USERS[session.username]) {
+        applyLoginSuccess(session.username, session.role);
+    } else {
+        // Show login overlay
+        const overlay = document.getElementById("login-overlay");
+        if (overlay) overlay.style.display = "flex";
+    }
+
+    // Login form submit handler
+    const loginForm = document.getElementById("login-form");
+    if (loginForm) {
+        loginForm.addEventListener("submit", function(e) {
+            e.preventDefault();
+            const username = document.getElementById("login-username").value.trim().toLowerCase();
+            const password = document.getElementById("login-password").value;
+            const user = USERS[username];
+            if (user && user.password === password) {
+                applyLoginSuccess(username, user.role);
+            } else {
+                showLoginError("⚠️ ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง");
+            }
+        });
+    }
+
+    // Logout button handler
+    const logoutBtn = document.getElementById("logout-btn");
+    if (logoutBtn) {
+        logoutBtn.addEventListener("click", function(e) {
+            e.preventDefault();
+            if (confirm("คุณต้องการออกจากระบบใช่ไหม?")) {
+                clearSession();
+                const overlay = document.getElementById("login-overlay");
+                if (overlay) overlay.style.display = "flex";
+                document.getElementById("profile-dropdown").classList.remove("active");
+                // Reset form
+                const loginForm = document.getElementById("login-form");
+                if (loginForm) loginForm.reset();
+                const errEl = document.getElementById("login-error-msg");
+                if (errEl) errEl.textContent = "";
+            }
+        });
+    }
+
+    // Share link button handler
+    const shareBtn = document.getElementById("copy-share-link-btn");
+    if (shareBtn) {
+        shareBtn.addEventListener("click", function() {
+            const code = appState.selectedDetailProject;
+            if (!code || code === "all") {
+                showToast("กรุณาเลือกโครงการก่อนคัดลอกลิงก์", "error");
+                return;
+            }
+            const shareUrl = `${window.location.origin}${window.location.pathname}?project=${encodeURIComponent(code)}`;
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                showToast(`✅ คัดลอกลิงก์แชร์โครงการ ${code} เรียบร้อยแล้ว!`, "success");
+            }).catch(() => {
+                // Fallback
+                const ta = document.createElement("textarea");
+                ta.value = shareUrl;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand("copy");
+                document.body.removeChild(ta);
+                showToast(`✅ คัดลอกลิงก์แชร์โครงการ ${code} เรียบร้อยแล้ว!`, "success");
+            });
+        });
+    }
+})();
 
 </script>
 </body>
