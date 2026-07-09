@@ -4720,6 +4720,9 @@ function renderOverallDashboard() {
     const yearAVal = appState.selectedYearFilterA || "2025";
     const yearBVal = appState.selectedYearFilterB || "2026";
     
+    // Always recalculate jobs from tasks first (single source of truth, fixes stale data)
+    Object.values(projectsData).forEach(p => recalculateJobsFromTasks(p));
+    
     // Active projects for Year A and Year B
     const projectsA = Object.values(projectsData).filter(p => p.year.toString() === yearAVal);
     const projectsB = Object.values(projectsData).filter(p => p.year.toString() === yearBVal);
@@ -5091,6 +5094,55 @@ function formatNumber(num) {
     return new Intl.NumberFormat('th-TH').format(num);
 }
 
+// --- FILE HELPER: Convert uploaded file to Base64 Data URL (persistent across refreshes) ---
+function readFileAsBase64(file) {
+    return new Promise((resolve) => {
+        if (!file) { resolve({ name: "", dataUrl: "" }); return; }
+        const reader = new FileReader();
+        reader.onload = (e) => resolve({ name: file.name, dataUrl: e.target.result });
+        reader.onerror = () => resolve({ name: file.name, dataUrl: "" });
+        reader.readAsDataURL(file);
+    });
+}
+
+// --- JOBS HELPER: Recalculate jobs counts from tasks array (single source of truth) ---
+function recalculateJobsFromTasks(project) {
+    if (!project || !project.tasks) {
+        if (project) project.jobs = { total: 0, inprogress: 0, completed: 0, delayed: 0 };
+        return;
+    }
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    let total = project.tasks.length;
+    let completed = 0;
+    let delayed = 0;
+    let inprogress = 0;
+    project.tasks.forEach(t => {
+        if (t.progress >= 100) {
+            completed++;
+        } else {
+            // Parse end date dd/mm/yyyy
+            const parts = (t.end || "").split("/");
+            let isDelayed = false;
+            if (parts.length === 3) {
+                const endDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+                if (!isNaN(endDate) && endDate < today && t.progress < 100) {
+                    isDelayed = true;
+                }
+            }
+            if (isDelayed) delayed++;
+            else inprogress++;
+        }
+    });
+    project.jobs = { total, completed, delayed, inprogress };
+    // Recalculate average progress
+    if (total > 0) {
+        project.progress = Math.round(project.tasks.reduce((s, t) => s + (t.progress || 0), 0) / total);
+    } else {
+        project.progress = 0;
+    }
+}
+
 function showToast(message, type = "success") {
     const container = document.getElementById("toast-container");
     const toast = document.createElement("div");
@@ -5409,22 +5461,34 @@ function renderHospitalsGrid(activeProjects) {
                     </div>
                 </div>
                 
-                <div class="hospital-card-progress-section">
-                    <div class="hospital-card-progress-label">
-                        <span>แผนงาน (Planned)</span>
-                        <strong>${p.plannedProgress}%</strong>
-                    </div>
-                    <div class="hospital-card-progress-bar-bg" style="margin-bottom: 6px;">
-                        <div class="hospital-card-progress-bar-fill blue-fill" style="width: ${p.plannedProgress}%; background: var(--primary-blue);"></div>
-                    </div>
-                    <div class="hospital-card-progress-label">
-                        <span>งานจริง (Actual)</span>
-                        <strong>${p.progress}%</strong>
-                    </div>
-                    <div class="hospital-card-progress-bar-bg">
-                        <div class="hospital-card-progress-bar-fill green-fill" style="width: ${p.progress}%;"></div>
-                    </div>
-                </div>
+                ${(() => {
+                    const tasks = p.tasks || [];
+                    const today = new Date(); today.setHours(0,0,0,0);
+                    const pending = tasks.filter(t => {
+                        if (t.progress >= 100) return false;
+                        return true;
+                    });
+                    const delayed = tasks.filter(t => {
+                        if (t.progress >= 100) return false;
+                        const parts = (t.end || "").split("/");
+                        if (parts.length === 3) {
+                            const end = new Date(parseInt(parts[2]), parseInt(parts[1])-1, parseInt(parts[0]));
+                            return !isNaN(end) && end < today;
+                        }
+                        return false;
+                    });
+                    if (pending.length === 0) {
+                        return `<div style="font-size:11px;color:#16a34a;font-weight:600;padding:6px 0 2px;display:flex;align-items:center;gap:4px;"><i class="fa-solid fa-circle-check"></i> งานทั้งหมดเสร็จสิ้นแล้ว</div>`;
+                    }
+                    const items = pending.slice(0, 3).map(t => {
+                        const isDelayed = delayed.some(d => d.id === t.id);
+                        const color = isDelayed ? "#ef4444" : "#f59e0b";
+                        const icon = isDelayed ? "fa-triangle-exclamation" : "fa-circle-play";
+                        return `<div style="display:flex;align-items:center;gap:4px;font-size:10.5px;color:#334155;padding:2px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"><i class="fa-solid ${icon}" style="color:${color};font-size:9px;flex-shrink:0;"></i><span style="overflow:hidden;text-overflow:ellipsis;">${t.title}</span></div>`;
+                    }).join("");
+                    const more = pending.length > 3 ? `<div style="font-size:10px;color:#64748b;padding-top:2px;">+${pending.length - 3} งานเพิ่มเติม</div>` : "";
+                    return `<div style="padding:4px 0 2px;border-top:1px solid var(--border-color);margin-top:6px;"><div style="font-size:10px;font-weight:700;color:#475569;margin-bottom:3px;">งานค้างดำเนินการ (${pending.length} งาน)</div>${items}${more}</div>`;
+                })()}
 
                 ${financialsHTML}
 
@@ -7122,7 +7186,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (closeExpenseBtn) closeExpenseBtn.addEventListener("click", closeExpenseModal);
     if (cancelExpenseBtn) cancelExpenseBtn.addEventListener("click", closeExpenseModal);
 
-    expenseForm.addEventListener("submit", function(e) {
+    expenseForm.addEventListener("submit", async function(e) {
         e.preventDefault();
         
         const title = document.getElementById("exp-title").value;
@@ -7134,9 +7198,9 @@ document.addEventListener("DOMContentLoaded", () => {
         let file = "";
         let fileUrl = "";
         if (fileInput && fileInput.files && fileInput.files.length > 0) {
-            const uploadedFile = fileInput.files[0];
-            file = uploadedFile.name;
-            fileUrl = URL.createObjectURL(uploadedFile);
+            const result = await readFileAsBase64(fileInput.files[0]);
+            file = result.name;
+            fileUrl = result.dataUrl;
         }
         
         const project = projectsData[appState.selectedCostProject];
@@ -7184,7 +7248,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (cancelMediaBtn) cancelMediaBtn.addEventListener("click", closeMediaModal);
 
     if (mediaForm) {
-        mediaForm.addEventListener("submit", function(e) {
+        mediaForm.addEventListener("submit", async function(e) {
             e.preventDefault();
             
             const title = document.getElementById("media-title").value;
@@ -7193,8 +7257,8 @@ document.addEventListener("DOMContentLoaded", () => {
             let imgUrl = "https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&w=250&q=80";
             
             if (fileInput && fileInput.files && fileInput.files.length > 0) {
-                const file = fileInput.files[0];
-                imgUrl = URL.createObjectURL(file);
+                const result = await readFileAsBase64(fileInput.files[0]);
+                imgUrl = result.dataUrl || imgUrl;
             }
             
             const project = projectsData[appState.selectedDetailProject];
@@ -7246,7 +7310,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (cancelDailyReportBtn) cancelDailyReportBtn.addEventListener("click", closeDailyReportModal);
 
     if (dailyReportForm) {
-        dailyReportForm.addEventListener("submit", function(e) {
+        dailyReportForm.addEventListener("submit", async function(e) {
             e.preventDefault();
             
             const dateVal = document.getElementById("report-date").value;
@@ -7257,8 +7321,11 @@ document.addEventListener("DOMContentLoaded", () => {
             const formattedDate = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
             
             let pdfName = "";
+            let fileUrl = "";
             if (fileInput && fileInput.files && fileInput.files.length > 0) {
-                pdfName = fileInput.files[0].name;
+                const result = await readFileAsBase64(fileInput.files[0]);
+                pdfName = result.name;
+                fileUrl = result.dataUrl;
             } else {
                 pdfName = `DailyReport_${dateVal}.pdf`;
             }
@@ -7270,9 +7337,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 project.dailyReports.unshift({
                     date: formattedDate,
                     desc: descVal,
-                    file: pdfName
+                    file: pdfName,
+                    fileUrl: fileUrl
                 });
                 
+                saveToLocalStorage();
                 showToast(`ส่งรายงานการปฏิบัติงานรายวันประจำวันที่ ${formattedDate} สำเร็จ!`, "success");
                 closeDailyReportModal();
                 renderSubnavProjectWorkspace();
@@ -7483,21 +7552,22 @@ document.addEventListener("DOMContentLoaded", () => {
     if (cancelTaskPdfBtn) cancelTaskPdfBtn.addEventListener("click", closeTaskPdfModal);
 
     if (taskPdfForm) {
-        taskPdfForm.addEventListener("submit", function(e) {
+        taskPdfForm.addEventListener("submit", async function(e) {
             e.preventDefault();
             const taskId = parseInt(document.getElementById("upload-task-id").value);
             const fileInput = document.getElementById("task-pdf-file");
             
             if (fileInput && fileInput.files && fileInput.files.length > 0) {
-                const file = fileInput.files[0];
+                const result = await readFileAsBase64(fileInput.files[0]);
                 const project = projectsData[appState.selectedDetailProject];
                 if (project && project.tasks) {
                     const task = project.tasks.find(t => t.id === taskId);
                     if (task) {
-                        task.file = file.name;
-                        task.fileUrl = URL.createObjectURL(file);
+                        task.file = result.name;
+                        task.fileUrl = result.dataUrl;
                         
-                        showToast(`แนบรายงานความก้าวหน้า ${file.name} เรียบร้อยแล้ว!`, "success");
+                        saveToLocalStorage();
+                        showToast(`แนบรายงานความก้าวหน้า ${result.name} เรียบร้อยแล้ว!`, "success");
                         closeTaskPdfModal();
                         renderSubnavProjectWorkspace();
                     }
@@ -7532,7 +7602,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (cancelTaskBtn) cancelTaskBtn.addEventListener("click", closeTaskModal);
 
     if (addTaskForm) {
-        addTaskForm.addEventListener("submit", function(e) {
+        addTaskForm.addEventListener("submit", async function(e) {
             e.preventDefault();
             
             const title = document.getElementById("task-title-input").value.trim();
@@ -7546,38 +7616,28 @@ document.addEventListener("DOMContentLoaded", () => {
             const startStr = `${startDateObj.getDate().toString().padStart(2, '0')}/${(startDateObj.getMonth() + 1).toString().padStart(2, '0')}/${startDateObj.getFullYear()}`;
             const endStr = `${endDateObj.getDate().toString().padStart(2, '0')}/${(endDateObj.getMonth() + 1).toString().padStart(2, '0')}/${endDateObj.getFullYear()}`;
             
+            // Convert file to Base64 for persistent storage
             let file = "";
             let fileUrl = "";
             if (fileInput && fileInput.files && fileInput.files.length > 0) {
-                const uploadedFile = fileInput.files[0];
-                file = uploadedFile.name;
-                fileUrl = URL.createObjectURL(uploadedFile);
+                const result = await readFileAsBase64(fileInput.files[0]);
+                file = result.name;
+                fileUrl = result.dataUrl;
             }
             
             const project = projectsData[appState.selectedDetailProject];
             if (project) {
-                if (!project.tasks) {
-                    project.tasks = [];
-                }
+                if (!project.tasks) project.tasks = [];
                 
                 const nextId = project.tasks.length > 0 ? Math.max(...project.tasks.map(t => t.id)) + 1 : 1;
-                project.tasks.push({
-                    id: nextId,
-                    title: title,
-                    start: startStr,
-                    end: endStr,
-                    progress: progress,
-                    file: file,
-                    fileUrl: fileUrl
-                });
+                project.tasks.push({ id: nextId, title, start: startStr, end: endStr, progress, file, fileUrl });
                 
-                // Recalculate average progress of the project
-                project.progress = Math.round(project.tasks.reduce((sum, t) => sum + t.progress, 0) / project.tasks.length);
+                // Recalculate jobs & progress from tasks (single source of truth)
+                recalculateJobsFromTasks(project);
                 
+                saveToLocalStorage();
                 showToast(`เพิ่มรายการงาน: ${title} เรียบร้อยแล้ว!`, "success");
                 closeTaskModal();
-                
-                // Re-render
                 renderSubnavProjectWorkspace();
                 renderOverallDashboard();
             }
