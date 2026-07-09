@@ -4366,35 +4366,24 @@ const defaultProjectsData = {
         cost: 9500000,
         profit: 2500000,
         loss: 0,
-        progress: 10,
-        plannedProgress: 15,
+        progress: 0,
+        plannedProgress: 0,
         status: "กำลังดำเนินการ",
         description: "รายละเอียดโครงการตัวอย่างเพื่อเริ่มต้นใช้งาน คุณสามารถแก้ไข ลบ หรือสร้างโครงการใหม่ได้ตามต้องการ",
-        jobs: { total: 10, inprogress: 3, completed: 2, delayed: 0 },
+        jobs: { total: 0, inprogress: 0, completed: 0, delayed: 0 },
         workBreakdown: {
             categories: ["งานระบบไฟฟ้า", "งานระบบปรับอากาศ", "งานระบบสุขาภิบาล", "งานโครงสร้าง", "งานสถาปัตย์", "งานอื่นๆ"],
-            total: [5, 2, 1, 1, 1, 0],
-            inprogress: [2, 1, 0, 0, 0, 0],
-            completed: [2, 0, 0, 0, 0, 0],
+            total: [0, 0, 0, 0, 0, 0],
+            inprogress: [0, 0, 0, 0, 0, 0],
+            completed: [0, 0, 0, 0, 0, 0],
             delayed: [0, 0, 0, 0, 0, 0]
         },
-        costStructure: { labor: 35.0, material: 55.0, other: 10.0 },
-        expenses: [
-            { date: "2026-03-10", title: "ค่าออกแบบระบบไฟฟ้าเบื้องต้น", type: "ค่าแรง", amount: 150000 }
-        ],
-        documents: [
-            { name: "PO-PRJ2601.pdf", type: "PO", date: "2026-03-01" },
-            { name: "BOQ-PRJ2601.xlsx", type: "BOQ", date: "2026-03-01" }
-        ],
+        costStructure: { labor: 0.0, material: 0.0, other: 0.0 },
+        expenses: [],
+        documents: [],
         media: [],
-        dailyReports: [
-            { date: "10/03/2026", desc: "เริ่มงานสำรวจพื้นที่หน้างานและออกแบบระบบไฟฟ้าห้องควบคุมย่อย", file: "DailyReport-2026-03-10.pdf" }
-        ],
-        tasks: [
-            { id: 1, title: "งานเดินสายไฟห้องวิกฤต ICU", start: "01/03/2026", end: "30/06/2026", progress: 50, file: "wiring-report.pdf", fileUrl: "https://pdfobject.com/pdf/sample.pdf" },
-            { id: 2, title: "งานติดตั้งตู้ไฟหลัก MDB", start: "01/07/2026", end: "30/09/2026", progress: 0, file: "", fileUrl: "" },
-            { id: 3, title: "งานปรับปรุงท่อระบายลมเย็น", start: "01/10/2026", end: "31/12/2026", progress: 0, file: "", fileUrl: "" }
-        ]
+        dailyReports: [],
+        tasks: []
     }
 };
 
@@ -7446,11 +7435,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const project = projectsData[appState.selectedDetailProject];
             if (project) {
                 if (!project.tasks) {
-                    project.tasks = [
-                        { id: 1, title: "งานเดินสายไฟห้องวิกฤต ICU", start: `15/01/${project.year}`, end: `15/04/${project.year}`, progress: 100, file: "", fileUrl: "" },
-                        { id: 2, title: "งานติดตั้งตู้ไฟหลัก MDB", start: `01/04/${project.year}`, end: `30/06/${project.year}`, progress: 75, file: "", fileUrl: "" },
-                        { id: 3, title: "งานปรับปรุงท่อระบายลมเย็น", start: `10/05/${project.year}`, end: `30/08/${project.year}`, progress: 45, file: "", fileUrl: "" }
-                    ];
+                    project.tasks = [];
                 }
                 
                 const nextId = project.tasks.length > 0 ? Math.max(...project.tasks.map(t => t.id)) + 1 : 1;
@@ -7522,12 +7507,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const project = projectsData[appState.selectedDetailProject];
             if (project) {
                 if (!project.plans) {
-                    project.plans = [
-                        { title: "งานระบบไฟฟ้า", color: "blue", width: 70, left: 0 },
-                        { title: "งานระบบปรับอากาศ", color: "green", width: 50, left: 20 },
-                        { title: "งานโครงสร้าง", color: "orange", width: 40, left: 10 },
-                        { title: "งานสถาปัตย์", color: "purple", width: 30, left: 50 }
-                    ];
+                    project.plans = [];
                 }
                 
                 project.plans.push({ title, color, width, left });
