@@ -4354,8 +4354,8 @@ select.form-control {
 // --- DATA STORE ---
 // Load data from localStorage or fallback to default template project
 const defaultProjectsData = {
-    "PRJ-2601": {
-        code: "PRJ-2601",
+    "PRJ-2602": {
+        code: "PRJ-2602",
         name: "ปรับปรุงระบบไฟฟ้าและควบคุมหลัก",
         customer: "โรงพยาบาลพญาไท 1",
         manager: "คุณสมชาย รินกร",
@@ -4394,12 +4394,12 @@ const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
 let projectsData = {};
 try {
-    const savedData = localStorage.getItem("technical_water_projects_data");
+    const savedData = localStorage.getItem("technical_water_projects_data_v2");
     if (savedData) {
         projectsData = JSON.parse(savedData);
     } else {
         projectsData = defaultProjectsData;
-        localStorage.setItem("technical_water_projects_data", JSON.stringify(projectsData));
+        localStorage.setItem("technical_water_projects_data_v2", JSON.stringify(projectsData));
     }
 } catch (e) {
     console.error("Failed to load projectsData:", e);
@@ -4418,7 +4418,7 @@ async function loadFromSupabase() {
                 remoteData[row.code] = row.data;
             });
             projectsData = remoteData;
-            localStorage.setItem("technical_water_projects_data", JSON.stringify(projectsData));
+            localStorage.setItem("technical_water_projects_data_v2", JSON.stringify(projectsData));
             
             // Re-render UI
             renderOverallDashboard();
@@ -4427,8 +4427,8 @@ async function loadFromSupabase() {
         } else {
             console.log("Supabase is empty. Resetting local cache to default...");
             projectsData = JSON.parse(JSON.stringify(defaultProjectsData));
-            localStorage.setItem("technical_water_projects_data", JSON.stringify(projectsData));
-            await syncProjectToSupabase("PRJ-2601");
+            localStorage.setItem("technical_water_projects_data_v2", JSON.stringify(projectsData));
+            await syncProjectToSupabase("PRJ-2602");
             renderOverallDashboard();
             renderSubnavProjectWorkspace();
         }
@@ -4476,7 +4476,7 @@ function syncActiveProject() {
 
 function saveToLocalStorage() {
     try {
-        localStorage.setItem("technical_water_projects_data", JSON.stringify(projectsData));
+        localStorage.setItem("technical_water_projects_data_v2", JSON.stringify(projectsData));
         syncActiveProject();
     } catch (e) {
         console.error("Failed to save projectsData:", e);
@@ -4495,7 +4495,7 @@ supabaseClient
         } else if (payload.new && payload.new.code) {
             projectsData[payload.new.code] = payload.new.data;
         }
-        localStorage.setItem("technical_water_projects_data", JSON.stringify(projectsData));
+        localStorage.setItem("technical_water_projects_data_v2", JSON.stringify(projectsData));
         renderOverallDashboard();
         renderSubnavProjectWorkspace();
     })
@@ -7759,18 +7759,18 @@ document.addEventListener("DOMContentLoaded", () => {
                     if (error) throw error;
                     
                     // 2. Clear localStorage
-                    localStorage.removeItem("technical_water_projects_data");
+                    localStorage.removeItem("technical_water_projects_data_v2");
                     
                     // 3. Reset in-memory data to default (which has 0 progress and 0 tasks)
                     projectsData = JSON.parse(JSON.stringify(defaultProjectsData));
                     
                     // 4. Save to local storage and sync the blank default project to Supabase
-                    localStorage.setItem("technical_water_projects_data", JSON.stringify(projectsData));
-                    await syncProjectToSupabase("PRJ-2601");
+                    localStorage.setItem("technical_water_projects_data_v2", JSON.stringify(projectsData));
+                    await syncProjectToSupabase("PRJ-2602");
                     
                     // 5. Re-render UI
-                    appState.selectedDetailProject = "PRJ-2601";
-                    appState.selectedCostProject = "PRJ-2601";
+                    appState.selectedDetailProject = "PRJ-2602";
+                    appState.selectedCostProject = "PRJ-2602";
                     
                     populateSubnavHospitals();
                     populateSubnavProjects("all");
