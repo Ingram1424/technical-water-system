@@ -3075,6 +3075,11 @@ select.form-control {
                                     <div class="role-desc">เข้าถึงได้เฉพาะสิทธิ์โครงการตนเอง ไม่เห็นต้นทุน</div>
                                 </div>
                             </a>
+                            <div style="border-top: 1px solid var(--border-color); margin-top: 8px; padding-top: 8px;">
+                                <button type="button" class="btn btn-sm btn-outline-red" id="reset-system-data-btn" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; font-family: 'Prompt'; font-size: 11px; background: #fee2e2; color: #ef4444; border: 1px solid #fca5a5; padding: 6px; border-radius: 4px; cursor: pointer;">
+                                    <i class="fa-solid fa-trash-arrow-up"></i> ล้างข้อมูลในระบบทั้งหมด (Reset to 0)
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -7755,6 +7760,47 @@ document.addEventListener("DOMContentLoaded", () => {
                 populateCostProjects();
                 renderOverallDashboard();
                 renderSubnavProjectWorkspace();
+            }
+    const resetDataBtn = document.getElementById("reset-system-data-btn");
+    if (resetDataBtn) {
+        resetDataBtn.addEventListener("click", async function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if (confirm("⚠️ คำเตือน! คุณแน่ใจหรือไม่ว่าต้องการลบข้อมูลโครงการและงานทั้งหมดในระบบให้เป็น 0?\nข้อมูลทั้งหมดบน Supabase Cloud และในเบราว์เซอร์จะถูกลบถาวร!")) {
+                try {
+                    // 1. Delete all projects on Supabase
+                    const { error } = await supabaseClient.from('projects').delete().neq('code', 'abc');
+                    if (error) throw error;
+                    
+                    // 2. Clear localStorage
+                    localStorage.removeItem("technical_water_projects_data");
+                    
+                    // 3. Reset in-memory data to default (which has 0 progress and 0 tasks)
+                    projectsData = JSON.parse(JSON.stringify(defaultProjectsData));
+                    
+                    // 4. Save to local storage and sync the blank default project to Supabase
+                    localStorage.setItem("technical_water_projects_data", JSON.stringify(projectsData));
+                    await syncProjectToSupabase("PRJ-2601");
+                    
+                    // 5. Re-render UI
+                    appState.selectedDetailProject = "PRJ-2601";
+                    appState.selectedCostProject = "PRJ-2601";
+                    
+                    populateSubnavHospitals();
+                    populateSubnavProjects("all");
+                    populateCostHospitals();
+                    populateCostProjects();
+                    
+                    renderOverallDashboard();
+                    renderSubnavProjectWorkspace();
+                    
+                    showToast("ล้างข้อมูลระบบทั้งหมดเป็น 0 เรียบร้อยแล้ว!", "success");
+                    document.getElementById("profile-dropdown").classList.remove("active");
+                } catch (err) {
+                    console.error("Error resetting data:", err);
+                    showToast("เกิดข้อผิดพลาดในการล้างข้อมูล", "error");
+                }
             }
         });
     }
