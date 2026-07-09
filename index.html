@@ -4597,7 +4597,6 @@ function updateSelectedDetailProject() {
 }
 
 function renderOverallDashboard() {
-    saveToLocalStorage();
     const yearAVal = appState.selectedYearFilterA || "2025";
     const yearBVal = appState.selectedYearFilterB || "2026";
     
@@ -5373,7 +5372,6 @@ function renderHospitalsGrid(activeProjects) {
 // 2. Project Detail workspace and Tab views (Subtabs)
 
 function renderSubnavProjectWorkspace() {
-    saveToLocalStorage();
     const activeCode = appState.selectedDetailProject;
     const hospitalSelector = document.getElementById("subnav-hospital-selector");
     const projectSelector = document.getElementById("subnav-project-selector");
