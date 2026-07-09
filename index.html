@@ -7287,10 +7287,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const createProjectForm = document.getElementById("create-project-form");
 
     const openCreateProjectModal = () => {
-        document.getElementById("new-project-code").value = "";
-        document.getElementById("new-project-name").value = "";
-        document.getElementById("new-project-value").value = "";
-        document.getElementById("new-project-cost").value = "";
+        // Only clear if no draft exists — draft system will restore if available
+        const hasDraft = sessionStorage.getItem("draft_create_project");
+        if (!hasDraft) {
+            document.getElementById("new-project-code").value = "";
+            document.getElementById("new-project-name").value = "";
+            document.getElementById("new-project-value").value = "";
+            document.getElementById("new-project-cost").value = "";
+        }
         createProjectModal.classList.add("active");
     };
 
@@ -8067,6 +8071,154 @@ function initPublicView(projectCode) {
             });
         });
     }
+})();
+
+// ============================================================
+// FORM DRAFT AUTO-SAVE SYSTEM
+// Saves all modal form inputs to sessionStorage on every input event.
+// Restores drafts when modals are opened again.
+// Cleared after successful form submission.
+// ============================================================
+
+const FORM_DRAFTS = {
+    // formId -> { fieldId: value, ... }
+};
+
+// Map of modal open buttons/IDs to their form IDs and fields
+const MODAL_FORM_MAP = [
+    {
+        modalId: "task-modal",
+        formId: "add-task-form",
+        draftKey: "draft_task",
+        fields: ["task-title-input", "task-start-input", "task-end-input", "task-progress-input"]
+    },
+    {
+        modalId: "plan-modal",
+        formId: "add-plan-form",
+        draftKey: "draft_plan",
+        fields: ["plan-title-input", "plan-quarter-input", "plan-duration-input", "plan-color-input"]
+    },
+    {
+        modalId: "daily-report-modal",
+        formId: "add-daily-report-form",
+        draftKey: "draft_daily_report",
+        fields: ["report-date", "report-desc"]
+    },
+    {
+        modalId: "expense-modal",
+        formId: "add-expense-form",
+        draftKey: "draft_expense",
+        fields: ["exp-date", "exp-type", "exp-title", "exp-amount"]
+    },
+    {
+        modalId: "create-project-modal",
+        formId: "create-project-form",
+        draftKey: "draft_create_project",
+        fields: [
+            "new-project-code", "new-project-name", "new-project-customer",
+            "new-project-manager", "new-project-start", "new-project-end",
+            "new-project-value", "new-project-cost", "new-project-year",
+            "new-project-status", "new-project-desc"
+        ]
+    },
+    {
+        modalId: "upload-modal",
+        formId: "add-doc-form",
+        draftKey: "draft_upload_doc",
+        fields: ["doc-name", "doc-type", "doc-date"]
+    },
+    {
+        modalId: "media-upload-modal",
+        formId: "add-media-form",
+        draftKey: "draft_media",
+        fields: ["media-title", "media-date"]
+    }
+];
+
+function saveDraft(draftKey, fields) {
+    const draft = {};
+    fields.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) draft[id] = el.value;
+    });
+    sessionStorage.setItem(draftKey, JSON.stringify(draft));
+}
+
+function restoreDraft(draftKey, fields) {
+    try {
+        const raw = sessionStorage.getItem(draftKey);
+        if (!raw) return false;
+        const draft = JSON.parse(raw);
+        let hasData = false;
+        fields.forEach(id => {
+            const el = document.getElementById(id);
+            if (el && draft[id] !== undefined && draft[id] !== "") {
+                el.value = draft[id];
+                hasData = true;
+            }
+        });
+        return hasData;
+    } catch { return false; }
+}
+
+function clearDraft(draftKey) {
+    sessionStorage.removeItem(draftKey);
+}
+
+function showDraftBadge(modalId) {
+    const modal = document.getElementById(modalId);
+    if (!modal) return;
+    const existing = modal.querySelector(".draft-restored-badge");
+    if (existing) return;
+    const header = modal.querySelector(".modal-header");
+    if (!header) return;
+    const badge = document.createElement("div");
+    badge.className = "draft-restored-badge";
+    badge.innerHTML = `<i class="fa-solid fa-rotate-left" style="margin-right:4px;"></i>กู้คืนข้อมูลที่กรอกไว้`;
+    badge.style.cssText = "font-size:11px;color:#0d9488;font-weight:600;background:#f0fdf4;border:1px solid #6ee7b7;border-radius:4px;padding:3px 8px;margin-top:6px;display:inline-flex;align-items:center;";
+    header.appendChild(badge);
+    setTimeout(() => badge.remove(), 4000);
+}
+
+// Attach auto-save and restore to all forms after DOM is ready
+(function initDraftSystem() {
+    MODAL_FORM_MAP.forEach(({ modalId, formId, draftKey, fields }) => {
+        const modal = document.getElementById(modalId);
+        const form = document.getElementById(formId);
+        if (!modal || !form) return;
+
+        // Restore draft when modal becomes visible (use MutationObserver)
+        const observer = new MutationObserver(() => {
+            if (modal.classList.contains("active") || modal.style.display === "flex" || modal.style.display === "block") {
+                const restored = restoreDraft(draftKey, fields);
+                if (restored) showDraftBadge(modalId);
+            }
+        });
+        observer.observe(modal, { attributes: true, attributeFilter: ["class", "style"] });
+
+        // Auto-save on every input change
+        fields.forEach(id => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.addEventListener("input", () => saveDraft(draftKey, fields));
+            el.addEventListener("change", () => saveDraft(draftKey, fields));
+        });
+
+        // Clear draft on successful form submit
+        form.addEventListener("submit", () => {
+            clearDraft(draftKey);
+            const existing = modal.querySelector(".draft-restored-badge");
+            if (existing) existing.remove();
+        });
+
+        // Clear draft when cancel button inside modal is clicked
+        const cancelBtns = modal.querySelectorAll("[id^='cancel-'], .modal-close-btn");
+        cancelBtns.forEach(btn => {
+            btn.addEventListener("click", () => {
+                // Don't auto-clear draft on cancel — let user keep it
+            });
+        });
+    });
 })();
 
 </script>
