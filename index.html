@@ -5966,27 +5966,45 @@ function renderSubnavPlanWork(project) {
 
     // Fallback default plans if not defined
     if (!project.plans) {
-        project.plans = [
-            { title: "งานระบบไฟฟ้า", color: "blue", width: 70, left: 0 },
-            { title: "งานระบบปรับอากาศ", color: "green", width: 50, left: 20 },
-            { title: "งานโครงสร้าง", color: "orange", width: 40, left: 10 },
-            { title: "งานสถาปัตย์", color: "purple", width: 30, left: 50 }
-        ];
+        project.plans = [];
     }
 
     rowsContainer.innerHTML = "";
 
-    project.plans.forEach(plan => {
-        const row = document.createElement("div");
-        row.className = "timeline-gantt-row";
-        row.innerHTML = `
-            <div class="gantt-col label">${plan.title}</div>
-            <div class="gantt-col bar-col">
-                <div class="gantt-bar ${plan.color}" style="width: ${plan.width}%; left: ${plan.left}%;"></div>
-            </div>
-        `;
-        rowsContainer.appendChild(row);
-    });
+    if (project.plans.length === 0) {
+        rowsContainer.innerHTML = `<div style="grid-column: span 2; text-align: center; color: var(--text-muted); font-style: italic; padding: 20px; font-size: 13px;">ยังไม่มีขั้นตอนแผนงานหลักสำหรับโครงการนี้</div>`;
+    } else {
+        const canDelete = appState.currentRole === "pm";
+        project.plans.forEach((plan, idx) => {
+            const row = document.createElement("div");
+            row.className = "timeline-gantt-row";
+            const deleteButtonHTML = canDelete 
+                ? `<button type="button" class="btn-delete-gantt" onclick="deleteGanttRow(${idx})" title="ลบขั้นตอน" style="background:none; border:none; color:#e63946; cursor:pointer; padding: 2px 6px; font-size:12px;"><i class="fa-solid fa-trash-can"></i></button>`
+                : ``;
+            row.innerHTML = `
+                <div class="gantt-col label" style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+                    <span>${plan.title}</span>
+                    ${deleteButtonHTML}
+                </div>
+                <div class="gantt-col bar-col">
+                    <div class="gantt-bar ${plan.color}" style="width: ${plan.width}%; left: ${plan.left}%;"></div>
+                </div>
+            `;
+            rowsContainer.appendChild(row);
+        });
+    }
+}
+
+function deleteGanttRow(idx) {
+    const project = projectsData[appState.selectedDetailProject];
+    if (!project) return;
+    
+    if (confirm("คุณแน่ใจหรือไม่ว่าต้องการลบขั้นตอนแผนงานนี้?")) {
+        const deleted = project.plans.splice(idx, 1);
+        showToast(`ลบขั้นตอนแผนงาน: ${deleted[0].title} สำเร็จ!`, "success");
+        saveToLocalStorage();
+        renderSubnavPlanWork(project);
+    }
 
     // Render plan documents dynamically!
     const docsContainer = document.getElementById("plan-docs-container");
@@ -6087,14 +6105,15 @@ function renderSubnavActualProgress(project) {
 
     // Default task list if project has none defined
     if (!project.tasks) {
-        project.tasks = [
-            { id: 1, title: "งานเดินสายไฟห้องวิกฤต ICU", start: `15/01/${project.year}`, end: `15/04/${project.year}`, progress: 100, file: "wiring-report.pdf", fileUrl: "https://pdfobject.com/pdf/sample.pdf" },
-            { id: 2, title: "งานติดตั้งตู้ไฟหลัก MDB", start: `01/04/${project.year}`, end: `30/06/${project.year}`, progress: 75, file: "mdb-test-report.pdf", fileUrl: "https://pdfobject.com/pdf/sample.pdf" },
-            { id: 3, title: "งานปรับปรุงท่อระบายลมเย็น", start: `10/05/${project.year}`, end: `30/08/${project.year}`, progress: 45, file: "", fileUrl: "" }
-        ];
+        project.tasks = [];
     }
 
     listContainer.innerHTML = "";
+
+    if (project.tasks.length === 0) {
+        listContainer.innerHTML = `<div class="text-center text-muted py-4">ยังไม่มีรายการความคืบหน้างานจริงสำหรับโครงการนี้</div>`;
+        return;
+    }
 
     project.tasks.forEach(task => {
         const taskItem = document.createElement("div");
@@ -6117,6 +6136,10 @@ function renderSubnavActualProgress(project) {
                 <i class="fa-solid fa-paperclip"></i> แนบรายงาน PDF
              </button>` : "";
 
+        const deleteButtonHTML = isPM 
+            ? `<button class="btn-delete-task" data-task-id="${task.id}" title="ลบรายการงาน" style="background:none; border:none; color:#e63946; cursor:pointer; padding: 4px; font-size:14px;"><i class="fa-solid fa-trash-can"></i></button>`
+            : ``;
+
         taskItem.innerHTML = `
             <div class="task-info" style="display: flex; flex-direction: column;">
                 <strong style="color: var(--navy-dark); font-size: 14px;">${task.title}</strong>
@@ -6126,11 +6149,12 @@ function renderSubnavActualProgress(project) {
                     ${uploadButtonHTML}
                 </div>
             </div>
-            <div class="task-bar-area" style="display: flex; align-items: center; gap: 12px; min-width: 180px;">
+            <div class="task-bar-area" style="display: flex; align-items: center; gap: 12px; min-width: 220px;">
                 <div class="progress-bar-bg" style="flex-grow: 1; height: 8px; background-color: #f1f5f9; border-radius: 999px; overflow: hidden;">
                     <div class="progress-bar-fill ${task.progress === 100 ? 'green-fill' : 'blue-fill'}" style="width: ${task.progress}%; height: 100%; border-radius: 999px;"></div>
                 </div>
                 <strong style="font-size: 14px; min-width: 36px; text-align: right; color: var(--navy-medium);">${task.progress}%</strong>
+                ${deleteButtonHTML}
             </div>
         `;
         listContainer.appendChild(taskItem);
@@ -6155,6 +6179,29 @@ function renderSubnavActualProgress(project) {
             if (window.openPdfViewer) window.openPdfViewer(fileUrl, fileName, title);
         });
     });
+
+    // Attach click listeners to delete buttons
+    listContainer.querySelectorAll(".btn-delete-task").forEach(btn => {
+        btn.addEventListener("click", function() {
+            const taskId = parseInt(this.getAttribute("data-task-id"));
+            deleteTask(taskId);
+        });
+    });
+}
+
+function deleteTask(taskId) {
+    const project = projectsData[appState.selectedDetailProject];
+    if (!project) return;
+    
+    if (confirm("คุณแน่ใจหรือไม่ว่าต้องการลบรายการงานความคืบหน้านี้?")) {
+        const index = project.tasks.findIndex(t => t.id === taskId);
+        if (index > -1) {
+            const deleted = project.tasks.splice(index, 1);
+            showToast(`ลบรายการงาน: ${deleted[0].title} สำเร็จ!`, "success");
+            saveToLocalStorage();
+            renderSubnavActualProgress(project);
+        }
+    }
 }
 
 function renderSubnavDailyReports(project) {
@@ -6169,11 +6216,20 @@ function renderSubnavDailyReports(project) {
         return;
     }
     
+    const isPM = appState.currentRole === "pm";
     reports.forEach((rep, idx) => {
         const card = document.createElement("div");
         card.className = "feed-item";
         card.style = "position: relative; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; margin-bottom: 12px; background: #fff;";
         
+        const deleteButtonHTML = isPM 
+            ? `<button class="btn btn-xs btn-outline-red btn-delete-daily-report" 
+                   data-idx="${idx}"
+                   style="font-size: 10.5px; padding: 3px 8px; display: flex; align-items: center; gap: 4px; background: none; border: 1px solid #ef4444; color: #ef4444; border-radius: 4px; cursor: pointer; margin-left: 6px;">
+                   <i class="fa-solid fa-trash-can"></i> ลบ
+               </button>` 
+            : ``;
+
         card.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
                 <div style="display: flex; align-items: center; gap: 8px; color: var(--navy-dark); font-weight: 600;">
@@ -6191,6 +6247,7 @@ function renderSubnavDailyReports(project) {
                             <i class="fa-solid fa-eye"></i> ดู PDF
                         </button>
                     ` : ''}
+                    ${deleteButtonHTML}
                 </div>
             </div>
             <p style="font-size: 12px; color: var(--text-dark); line-height: 1.6; margin: 0;">${rep.desc}</p>
@@ -6207,6 +6264,26 @@ function renderSubnavDailyReports(project) {
             if (window.openPdfViewer) window.openPdfViewer(fileUrl, fileName, title);
         });
     });
+
+    // Hook Delete Daily Report handler
+    container.querySelectorAll(".btn-delete-daily-report").forEach(btn => {
+        btn.addEventListener("click", function() {
+            const repIdx = parseInt(this.getAttribute("data-idx"));
+            deleteDailyReport(repIdx);
+        });
+    });
+}
+
+function deleteDailyReport(idx) {
+    const project = projectsData[appState.selectedDetailProject];
+    if (!project) return;
+    
+    if (confirm("คุณแน่ใจหรือไม่ว่าต้องการลบรายงานประจำวันนี้?")) {
+        const deleted = project.dailyReports.splice(idx, 1);
+        showToast(`ลบรายงานประจำวัน: วันที่ ${deleted[0].date} สำเร็จ!`, "success");
+        saveToLocalStorage();
+        renderSubnavDailyReports(project);
+    }
 }
 
 function deleteDocument(index) {
