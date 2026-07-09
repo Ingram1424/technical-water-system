@@ -4436,8 +4436,12 @@ async function loadFromSupabase() {
             renderSubnavProjectWorkspace();
             console.log("Loaded data from Supabase successfully!");
         } else {
-            console.log("Supabase is empty. Uploading default project...");
+            console.log("Supabase is empty. Resetting local cache to default...");
+            projectsData = JSON.parse(JSON.stringify(defaultProjectsData));
+            localStorage.setItem("technical_water_projects_data", JSON.stringify(projectsData));
             await syncProjectToSupabase("PRJ-2601");
+            renderOverallDashboard();
+            renderSubnavProjectWorkspace();
         }
     } catch (e) {
         console.error("Failed to load from Supabase:", e);
