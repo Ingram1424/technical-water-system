@@ -21,6 +21,8 @@
     </script>
     <!-- Chart.js for beautiful interactive visualizations -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Supabase JS Client for Real-time Cloud Database -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
 /* Clean, Professional White & Blue Design System */
 
@@ -4391,6 +4393,11 @@ const defaultProjectsData = {
     }
 };
 
+// --- SUPABASE CONFIG ---
+const supabaseUrl = 'https://txglgkovojxvazbqxaac.supabase.co';
+const supabaseKey = 'sb_publishable_XYSvmVEwASmhS9RpJMuz9Q_EbCZ8JJe';
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
 let projectsData = {};
 try {
     const savedData = localStorage.getItem("technical_water_projects_data");
@@ -4405,13 +4412,99 @@ try {
     projectsData = defaultProjectsData;
 }
 
+// Background sync from Supabase
+async function loadFromSupabase() {
+    try {
+        const { data, error } = await supabaseClient.from('projects').select('*');
+        if (error) throw error;
+        
+        if (data && data.length > 0) {
+            const remoteData = {};
+            data.forEach(row => {
+                remoteData[row.code] = row.data;
+            });
+            projectsData = remoteData;
+            localStorage.setItem("technical_water_projects_data", JSON.stringify(projectsData));
+            
+            // Re-render UI
+            renderOverallDashboard();
+            renderSubnavProjectWorkspace();
+            console.log("Loaded data from Supabase successfully!");
+        } else {
+            console.log("Supabase is empty. Uploading default project...");
+            await syncProjectToSupabase("PRJ-2601");
+        }
+    } catch (e) {
+        console.error("Failed to load from Supabase:", e);
+    }
+}
+
+async function syncProjectToSupabase(code) {
+    if (!code || !projectsData[code]) return;
+    try {
+        const { error } = await supabaseClient.from('projects').upsert({
+            code: code,
+            data: projectsData[code],
+            updated_at: new Date().toISOString()
+        });
+        if (error) throw error;
+        console.log(`Synced project ${code} with Supabase`);
+    } catch (e) {
+        console.error(`Failed to sync project ${code} with Supabase:`, e);
+    }
+}
+
+async function deleteProjectFromSupabase(code) {
+    if (!code) return;
+    try {
+        const { error } = await supabaseClient.from('projects').delete().eq('code', code);
+        if (error) throw error;
+        console.log(`Deleted project ${code} from Supabase`);
+    } catch (e) {
+        console.error(`Failed to delete project ${code} from Supabase:`, e);
+    }
+}
+
+function syncActiveProject() {
+    const activeCode = appState.selectedDetailProject;
+    if (activeCode && activeCode !== "all") {
+        syncProjectToSupabase(activeCode);
+    }
+    const costCode = appState.selectedCostProject;
+    if (costCode && costCode !== "all" && costCode !== activeCode) {
+        syncProjectToSupabase(costCode);
+    }
+}
+
 function saveToLocalStorage() {
     try {
         localStorage.setItem("technical_water_projects_data", JSON.stringify(projectsData));
+        syncActiveProject();
     } catch (e) {
         console.error("Failed to save projectsData:", e);
     }
 }
+
+// Subscribe to real-time updates
+supabaseClient
+    .channel('public:projects')
+    .on('postgres_changes', { event: '*', table: 'projects' }, (payload) => {
+        console.log('Realtime change received:', payload);
+        if (payload.eventType === 'DELETE') {
+            if (payload.old && payload.old.code) {
+                delete projectsData[payload.old.code];
+            }
+        } else if (payload.new && payload.new.code) {
+            projectsData[payload.new.code] = payload.new.data;
+        }
+        localStorage.setItem("technical_water_projects_data", JSON.stringify(projectsData));
+        renderOverallDashboard();
+        renderSubnavProjectWorkspace();
+    })
+    .subscribe();
+
+// Load from Supabase on startup
+loadFromSupabase();
 
 function populateSubnavHospitals() {
     const selector = document.getElementById("subnav-hospital-selector");
@@ -7575,6 +7668,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบโครงการ ${code} ออกจากระบบ?\nการลบนี้ไม่สามารถย้อนกลับได้!`)) {
                 const projName = projectsData[code].name;
                 delete projectsData[code];
+                deleteProjectFromSupabase(code);
                 appState.selectedDetailProject = "";
                 closeEditProjectModal();
                 showToast(`ลบโครงการ ${code}: ${projName} ออกจากระบบสำเร็จ!`, "success");
