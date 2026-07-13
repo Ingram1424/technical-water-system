@@ -4556,6 +4556,8 @@ async function syncProjectToSupabase(code) {
         console.log(`Synced project ${code} with Supabase`);
     } catch (e) {
         console.error(`Failed to sync project ${code} with Supabase:`, e);
+        showToast(`บันทึกข้อมูลคลาวด์ล้มเหลว: ${e.message || e}`, "error");
+        throw e;
     }
 }
 
