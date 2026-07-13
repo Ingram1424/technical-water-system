@@ -4586,10 +4586,11 @@ async function syncAllProjectsToSupabase() {
 function saveToLocalStorage() {
     try {
         localStorage.setItem("technical_water_projects_data_v2", JSON.stringify(projectsData));
-        syncActiveProject();
     } catch (e) {
-        console.error("Failed to save projectsData:", e);
+        console.warn("LocalStorage quota exceeded, writing to memory only:", e);
     }
+    // Always sync to Supabase even if localStorage quota is exceeded!
+    syncActiveProject();
 }
 
 // Disabled Realtime updates to prevent sync race conditions during rapid editing
@@ -5094,10 +5095,47 @@ function formatNumber(num) {
 function readFileAsBase64(file) {
     return new Promise((resolve) => {
         if (!file) { resolve({ name: "", dataUrl: "" }); return; }
-        const reader = new FileReader();
-        reader.onload = (e) => resolve({ name: file.name, dataUrl: e.target.result });
-        reader.onerror = () => resolve({ name: file.name, dataUrl: "" });
-        reader.readAsDataURL(file);
+        
+        // Auto-compress image files to 1200px width at 70% quality to prevent LocalStorage QuotaExceededError
+        if (file.type.startsWith('image/')) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    const maxWidth = 1200;
+                    
+                    if (width > maxWidth) {
+                        height = Math.round((height * maxWidth) / width);
+                        width = maxWidth;
+                    }
+                    canvas.width = width;
+                    canvas.height = height;
+                    
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                    resolve({ name: file.name, dataUrl: compressedDataUrl });
+                };
+                img.onerror = () => {
+                    // Fallback if image fails to load in canvas
+                    const rawReader = new FileReader();
+                    rawReader.onload = (ev) => resolve({ name: file.name, dataUrl: ev.target.result });
+                    rawReader.readAsDataURL(file);
+                };
+                img.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        } else {
+            // Non-image files (PDFs, Excels...) read raw
+            const reader = new FileReader();
+            reader.onload = (e) => resolve({ name: file.name, dataUrl: e.target.result });
+            reader.onerror = () => resolve({ name: file.name, dataUrl: "" });
+            reader.readAsDataURL(file);
+        }
     });
 }
 
@@ -6110,22 +6148,33 @@ function renderSubnavDocumentsTab(project) {
         
         const canDelete = appState.currentRole === "pm";
         const deleteButtonHTML = canDelete 
-            ? `<button class="btn-delete-row" data-idx="${idx}" title="ลบเอกสาร"><i class="fa-solid fa-trash-can"></i></button>`
-            : `<button class="btn-delete-row" disabled style="opacity:0.3; cursor:not-allowed;" title="ไม่มีสิทธิ์ลบข้อมูล"><i class="fa-solid fa-trash-can"></i></button>`;
+            ? `<button class="btn-delete-row" data-idx="${idx}" title="ลบเอกสาร" style="background:none; border:none; color:#e63946; cursor:pointer; padding: 4px; font-size:14px;"><i class="fa-solid fa-trash-can"></i></button>`
+            : `<button class="btn-delete-row" disabled style="opacity:0.3; cursor:not-allowed;" title="ไม่มีสิทธิ์ลบข้อมูล" style="background:none; border:none; color:#cbd5e1; cursor:not-allowed; padding: 4px; font-size:14px;"><i class="fa-solid fa-trash-can"></i></button>`;
         
         tr.innerHTML = `
             <td>
                 <div class="d-flex align-items-center">
-                    <i class="fa-solid fa-file-pdf text-red mr-2 fs-5"></i>
+                    <i class="fa-solid fa-file-pdf text-red mr-2 fs-5" style="color: #ef4444; margin-right: 8px; font-size: 16px;"></i>
                     <strong>${d.name}</strong>
                 </div>
             </td>
-            <td><span class="badge-status font-sm">${d.type}</span></td>
+            <td><span class="badge-status font-sm" style="font-size: 11px; padding: 2px 6px; background-color: #f1f5f9; color: #475569; border-radius: 4px; font-weight: 600;">${d.type}</span></td>
             <td>${d.uploadedAt || d.date}</td>
             <td class="text-right">
-                <a href="#" class="btn btn-sm btn-outline download-link" data-name="${d.name}">
-                    <i class="fa-solid fa-download"></i>
+                ${d.fileUrl ? `
+                <a href="${d.fileUrl}" download="${d.name}" class="btn btn-sm btn-outline" style="font-size: 10px; padding: 4px 8px; height: auto; display: inline-flex; align-items: center; gap: 4px; margin-right: 4px; background: rgba(16, 185, 129, 0.1); color: #10b981; border-color: rgba(16, 185, 129, 0.2); text-decoration: none;">
+                    <i class="fa-solid fa-download"></i> ดาวน์โหลด
                 </a>
+                ${d.name.toLowerCase().endsWith('.pdf') ? `
+                <button class="btn btn-sm btn-outline btn-view-doc-pdf" data-url="${d.fileUrl}" data-file="${d.name}" style="font-size: 10px; padding: 4px 8px; height: auto; display: inline-flex; align-items: center; gap: 4px; margin-right: 4px; background: rgba(15, 82, 186, 0.1); color: var(--primary-blue); border-color: rgba(15, 82, 186, 0.2); cursor: pointer;">
+                    <i class="fa-solid fa-eye"></i> ดู PDF
+                </button>
+                ` : ''}
+                ` : `
+                <a href="#" class="btn btn-sm btn-outline download-link" data-name="${d.name}" style="font-size: 10px; padding: 4px 8px; height: auto; display: inline-flex; align-items: center; gap: 4px; margin-right: 4px; background: rgba(0,0,0,0.05); color: #64748b; text-decoration: none; border-color: rgba(0,0,0,0.1);">
+                    <i class="fa-solid fa-download"></i> ไม่มีไฟล์อ้างอิง
+                </a>
+                `}
                 ${deleteButtonHTML}
             </td>
         `;
@@ -6140,12 +6189,23 @@ function renderSubnavDocumentsTab(project) {
         });
     });
 
-    // Hook Download handler
+    // Hook Download handler (fallback for items without fileUrl)
     tableBody.querySelectorAll(".download-link").forEach(link => {
         link.addEventListener("click", function(e) {
             e.preventDefault();
             const fileName = this.getAttribute("data-name");
-            showToast(`เริ่มดาวน์โหลดเอกสาร: ${fileName}`, "info");
+            showToast(`เริ่มดาวน์โหลดเอกสาร: ${fileName} (กำลังจำลองดาวน์โหลด)`, "info");
+        });
+    });
+
+    // Hook View PDF handler
+    tableBody.querySelectorAll(".btn-view-doc-pdf").forEach(btn => {
+        btn.addEventListener("click", function() {
+            const fileUrl = this.getAttribute("data-url");
+            const fileName = this.getAttribute("data-file");
+            if (window.openPdfViewer) {
+                window.openPdfViewer(fileUrl, fileName, fileName);
+            }
         });
     });
 }
@@ -6522,6 +6582,9 @@ function deleteDocument(index) {
     
     const docName = project.documents[index].name;
     project.documents.splice(index, 1);
+    
+    // Save and sync immediately
+    saveToLocalStorage();
     
     showToast(`ลบไฟล์ ${docName} สำเร็จ!`, "success");
     renderSubnavProjectWorkspace();
@@ -7187,17 +7250,28 @@ document.addEventListener("DOMContentLoaded", () => {
     if (closeUploadBtn) closeUploadBtn.addEventListener("click", closeUploadModal);
     if (cancelUploadBtn) cancelUploadBtn.addEventListener("click", closeUploadModal);
 
-    uploadForm.addEventListener("submit", function(e) {
+    uploadForm.addEventListener("submit", async function(e) {
         e.preventDefault();
         
         const name = document.getElementById("doc-name").value;
         const type = document.getElementById("doc-type").value;
         const date = document.getElementById("doc-date").value;
+        const fileInput = document.getElementById("doc-file");
+        
+        if (!fileInput || !fileInput.files || fileInput.files.length === 0) return;
+        
+        // Read file as Base64 for persistent cloud storage
+        const result = await readFileAsBase64(fileInput.files[0]);
+        const fileUrl = result.dataUrl;
         
         const project = projectsData[appState.selectedDetailProject];
         if (project) {
             if (!project.documents) project.documents = [];
-            project.documents.unshift({ name, type, uploadedAt: date });
+            project.documents.unshift({ name, type, uploadedAt: date, fileUrl });
+            
+            // Save and sync immediately
+            saveToLocalStorage();
+            
             showToast(`อัปโหลดเอกสาร ${name} เข้าสู่โครงการเรียบร้อย!`, "success");
             closeUploadModal();
             renderSubnavProjectWorkspace();
@@ -7323,6 +7397,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     date: formattedDate,
                     img: imgUrl
                 });
+                
+                // Save and sync immediately
+                saveToLocalStorage();
                 
                 showToast(`อัปโหลดรูปภาพ ${title} สำเร็จ!`, "success");
                 closeMediaModal();
@@ -7846,7 +7923,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     if (addPlanDocForm) {
-        addPlanDocForm.addEventListener("submit", function(e) {
+        addPlanDocForm.addEventListener("submit", async function(e) {
             e.preventDefault();
             
             const title = document.getElementById("plan-doc-title").value.trim();
@@ -7856,7 +7933,10 @@ document.addEventListener("DOMContentLoaded", () => {
             
             const uploadedFile = fileInput.files[0];
             const file = uploadedFile.name;
-            const fileUrl = URL.createObjectURL(uploadedFile);
+            
+            // Read file as Base64 for persistent cloud storage
+            const result = await readFileAsBase64(uploadedFile);
+            const fileUrl = result.dataUrl;
             
             const d = new Date();
             const dateStr = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
@@ -7873,6 +7953,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     fileUrl: fileUrl,
                     date: dateStr
                 });
+                
+                // Save and sync immediately
+                saveToLocalStorage();
                 
                 showToast(`อัปโหลดไฟล์แผนงาน: ${title} เรียบร้อยแล้ว!`, "success");
                 closePlanDocModal();
