@@ -3157,6 +3157,11 @@ body.public-view-mode #public-view-header {
 
                     <!-- Role & User Profile Selector -->
                     <div class="user-profile-menu">
+                        <!-- Cloud Sync Status Indicator -->
+                        <div id="cloud-sync-status" class="cloud-sync-status" style="margin-right: 12px; display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; padding: 6px 12px; border-radius: 999px; background: rgba(16, 185, 129, 0.1); color: #059669; border: 1px solid rgba(16, 185, 129, 0.2); transition: all 0.3s ease;">
+                            <i class="fa-solid fa-circle-check" id="cloud-sync-icon" style="font-size: 12px; color: #10b981;"></i>
+                            <span id="cloud-sync-text">บันทึกข้อมูลคลาวด์สำเร็จ</span>
+                        </div>
                         <div class="role-badge-current" id="active-role-badge">
                             <i class="fa-solid fa-user-lock"></i> PM (Project Manager)
                         </div>
@@ -4565,20 +4570,64 @@ async function deleteProjectFromSupabase(code) {
     }
 }
 
+function updateCloudSyncStatus(status) {
+    const el = document.getElementById("cloud-sync-status");
+    const icon = document.getElementById("cloud-sync-icon");
+    const text = document.getElementById("cloud-sync-text");
+    if (!el || !icon || !text) return;
+    
+    if (status === "syncing") {
+        el.style.backgroundColor = "rgba(245, 158, 11, 0.1)";
+        el.style.color = "#d97706";
+        el.style.borderColor = "rgba(245, 158, 11, 0.2)";
+        icon.className = "fa-solid fa-cloud-arrow-up fa-bounce";
+        icon.style.color = "#f59e0b";
+        text.textContent = "กำลังบันทึกข้อมูลล่าสุดขึ้นคลาวด์...";
+    } else if (status === "synced") {
+        el.style.backgroundColor = "rgba(16, 185, 129, 0.1)";
+        el.style.color = "#059669";
+        el.style.borderColor = "rgba(16, 185, 129, 0.2)";
+        icon.className = "fa-solid fa-circle-check";
+        icon.style.color = "#10b981";
+        text.textContent = "บันทึกข้อมูลคลาวด์สำเร็จ";
+    } else if (status === "error") {
+        el.style.backgroundColor = "rgba(239, 68, 68, 0.1)";
+        el.style.color = "#dc2626";
+        el.style.borderColor = "rgba(239, 68, 68, 0.2)";
+        icon.className = "fa-solid fa-triangle-exclamation";
+        icon.style.color = "#ef4444";
+        text.textContent = "การเชื่อมต่อขัดข้อง (บันทึกเฉพาะในเครื่อง)";
+    }
+}
+
 let isSyncing = false;
 const syncQueue = [];
 
+// Warn user if they try to close/refresh tab during sync
+window.addEventListener('beforeunload', (e) => {
+    if (isSyncing || syncQueue.length > 0) {
+        e.preventDefault();
+        e.returnValue = 'ระบบกำลังบันทึกข้อมูลล่าสุดขึ้นคลาวด์ กรุณารอสักครู่ก่อนออกจากหน้าเว็บ';
+        return e.returnValue;
+    }
+});
+
 async function processSyncQueue() {
     if (isSyncing) return;
-    if (syncQueue.length === 0) return;
+    if (syncQueue.length === 0) {
+        updateCloudSyncStatus("synced");
+        return;
+    }
     
     isSyncing = true;
+    updateCloudSyncStatus("syncing");
     const nextCode = syncQueue.shift();
     
     try {
         await syncProjectToSupabase(nextCode);
     } catch (e) {
         console.error("Queue sync error:", e);
+        updateCloudSyncStatus("error");
     } finally {
         isSyncing = false;
         processSyncQueue();
@@ -4587,6 +4636,7 @@ async function processSyncQueue() {
 
 function queueSyncActiveProject(code) {
     if (!code) return;
+    updateCloudSyncStatus("syncing");
     // Collapse duplicates by moving them to the end of the queue
     const idx = syncQueue.indexOf(code);
     if (idx > -1) {
