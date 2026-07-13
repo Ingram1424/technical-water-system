@@ -4592,23 +4592,7 @@ function saveToLocalStorage() {
     }
 }
 
-// Subscribe to real-time updates
-supabaseClient
-    .channel('public:projects')
-    .on('postgres_changes', { event: '*', table: 'projects' }, (payload) => {
-        console.log('Realtime change received:', payload);
-        if (payload.eventType === 'DELETE') {
-            if (payload.old && payload.old.code) {
-                delete projectsData[payload.old.code];
-            }
-        } else if (payload.new && payload.new.code) {
-            projectsData[payload.new.code] = payload.new.data;
-        }
-        localStorage.setItem("technical_water_projects_data_v2", JSON.stringify(projectsData));
-        renderOverallDashboard();
-        renderSubnavProjectWorkspace();
-    })
-    .subscribe();
+// Disabled Realtime updates to prevent sync race conditions during rapid editing
 
 // Load from Supabase on startup
 loadFromSupabase();
