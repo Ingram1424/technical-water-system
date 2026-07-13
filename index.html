@@ -4565,21 +4565,52 @@ async function deleteProjectFromSupabase(code) {
     }
 }
 
+let isSyncing = false;
+const syncQueue = [];
+
+async function processSyncQueue() {
+    if (isSyncing) return;
+    if (syncQueue.length === 0) return;
+    
+    isSyncing = true;
+    const nextCode = syncQueue.shift();
+    
+    try {
+        await syncProjectToSupabase(nextCode);
+    } catch (e) {
+        console.error("Queue sync error:", e);
+    } finally {
+        isSyncing = false;
+        processSyncQueue();
+    }
+}
+
+function queueSyncActiveProject(code) {
+    if (!code) return;
+    // Collapse duplicates by moving them to the end of the queue
+    const idx = syncQueue.indexOf(code);
+    if (idx > -1) {
+        syncQueue.splice(idx, 1);
+    }
+    syncQueue.push(code);
+    processSyncQueue();
+}
+
 function syncActiveProject() {
     const activeCode = appState.selectedDetailProject;
     if (activeCode && activeCode !== "all") {
-        syncProjectToSupabase(activeCode);
+        queueSyncActiveProject(activeCode);
     }
     const costCode = appState.selectedCostProject;
     if (costCode && costCode !== "all" && costCode !== activeCode) {
-        syncProjectToSupabase(costCode);
+        queueSyncActiveProject(costCode);
     }
 }
 
 async function syncAllProjectsToSupabase() {
     const codes = Object.keys(projectsData);
     for (const code of codes) {
-        await syncProjectToSupabase(code);
+        queueSyncActiveProject(code);
     }
 }
 
