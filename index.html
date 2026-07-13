@@ -3610,7 +3610,7 @@ body.public-view-mode #public-view-header {
                                 <div class="mini-kpi-card blue">
                                     <div class="mini-icon"><i class="fa-solid fa-folder-tree"></i></div>
                                     <div class="mini-lbl-val">
-                                        <span class="lbl">งานทั้งหมด</span>
+                                        <span class="lbl">งานย่อยทั้งหมด</span>
                                         <h3 class="val" id="detail-total-jobs">0</h3>
                                     </div>
                                     <span class="unit">รายการ</span>
@@ -3618,7 +3618,7 @@ body.public-view-mode #public-view-header {
                                 <div class="mini-kpi-card green">
                                     <div class="mini-icon"><i class="fa-solid fa-circle-play"></i></div>
                                     <div class="mini-lbl-val">
-                                        <span class="lbl">กำลังดำเนินการ</span>
+                                        <span class="lbl">งานย่อยกำลังทำ</span>
                                         <h3 class="val" id="detail-inprogress-jobs">0</h3>
                                     </div>
                                     <span class="unit">รายการ</span>
@@ -3626,7 +3626,7 @@ body.public-view-mode #public-view-header {
                                 <div class="mini-kpi-card teal">
                                     <div class="mini-icon"><i class="fa-solid fa-circle-check"></i></div>
                                     <div class="mini-lbl-val">
-                                        <span class="lbl">เสร็จแล้ว</span>
+                                        <span class="lbl">งานย่อยเสร็จแล้ว</span>
                                         <h3 class="val" id="detail-completed-jobs">0</h3>
                                     </div>
                                     <span class="unit">รายการ</span>
@@ -3634,7 +3634,7 @@ body.public-view-mode #public-view-header {
                                 <div class="mini-kpi-card red">
                                     <div class="mini-icon"><i class="fa-solid fa-circle-exclamation"></i></div>
                                     <div class="mini-lbl-val">
-                                        <span class="lbl">ล่าช้า</span>
+                                        <span class="lbl">งานย่อยล่าช้า</span>
                                         <h3 class="val" id="detail-delayed-jobs">0</h3>
                                     </div>
                                     <span class="unit">รายการ</span>
@@ -4244,10 +4244,11 @@ body.public-view-mode #public-view-header {
     <div class="modal-overlay" id="task-modal">
         <div class="modal-card">
             <div class="modal-header">
-                <h3 class="modal-title"><i class="fa-solid fa-tasks"></i> เพิ่มรายการงานย่อย</h3>
+                <h3 class="modal-title" id="task-modal-title"><i class="fa-solid fa-tasks"></i> เพิ่มรายการงานย่อย</h3>
                 <button class="modal-close-btn" id="close-task-modal">&times;</button>
             </div>
             <form id="add-task-form">
+                <input type="hidden" id="task-id-input">
                 <div class="modal-body">
                     <div class="form-group">
                         <label class="form-label" for="task-title-input">ชื่อรายการงานย่อย <span class="required">*</span></label>
@@ -5106,15 +5107,8 @@ function readFileAsBase64(file) {
 // --- JOBS HELPER: Recalculate jobs counts and work breakdown from tasks array (single source of truth) ---
 function recalculateJobsFromTasks(project) {
     if (!project) return;
-    if (!project.tasks || project.tasks.length === 0) {
-        const year = project.year || 2026;
-        project.tasks = [
-            { id: 1, title: "เตรียมงานและวางแผนโครงการหลัก (Project Planning)", start: `01/01/${year}`, end: `31/01/${year}`, progress: 0, file: "", fileUrl: "" },
-            { id: 2, title: "จัดเตรียมลำเลียงวัสดุอุปกรณ์วิศวกรรมเข้าพื้นที่หน้างาน", start: `01/02/${year}`, end: `28/02/${year}`, progress: 0, file: "", fileUrl: "" },
-            { id: 3, title: "ดำเนินการติดตั้งระบบควบคุมไฟฟ้าและสายเมนหลัก (Main Wiring & RMU)", start: `01/03/${year}`, end: `30/06/${year}`, progress: 0, file: "", fileUrl: "" },
-            { id: 4, title: "ทดสอบการทำงานของระบบและแก้ไขจุดบกพร่อง (System Commissioning & Testing)", start: `01/07/${year}`, end: `31/08/${year}`, progress: 0, file: "", fileUrl: "" },
-            { id: 5, title: "ฝึกอบรมเจ้าหน้าที่เทคนิคและส่งมอบโครงการฉบับสมบูรณ์ (Handover & Training)", start: `01/09/${year}`, end: `30/09/${year}`, progress: 0, file: "", fileUrl: "" }
-        ];
+    if (!project.tasks) {
+        project.tasks = [];
     }
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -6360,6 +6354,10 @@ function renderSubnavActualProgress(project) {
                 <i class="fa-solid fa-paperclip"></i> แนบรายงาน PDF
              </button>` : "";
 
+        const editButtonHTML = isPM 
+            ? `<button class="btn-edit-task" data-task-id="${task.id}" title="แก้ไขความคืบหน้าและข้อมูลงาน" style="background:none; border:none; color:#3b82f6; cursor:pointer; padding: 4px; font-size:14px; margin-right: 4px;"><i class="fa-solid fa-pen-to-square"></i></button>`
+            : ``;
+
         const deleteButtonHTML = isPM 
             ? `<button class="btn-delete-task" data-task-id="${task.id}" title="ลบรายการงาน" style="background:none; border:none; color:#e63946; cursor:pointer; padding: 4px; font-size:14px;"><i class="fa-solid fa-trash-can"></i></button>`
             : ``;
@@ -6378,10 +6376,21 @@ function renderSubnavActualProgress(project) {
                     <div class="progress-bar-fill ${task.progress === 100 ? 'green-fill' : 'blue-fill'}" style="width: ${task.progress}%; height: 100%; border-radius: 999px;"></div>
                 </div>
                 <strong style="font-size: 14px; min-width: 36px; text-align: right; color: var(--navy-medium);">${task.progress}%</strong>
-                ${deleteButtonHTML}
+                <div style="display: flex; gap: 4px; align-items: center;">
+                    ${editButtonHTML}
+                    ${deleteButtonHTML}
+                </div>
             </div>
         `;
         listContainer.appendChild(taskItem);
+    });
+
+    // Attach click listeners to edit buttons
+    listContainer.querySelectorAll(".btn-edit-task").forEach(btn => {
+        btn.addEventListener("click", function() {
+            const taskId = parseInt(this.getAttribute("data-task-id"));
+            if (window.openEditTaskModal) window.openEditTaskModal(taskId);
+        });
     });
 
     // Attach click listeners to upload buttons
@@ -7635,12 +7644,40 @@ document.addEventListener("DOMContentLoaded", () => {
     const addTaskForm = document.getElementById("add-task-form");
 
     const openTaskModal = () => {
+        document.getElementById("task-id-input").value = "";
+        document.getElementById("task-modal-title").innerHTML = '<i class="fa-solid fa-tasks"></i> เพิ่มรายการงานย่อย';
         document.getElementById("task-title-input").value = "";
         document.getElementById("task-start-input").value = new Date().toISOString().substring(0, 10);
         document.getElementById("task-end-input").value = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().substring(0, 10);
         document.getElementById("task-progress-input").value = "0";
         const fileInput = document.getElementById("task-ref-file");
         if (fileInput) fileInput.value = "";
+        if (taskModal) taskModal.classList.add("active");
+    };
+
+    window.openEditTaskModal = (taskId) => {
+        const project = projectsData[appState.selectedDetailProject];
+        if (!project || !project.tasks) return;
+        const task = project.tasks.find(t => t.id === taskId);
+        if (!task) return;
+
+        document.getElementById("task-id-input").value = task.id;
+        document.getElementById("task-modal-title").innerHTML = '<i class="fa-solid fa-tasks"></i> แก้ไขรายการงานย่อย';
+        document.getElementById("task-title-input").value = task.title;
+        document.getElementById("task-progress-input").value = task.progress;
+
+        const toISO = (str) => {
+            if (!str) return "";
+            const parts = str.split("/");
+            if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+            return "";
+        };
+        document.getElementById("task-start-input").value = toISO(task.start);
+        document.getElementById("task-end-input").value = toISO(task.end);
+
+        const fileInput = document.getElementById("task-ref-file");
+        if (fileInput) fileInput.value = "";
+
         if (taskModal) taskModal.classList.add("active");
     };
 
@@ -7656,6 +7693,7 @@ document.addEventListener("DOMContentLoaded", () => {
         addTaskForm.addEventListener("submit", async function(e) {
             e.preventDefault();
             
+            const taskIdVal = document.getElementById("task-id-input").value;
             const title = document.getElementById("task-title-input").value.trim();
             const startVal = document.getElementById("task-start-input").value;
             const endVal = document.getElementById("task-end-input").value;
@@ -7667,27 +7705,47 @@ document.addEventListener("DOMContentLoaded", () => {
             const startStr = `${startDateObj.getDate().toString().padStart(2, '0')}/${(startDateObj.getMonth() + 1).toString().padStart(2, '0')}/${startDateObj.getFullYear()}`;
             const endStr = `${endDateObj.getDate().toString().padStart(2, '0')}/${(endDateObj.getMonth() + 1).toString().padStart(2, '0')}/${endDateObj.getFullYear()}`;
             
-            // Convert file to Base64 for persistent storage
+            // Convert file to Base64 for persistent storage if a new one is selected
             let file = "";
             let fileUrl = "";
+            let hasNewFile = false;
             if (fileInput && fileInput.files && fileInput.files.length > 0) {
                 const result = await readFileAsBase64(fileInput.files[0]);
                 file = result.name;
                 fileUrl = result.dataUrl;
+                hasNewFile = true;
             }
             
             const project = projectsData[appState.selectedDetailProject];
             if (project) {
                 if (!project.tasks) project.tasks = [];
                 
-                const nextId = project.tasks.length > 0 ? Math.max(...project.tasks.map(t => t.id)) + 1 : 1;
-                project.tasks.push({ id: nextId, title, start: startStr, end: endStr, progress, file, fileUrl });
+                if (taskIdVal) {
+                    // EDIT MODE
+                    const taskId = parseInt(taskIdVal);
+                    const task = project.tasks.find(t => t.id === taskId);
+                    if (task) {
+                        task.title = title;
+                        task.start = startStr;
+                        task.end = endStr;
+                        task.progress = progress;
+                        if (hasNewFile) {
+                            task.file = file;
+                            task.fileUrl = fileUrl;
+                        }
+                        showToast(`แก้ไขรายการงานย่อยสำเร็จ!`, "success");
+                    }
+                } else {
+                    // ADD MODE
+                    const nextId = project.tasks.length > 0 ? Math.max(...project.tasks.map(t => t.id)) + 1 : 1;
+                    project.tasks.push({ id: nextId, title, start: startStr, end: endStr, progress, file, fileUrl });
+                    showToast(`เพิ่มรายการงาน: ${title} เรียบร้อยแล้ว!`, "success");
+                }
                 
                 // Recalculate jobs & progress from tasks (single source of truth)
                 recalculateJobsFromTasks(project);
                 
                 saveToLocalStorage();
-                showToast(`เพิ่มรายการงาน: ${title} เรียบร้อยแล้ว!`, "success");
                 closeTaskModal();
                 renderSubnavProjectWorkspace();
                 renderOverallDashboard();
