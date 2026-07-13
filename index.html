@@ -4676,10 +4676,15 @@ function populateSubnavProjects(yearFilter) {
     });
     
     const activeCode = appState.selectedDetailProject;
-    if (activeCode === "all" || [...projectSelector.options].some(opt => opt.value === activeCode)) {
+    if (activeCode && [...projectSelector.options].some(opt => opt.value === activeCode)) {
         projectSelector.value = activeCode;
     } else {
-        projectSelector.selectedIndex = 0;
+        // Default to the first actual project (index 1) if available, otherwise "all" (index 0)
+        if (projectSelector.options.length > 1) {
+            projectSelector.selectedIndex = 1;
+        } else {
+            projectSelector.selectedIndex = 0;
+        }
         appState.selectedDetailProject = projectSelector.value;
     }
 }
@@ -5101,8 +5106,15 @@ function readFileAsBase64(file) {
 // --- JOBS HELPER: Recalculate jobs counts and work breakdown from tasks array (single source of truth) ---
 function recalculateJobsFromTasks(project) {
     if (!project) return;
-    if (!project.tasks) {
-        project.tasks = [];
+    if (!project.tasks || project.tasks.length === 0) {
+        const year = project.year || 2026;
+        project.tasks = [
+            { id: 1, title: "เตรียมงานและวางแผนโครงการหลัก (Project Planning)", start: `01/01/${year}`, end: `31/01/${year}`, progress: 0, file: "", fileUrl: "" },
+            { id: 2, title: "จัดเตรียมลำเลียงวัสดุอุปกรณ์วิศวกรรมเข้าพื้นที่หน้างาน", start: `01/02/${year}`, end: `28/02/${year}`, progress: 0, file: "", fileUrl: "" },
+            { id: 3, title: "ดำเนินการติดตั้งระบบควบคุมไฟฟ้าและสายเมนหลัก (Main Wiring & RMU)", start: `01/03/${year}`, end: `30/06/${year}`, progress: 0, file: "", fileUrl: "" },
+            { id: 4, title: "ทดสอบการทำงานของระบบและแก้ไขจุดบกพร่อง (System Commissioning & Testing)", start: `01/07/${year}`, end: `31/08/${year}`, progress: 0, file: "", fileUrl: "" },
+            { id: 5, title: "ฝึกอบรมเจ้าหน้าที่เทคนิคและส่งมอบโครงการฉบับสมบูรณ์ (Handover & Training)", start: `01/09/${year}`, end: `30/09/${year}`, progress: 0, file: "", fileUrl: "" }
+        ];
     }
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -5446,7 +5458,7 @@ function renderHospitalsGrid(activeProjects) {
         "โรงพยาบาลเปาโล โชคชัย 4"
     ];
     
-    const selectedYear = appState.selectedYearFilter;
+    const selectedYear = appState.selectedYearFilterB || "2026";
     
     allHospitalsList.forEach(hospital => {
         // Find if this hospital has an active project in the filtered list
@@ -5470,7 +5482,7 @@ function renderHospitalsGrid(activeProjects) {
                          <span class="value">${formatNumber(p.value)}</span>
                      </div>
                      <div class="hospital-card-fin-item">
-                         <span class="label">ค่าใช้จ่าย</span>
+                         <span class="label">ต้นทุน</span>
                          <span class="value">${formatNumber(p.cost)}</span>
                      </div>
                      <div class="hospital-card-fin-item">
@@ -5506,6 +5518,9 @@ function renderHospitalsGrid(activeProjects) {
                         }
                         return false;
                     });
+                    if (tasks.length === 0) {
+                        return `<div style="font-size:11px;color:#64748b;font-style:italic;padding:6px 0 2px;display:flex;align-items:center;gap:4px;"><i class="fa-solid fa-circle-question"></i> ยังไม่มีงานย่อย</div>`;
+                    }
                     if (pending.length === 0) {
                         return `<div style="font-size:11px;color:#16a34a;font-weight:600;padding:6px 0 2px;display:flex;align-items:center;gap:4px;"><i class="fa-solid fa-circle-check"></i> งานทั้งหมดเสร็จสิ้นแล้ว</div>`;
                     }
