@@ -4474,39 +4474,7 @@ body.public-view-mode #public-view-header {
 
 // --- DATA STORE ---
 // Load data from localStorage or fallback to default template project
-const defaultProjectsData = {
-    "PRJ-2602": {
-        code: "PRJ-2602",
-        name: "ปรับปรุงระบบไฟฟ้าและควบคุมหลัก",
-        customer: "โรงพยาบาลพญาไท 1",
-        manager: "คุณสมชาย รินกร",
-        start: "01/03/2026",
-        end: "31/12/2026",
-        year: 2026,
-        value: 0,
-        cost: 0,
-        profit: 0,
-        loss: 0,
-        progress: 0,
-        plannedProgress: 0,
-        status: "กำลังดำเนินการ",
-        description: "รายละเอียดโครงการตัวอย่างเพื่อเริ่มต้นใช้งาน คุณสามารถแก้ไข ลบ หรือสร้างโครงการใหม่ได้ตามต้องการ",
-        jobs: { total: 0, inprogress: 0, completed: 0, delayed: 0 },
-        workBreakdown: {
-            categories: ["งานระบบไฟฟ้า", "งานระบบปรับอากาศ", "งานระบบสุขาภิบาล", "งานโครงสร้าง", "งานสถาปัตย์", "งานอื่นๆ"],
-            total: [0, 0, 0, 0, 0, 0],
-            inprogress: [0, 0, 0, 0, 0, 0],
-            completed: [0, 0, 0, 0, 0, 0],
-            delayed: [0, 0, 0, 0, 0, 0]
-        },
-        costStructure: { labor: 0.0, material: 0.0, other: 0.0 },
-        expenses: [],
-        documents: [],
-        media: [],
-        dailyReports: [],
-        tasks: []
-    }
-};
+const defaultProjectsData = {};
 
 // --- SUPABASE CONFIG ---
 const supabaseUrl = 'https://txglgkovojxvazbqxaac.supabase.co';
@@ -4591,6 +4559,13 @@ function syncActiveProject() {
     const costCode = appState.selectedCostProject;
     if (costCode && costCode !== "all" && costCode !== activeCode) {
         syncProjectToSupabase(costCode);
+    }
+}
+
+async function syncAllProjectsToSupabase() {
+    const codes = Object.keys(projectsData);
+    for (const code of codes) {
+        await syncProjectToSupabase(code);
     }
 }
 
@@ -7478,6 +7453,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 planDocs: []
             };
             
+            // Save and sync immediately
+            saveToLocalStorage();
+            
             showToast(`สร้างโครงการใหม่ ${code} เรียบร้อยแล้ว!`, "success");
             closeCreateProjectModal();
             
@@ -7567,6 +7545,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
                 
                 if (successCount > 0) {
+                    // Save and sync all imported projects immediately
+                    saveToLocalStorage();
+                    syncAllProjectsToSupabase();
+                    
                     showToast(`นำเข้าโครงการสำเร็จ ${successCount} โครงการ! ${duplicateCount > 0 ? `(ข้ามรหัสซ้ำ ${duplicateCount} รายการ)` : ""}`, "success");
                     closeCreateProjectModal();
                     
@@ -7953,6 +7935,9 @@ document.addEventListener("DOMContentLoaded", () => {
             proj.status = document.getElementById("edit-project-status").value;
             proj.description = document.getElementById("edit-project-desc").value.trim();
 
+            // Save and sync immediately
+            saveToLocalStorage();
+
             showToast(`แก้ไขโครงการ ${code} เรียบร้อยแล้ว!`, "success");
             closeEditProjectModal();
 
@@ -7970,7 +7955,13 @@ document.addEventListener("DOMContentLoaded", () => {
             if (confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบโครงการ ${code} ออกจากระบบ?\nการลบนี้ไม่สามารถย้อนกลับได้!`)) {
                 const projName = projectsData[code].name;
                 delete projectsData[code];
+                
+                // Save updated list to local storage
+                localStorage.setItem("technical_water_projects_data_v2", JSON.stringify(projectsData));
+                
+                // Delete from Supabase
                 deleteProjectFromSupabase(code);
+                
                 appState.selectedDetailProject = "";
                 closeEditProjectModal();
                 showToast(`ลบโครงการ ${code}: ${projName} ออกจากระบบสำเร็จ!`, "success");
@@ -7999,16 +7990,15 @@ document.addEventListener("DOMContentLoaded", () => {
                     // 2. Clear localStorage
                     localStorage.removeItem("technical_water_projects_data_v2");
                     
-                    // 3. Reset in-memory data to default (which has 0 progress and 0 tasks)
-                    projectsData = JSON.parse(JSON.stringify(defaultProjectsData));
+                    // 3. Reset in-memory data to empty
+                    projectsData = {};
                     
-                    // 4. Save to local storage and sync the blank default project to Supabase
+                    // 4. Save to local storage
                     localStorage.setItem("technical_water_projects_data_v2", JSON.stringify(projectsData));
-                    await syncProjectToSupabase("PRJ-2602");
                     
-                    // 5. Re-render UI
-                    appState.selectedDetailProject = "PRJ-2602";
-                    appState.selectedCostProject = "PRJ-2602";
+                    // 5. Re-render UI with empty state
+                    appState.selectedDetailProject = "";
+                    appState.selectedCostProject = "";
                     
                     populateSubnavHospitals();
                     populateSubnavProjects("all");
