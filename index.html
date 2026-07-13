@@ -4510,6 +4510,13 @@ async function loadFromSupabase() {
             projectsData = remoteData;
             localStorage.setItem("technical_water_projects_data_v2", JSON.stringify(projectsData));
             
+            // Re-populate dropdowns
+            populateSubnavHospitals();
+            const yearFilterEl = document.getElementById("subnav-year-filter");
+            populateSubnavProjects(yearFilterEl ? yearFilterEl.value : "all");
+            populateCostHospitals();
+            populateCostProjects();
+            
             // Re-render UI
             renderOverallDashboard();
             renderSubnavProjectWorkspace();
@@ -4518,6 +4525,12 @@ async function loadFromSupabase() {
             console.log("Supabase is empty. Resetting local cache to empty...");
             projectsData = {};
             localStorage.setItem("technical_water_projects_data_v2", JSON.stringify(projectsData));
+            
+            populateSubnavHospitals();
+            populateSubnavProjects("all");
+            populateCostHospitals();
+            populateCostProjects();
+            
             renderOverallDashboard();
             renderSubnavProjectWorkspace();
         }
