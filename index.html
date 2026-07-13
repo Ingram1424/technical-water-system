@@ -4730,7 +4730,7 @@ function renderOverallDashboard() {
     // For KPIs and general metrics, we show the combined sum of both selected years!
     const combinedProjects = [...projectsA, ...projectsB];
     
-    let totalJobs = 0;
+    let totalJobs = combinedProjects.length;
     let inprogressJobs = 0;
     let completedJobs = 0;
     let delayedJobs = 0;
@@ -4741,17 +4741,35 @@ function renderOverallDashboard() {
     let costSum = 0;
     let profitSum = 0;
     
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
     combinedProjects.forEach(p => {
-        totalJobs += p.jobs.total;
-        inprogressJobs += p.jobs.inprogress;
-        completedJobs += p.jobs.completed;
-        delayedJobs += p.jobs.delayed;
+        plannedProg += p.plannedProgress || 0;
+        actualProg += p.progress || 0;
         
-        plannedProg += p.plannedProgress;
-        actualProg += p.progress;
+        costSum += p.cost || 0;
+        profitSum += p.profit || 0;
         
-        costSum += p.cost;
-        profitSum += p.profit;
+        // Count projects by status
+        if (p.status === "เสร็จสิ้น" || p.status === "เสร็จแล้ว") {
+            completedJobs++;
+        } else {
+            // Check if end date is past today
+            const parts = (p.end || "").split("/");
+            let isDelayed = false;
+            if (parts.length === 3) {
+                const endDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+                if (!isNaN(endDate) && endDate < today) {
+                    isDelayed = true;
+                }
+            }
+            if (isDelayed || p.status === "ล่าช้า") {
+                delayedJobs++;
+            } else {
+                inprogressJobs++;
+            }
+        }
     });
     
     // Average progress values
@@ -5105,11 +5123,11 @@ function readFileAsBase64(file) {
     });
 }
 
-// --- JOBS HELPER: Recalculate jobs counts from tasks array (single source of truth) ---
+// --- JOBS HELPER: Recalculate jobs counts and work breakdown from tasks array (single source of truth) ---
 function recalculateJobsFromTasks(project) {
-    if (!project || !project.tasks) {
-        if (project) project.jobs = { total: 0, inprogress: 0, completed: 0, delayed: 0 };
-        return;
+    if (!project) return;
+    if (!project.tasks) {
+        project.tasks = [];
     }
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -5117,24 +5135,60 @@ function recalculateJobsFromTasks(project) {
     let completed = 0;
     let delayed = 0;
     let inprogress = 0;
+    
+    // Initialize categorized counts for workBreakdown
+    const wbInprogress = [0, 0, 0, 0, 0, 0];
+    const wbCompleted = [0, 0, 0, 0, 0, 0];
+    const wbDelayed = [0, 0, 0, 0, 0, 0];
+
     project.tasks.forEach(t => {
+        // Categorize based on keywords in title
+        const title = (t.title || "").toLowerCase();
+        let catIdx = 5; // Others
+        if (title.includes("ไฟ") || title.includes("control") || title.includes("power") || title.includes("electrical") || title.includes("cable") || title.includes("wiring") || title.includes("rmu")) {
+            catIdx = 0; // Electrical
+        } else if (title.includes("แอร์") || title.includes("hvac") || title.includes("cool") || title.includes("air") || title.includes("duct") || title.includes("ระบายอากาศ")) {
+            catIdx = 1; // HVAC
+        } else if (title.includes("น้ำ") || title.includes("สุขาภิบาล") || title.includes("pipe") || title.includes("plumbing") || title.includes("sanitation") || title.includes("drain")) {
+            catIdx = 2; // Sanitation
+        } else if (title.includes("โครงสร้าง") || title.includes("foundation") || title.includes("beam") || title.includes("structure") || title.includes("เสา")) {
+            catIdx = 3; // Structure
+        } else if (title.includes("สถาปัตย์") || title.includes("paint") || title.includes("wall") || title.includes("floor") || title.includes("tile") || title.includes("architecture") || title.includes("ตกแต่ง")) {
+            catIdx = 4; // Architecture
+        }
+
         if (t.progress >= 100) {
             completed++;
+            wbCompleted[catIdx]++;
         } else {
             // Parse end date dd/mm/yyyy
             const parts = (t.end || "").split("/");
             let isDelayed = false;
             if (parts.length === 3) {
                 const endDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-                if (!isNaN(endDate) && endDate < today && t.progress < 100) {
+                if (!isNaN(endDate) && endDate < today) {
                     isDelayed = true;
                 }
             }
-            if (isDelayed) delayed++;
-            else inprogress++;
+            if (isDelayed) {
+                delayed++;
+                wbDelayed[catIdx]++;
+            } else {
+                inprogress++;
+                wbInprogress[catIdx]++;
+            }
         }
     });
+
     project.jobs = { total, completed, delayed, inprogress };
+    
+    // Update workBreakdown
+    project.workBreakdown = {
+        inprogress: wbInprogress,
+        completed: wbCompleted,
+        delayed: wbDelayed
+    };
+
     // Recalculate average progress
     if (total > 0) {
         project.progress = Math.round(project.tasks.reduce((s, t) => s + (t.progress || 0), 0) / total);
