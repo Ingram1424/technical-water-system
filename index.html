@@ -5302,11 +5302,13 @@ function recalculateJobsFromTasks(project) {
         delayed: wbDelayed
     };
 
-    // Recalculate average progress
+    // Recalculate average progress if tasks exist; otherwise preserve manual override
     if (total > 0) {
         project.progress = Math.round(project.tasks.reduce((s, t) => s + (t.progress || 0), 0) / total);
     } else {
-        project.progress = 0;
+        if (project.progress === undefined || project.progress === null) {
+            project.progress = 0;
+        }
     }
 }
 
@@ -8329,8 +8331,8 @@ document.addEventListener("DOMContentLoaded", () => {
             proj.profit = proj.value - proj.cost;
             proj.start = toThai(document.getElementById("edit-project-start").value);
             proj.end = toThai(document.getElementById("edit-project-end").value);
-            proj.plannedProgress = parseInt(document.getElementById("edit-project-planned").value) || 0;
-            proj.progress = parseInt(document.getElementById("edit-project-progress").value) || 0;
+            proj.plannedProgress = parseFloat(document.getElementById("edit-project-planned").value) || 0;
+            proj.progress = parseFloat(document.getElementById("edit-project-progress").value) || 0;
             proj.status = document.getElementById("edit-project-status").value;
             proj.description = document.getElementById("edit-project-desc").value.trim();
 
