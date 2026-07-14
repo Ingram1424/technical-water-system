@@ -4882,8 +4882,10 @@ function renderOverallDashboard() {
     document.getElementById("fin-profit-summary").textContent = formatNumber(profitSum);
     document.getElementById("fin-netprofit-summary").textContent = formatNumber(profitSum);
     
-    // Render Bottom Hospital Cards Grid (Default to showing projects for Year B as baseline)
-    const gridProjects = Object.values(projectsData).filter(p => p.year.toString() === yearBVal);
+    // Render Bottom Hospital Cards Grid (Show projects for both compared years A and B)
+    const gridProjects = Object.values(projectsData).filter(p => 
+        p.year.toString() === yearAVal || p.year.toString() === yearBVal
+    );
     renderHospitalsGrid(gridProjects);
     
     // Prepare bar chart sums for Year A
@@ -5665,8 +5667,11 @@ function renderHospitalsGrid(activeProjects) {
                 
                 projectsHTML += `
                     <div class="project-group-item" data-code="${p.code}" style="padding: 8px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); background: var(--bg-light); cursor: pointer; transition: all 0.2s ease;">
-                        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 6px;">
-                            <span style="font-weight: 700; font-size: 11px; color: var(--primary-color); white-space: nowrap;">${p.code}</span>
+                        <div style="display: flex; justify-content: space-between; align-items: center; gap: 6px;">
+                            <span style="font-weight: 700; font-size: 11px; color: var(--primary-color); white-space: nowrap; display: inline-flex; align-items: center; gap: 4px;">
+                                ${p.code}
+                                <span style="font-size: 8.5px; font-weight: 700; padding: 1px 4px; border-radius: 3px; background: #e0f2fe; color: #0369a1;">ปี ${p.year}</span>
+                            </span>
                             <span style="font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 4px; background: rgba(16, 185, 129, 0.1); color: #10b981;">
                                 ${p.progress}%
                             </span>
