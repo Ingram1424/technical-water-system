@@ -3157,11 +3157,6 @@ body.public-view-mode #public-view-header {
 
                     <!-- Role & User Profile Selector -->
                     <div class="user-profile-menu">
-                        <!-- Cloud Sync Status Indicator -->
-                        <div id="cloud-sync-status" class="cloud-sync-status" style="margin-right: 12px; display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 600; padding: 6px 12px; border-radius: 999px; background: rgba(16, 185, 129, 0.1); color: #059669; border: 1px solid rgba(16, 185, 129, 0.2); transition: all 0.3s ease;">
-                            <i class="fa-solid fa-circle-check" id="cloud-sync-icon" style="font-size: 12px; color: #10b981;"></i>
-                            <span id="cloud-sync-text">บันทึกข้อมูลคลาวด์สำเร็จ</span>
-                        </div>
                         <div class="role-badge-current" id="active-role-badge">
                             <i class="fa-solid fa-user-lock"></i> PM (Project Manager)
                         </div>
@@ -4572,32 +4567,52 @@ async function deleteProjectFromSupabase(code) {
     }
 }
 
+let syncStatusTimeout = null;
+
 function updateCloudSyncStatus(status) {
     const el = document.getElementById("cloud-sync-status");
     const icon = document.getElementById("cloud-sync-icon");
     const text = document.getElementById("cloud-sync-text");
     if (!el || !icon || !text) return;
     
+    // Clear any pending fadeout
+    if (syncStatusTimeout) {
+        clearTimeout(syncStatusTimeout);
+        syncStatusTimeout = null;
+    }
+    
+    // Reset display opacity
+    el.style.opacity = "1";
+    el.style.transform = "translateY(0)";
+    el.style.pointerEvents = "auto";
+    
     if (status === "syncing") {
-        el.style.backgroundColor = "rgba(245, 158, 11, 0.1)";
-        el.style.color = "#d97706";
+        el.style.backgroundColor = "rgba(245, 158, 11, 0.95)";
+        el.style.color = "#ffffff";
         el.style.borderColor = "rgba(245, 158, 11, 0.2)";
         icon.className = "fa-solid fa-cloud-arrow-up fa-bounce";
-        icon.style.color = "#f59e0b";
+        icon.style.color = "#ffffff";
         text.textContent = "กำลังบันทึกข้อมูลล่าสุดขึ้นคลาวด์...";
     } else if (status === "synced") {
-        el.style.backgroundColor = "rgba(16, 185, 129, 0.1)";
-        el.style.color = "#059669";
+        el.style.backgroundColor = "rgba(16, 185, 129, 0.95)";
+        el.style.color = "#ffffff";
         el.style.borderColor = "rgba(16, 185, 129, 0.2)";
         icon.className = "fa-solid fa-circle-check";
-        icon.style.color = "#10b981";
+        icon.style.color = "#ffffff";
         text.textContent = "บันทึกข้อมูลคลาวด์สำเร็จ";
+        
+        // Auto fadeout after 3 seconds of showing green check
+        syncStatusTimeout = setTimeout(() => {
+            el.style.opacity = "0";
+            el.style.transform = "translateY(10px)";
+            el.style.pointerEvents = "none";
+        }, 3000);
     } else if (status === "error") {
-        el.style.backgroundColor = "rgba(239, 68, 68, 0.1)";
-        el.style.color = "#dc2626";
+        el.style.backgroundColor = "rgba(239, 68, 68, 0.95)";
+        el.style.color = "#ffffff";
         el.style.borderColor = "rgba(239, 68, 68, 0.2)";
         icon.className = "fa-solid fa-triangle-exclamation";
-        icon.style.color = "#ef4444";
+        icon.style.color = "#ffffff";
         text.textContent = "การเชื่อมต่อขัดข้อง (บันทึกเฉพาะในเครื่อง)";
     }
 }
@@ -4768,6 +4783,7 @@ function populateSubnavProjects(yearFilter) {
             projectSelector.selectedIndex = 0;
         }
         appState.selectedDetailProject = projectSelector.value;
+        sessionStorage.setItem("technical_water_last_detail_project", appState.selectedDetailProject);
     }
 }
 
@@ -4776,6 +4792,12 @@ function updateSelectedDetailProject() {
     if (!projectSelector || !projectSelector.value) return;
     
     appState.selectedDetailProject = projectSelector.value;
+    sessionStorage.setItem("technical_water_last_detail_project", appState.selectedDetailProject);
+}
+
+function updateSelectedCostProject(code) {
+    appState.selectedCostProject = code;
+    sessionStorage.setItem("technical_water_last_cost_project", code);
 }
 
 function renderOverallDashboard() {
@@ -5148,8 +5170,8 @@ const appState = {
     currentView: "dashboard",
     currentRole: "pm", // pm, accounting, customer
     selectedProjectFilter: "all", // all or specific PRJ code
-    selectedDetailProject: Object.keys(projectsData)[0] || "",
-    selectedCostProject: Object.keys(projectsData)[0] || "",
+    selectedDetailProject: sessionStorage.getItem("technical_water_last_detail_project") || Object.keys(projectsData)[0] || "",
+    selectedCostProject: sessionStorage.getItem("technical_water_last_cost_project") || Object.keys(projectsData)[0] || "",
     selectedDocFilter: "all",
     activeProjectTab: "general-info",
     selectedYearFilterA: "2025",
@@ -5409,7 +5431,8 @@ function switchRole(roleName) {
         const firstProj = projectsData[firstCode];
         
         appState.selectedDetailProject = firstCode;
-        appState.selectedCostProject = firstCode;
+        sessionStorage.setItem("technical_water_last_detail_project", firstCode);
+        updateSelectedCostProject(firstCode);
         
         const subnavYearFilter = document.getElementById("subnav-year-filter");
         if (subnavYearFilter) {
@@ -7243,7 +7266,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (costDetailYearFilter) {
         costDetailYearFilter.addEventListener("change", function() {
             populateCostProjects();
-            appState.selectedCostProject = costSelector ? costSelector.value : "";
+            updateSelectedCostProject(costSelector ? costSelector.value : "");
             renderCostManagement();
         });
     }
@@ -7251,14 +7274,14 @@ document.addEventListener("DOMContentLoaded", () => {
     if (costDetailHospitalSelector) {
         costDetailHospitalSelector.addEventListener("change", function() {
             populateCostProjects();
-            appState.selectedCostProject = costSelector ? costSelector.value : "";
+            updateSelectedCostProject(costSelector ? costSelector.value : "");
             renderCostManagement();
         });
     }
 
     if (costSelector) {
         costSelector.addEventListener("change", function() {
-            appState.selectedCostProject = this.value;
+            updateSelectedCostProject(this.value);
             renderCostManagement();
         });
     }
@@ -7383,12 +7406,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (openExpenseBtn) openExpenseBtn.addEventListener("click", openExpenseModal);
     const subtabOpenExpenseBtn = document.getElementById("subtab-open-expense-modal-btn");
-    if (subtabOpenExpenseBtn) {
         subtabOpenExpenseBtn.addEventListener("click", () => {
-            appState.selectedCostProject = appState.selectedDetailProject;
+            updateSelectedCostProject(appState.selectedDetailProject);
             openExpenseModal();
         });
-    }
 
     if (closeExpenseBtn) closeExpenseBtn.addEventListener("click", closeExpenseModal);
     if (cancelExpenseBtn) cancelExpenseBtn.addEventListener("click", closeExpenseModal);
@@ -8561,5 +8582,11 @@ function showDraftBadge(modalId) {
 })();
 
 </script>
+<!-- Floating Cloud Sync Status Indicator -->
+<div id="cloud-sync-status" class="cloud-sync-status" style="position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; padding: 10px 16px; border-radius: 999px; background: rgba(16, 185, 129, 0.95); color: #ffffff; border: 1px solid rgba(16, 185, 129, 0.2); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); backdrop-filter: blur(8px); opacity: 0; pointer-events: none; transform: translateY(10px);">
+    <i class="fa-solid fa-circle-check" id="cloud-sync-icon" style="font-size: 14px; color: #ffffff;"></i>
+    <span id="cloud-sync-text">บันทึกข้อมูลคลาวด์สำเร็จ</span>
+</div>
+
 </body>
 </html>
