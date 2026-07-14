@@ -4624,9 +4624,16 @@ async function processSyncQueue() {
     isSyncing = true;
     updateCloudSyncStatus("syncing");
     const nextCode = syncQueue.shift();
+    const startTime = Date.now();
     
     try {
         await syncProjectToSupabase(nextCode);
+        
+        // Satisfying UX: Ensure yellow state is visible for at least 600ms
+        const elapsed = Date.now() - startTime;
+        if (elapsed < 600) {
+            await new Promise(resolve => setTimeout(resolve, 600 - elapsed));
+        }
     } catch (e) {
         console.error("Queue sync error:", e);
         updateCloudSyncStatus("error");
