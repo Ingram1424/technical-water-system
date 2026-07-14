@@ -3047,6 +3047,9 @@ body.public-view-mode #public-view-header {
                             <!-- Populated dynamically with hospitals -->
                         </select>
 
+                        <label for="sidebar-project-search" class="selector-label">พิมพ์ค้นหาโครงการ :</label>
+                        <input type="text" id="sidebar-project-search" class="form-control" placeholder="พิมพ์รหัส หรือ ชื่องานเพื่อค้นหา..." style="margin-bottom: 12px; font-size: 12px; padding: 6px; height: auto; border: 1px solid var(--border-color); border-radius: var(--radius-sm); width: 100%; background: #ffffff;">
+
                         <label for="subnav-project-selector" class="selector-label">เลือกงาน/โครงการ :</label>
                         <select id="subnav-project-selector" class="form-control" style="margin-bottom: 12px; font-size: 12px; padding: 6px; height: auto; background-color: var(--primary-light); color: var(--navy-dark); font-weight: 600;">
                             <!-- Populated dynamically with projects of selected hospital -->
@@ -4731,16 +4734,27 @@ function populateSubnavHospitals() {
 function populateSubnavProjects(yearFilter) {
     const hospitalSelector = document.getElementById("subnav-hospital-selector");
     const projectSelector = document.getElementById("subnav-project-selector");
+    const searchInput = document.getElementById("sidebar-project-search");
     if (!hospitalSelector || !projectSelector) return;
     
     const selectedHospital = hospitalSelector.value;
+    const searchQuery = searchInput ? searchInput.value.trim().toLowerCase() : "";
     projectSelector.innerHTML = "";
     
-    // Filter projects based on hospital and year
+    // Filter projects based on hospital, year, and search input
     const projects = Object.values(projectsData).filter(p => {
         const hospitalMatch = selectedHospital === "all" || p.customer === selectedHospital;
         const yearMatch = yearFilter === "all" || p.year === parseInt(yearFilter);
-        return hospitalMatch && yearMatch;
+        
+        let searchMatch = true;
+        if (searchQuery) {
+            const code = (p.code || "").toLowerCase();
+            const name = (p.name || "").toLowerCase();
+            const customer = (p.customer || "").toLowerCase();
+            searchMatch = code.includes(searchQuery) || name.includes(searchQuery) || customer.includes(searchQuery);
+        }
+        
+        return hospitalMatch && yearMatch && searchMatch;
     });
     
     if (projects.length === 0) {
@@ -7293,6 +7307,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const subnavSelector = document.getElementById("subnav-project-selector");
     if (subnavSelector) {
         subnavSelector.addEventListener("change", function() {
+            updateSelectedDetailProject();
+            renderSubnavProjectWorkspace();
+        });
+    }
+
+    const projectSearch = document.getElementById("sidebar-project-search");
+    if (projectSearch) {
+        projectSearch.addEventListener("input", function() {
+            populateSubnavProjects(subnavYearFilter ? subnavYearFilter.value : "all");
             updateSelectedDetailProject();
             renderSubnavProjectWorkspace();
         });
