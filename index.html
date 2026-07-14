@@ -3047,8 +3047,11 @@ body.public-view-mode #public-view-header {
                             <!-- Populated dynamically with hospitals -->
                         </select>
 
-                        <label for="sidebar-project-search" class="selector-label">พิมพ์ค้นหาโครงการ :</label>
-                        <input type="text" id="sidebar-project-search" class="form-control" placeholder="พิมพ์รหัส หรือ ชื่องานเพื่อค้นหา..." style="margin-bottom: 12px; font-size: 12px; padding: 6px; height: auto; border: 1px solid var(--border-color); border-radius: var(--radius-sm); width: 100%; background: #ffffff;">
+                        <div class="position-relative" style="position: relative; width: 100%;">
+                            <label for="sidebar-project-search" class="selector-label">พิมพ์ค้นหาโครงการ :</label>
+                            <input type="text" id="sidebar-project-search" class="form-control" placeholder="พิมพ์รหัส หรือ ชื่องานเพื่อค้นหา..." style="margin-bottom: 12px; font-size: 12px; padding: 6px; height: auto; border: 1px solid var(--border-color); border-radius: var(--radius-sm); width: 100%; background: #ffffff;" autocomplete="off">
+                            <div id="sidebar-search-results" style="display: none; position: absolute; top: 100%; left: 0; right: 0; background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-sm); box-shadow: 0 10px 25px rgba(0,0,0,0.15); max-height: 250px; overflow-y: auto; z-index: 1005; padding: 4px 0; margin-top: -8px;"></div>
+                        </div>
 
                         <label for="subnav-project-selector" class="selector-label">เลือกงาน/โครงการ :</label>
                         <select id="subnav-project-selector" class="form-control" style="margin-bottom: 12px; font-size: 12px; padding: 6px; height: auto; background-color: var(--primary-light); color: var(--navy-dark); font-weight: 600;">
@@ -4734,27 +4737,16 @@ function populateSubnavHospitals() {
 function populateSubnavProjects(yearFilter) {
     const hospitalSelector = document.getElementById("subnav-hospital-selector");
     const projectSelector = document.getElementById("subnav-project-selector");
-    const searchInput = document.getElementById("sidebar-project-search");
     if (!hospitalSelector || !projectSelector) return;
     
     const selectedHospital = hospitalSelector.value;
-    const searchQuery = searchInput ? searchInput.value.trim().toLowerCase() : "";
     projectSelector.innerHTML = "";
     
-    // Filter projects based on hospital, year, and search input
+    // Filter projects based on hospital and year
     const projects = Object.values(projectsData).filter(p => {
         const hospitalMatch = selectedHospital === "all" || p.customer === selectedHospital;
         const yearMatch = yearFilter === "all" || p.year === parseInt(yearFilter);
-        
-        let searchMatch = true;
-        if (searchQuery) {
-            const code = (p.code || "").toLowerCase();
-            const name = (p.name || "").toLowerCase();
-            const customer = (p.customer || "").toLowerCase();
-            searchMatch = code.includes(searchQuery) || name.includes(searchQuery) || customer.includes(searchQuery);
-        }
-        
-        return hospitalMatch && yearMatch && searchMatch;
+        return hospitalMatch && yearMatch;
     });
     
     if (projects.length === 0) {
@@ -7312,12 +7304,84 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    const projectSearch = document.getElementById("sidebar-project-search");
-    if (projectSearch) {
-        projectSearch.addEventListener("input", function() {
-            populateSubnavProjects(subnavYearFilter ? subnavYearFilter.value : "all");
-            updateSelectedDetailProject();
-            renderSubnavProjectWorkspace();
+    // Initialize sidebar project search suggestion list (pops up matching projects on the fly)
+    const searchInput = document.getElementById("sidebar-project-search");
+    const searchResults = document.getElementById("sidebar-search-results");
+    if (searchInput && searchResults) {
+        const performSearch = () => {
+            const query = searchInput.value.trim().toLowerCase();
+            searchResults.innerHTML = "";
+            
+            if (!query) {
+                searchResults.style.display = "none";
+                return;
+            }
+            
+            // Search all projects globally matching code, name, or customer
+            const matches = Object.values(projectsData).filter(p => {
+                const code = (p.code || "").toLowerCase();
+                const name = (p.name || "").toLowerCase();
+                const customer = (p.customer || "").toLowerCase();
+                return code.includes(query) || name.includes(query) || customer.includes(query);
+            });
+            
+            if (matches.length === 0) {
+                searchResults.innerHTML = `<div style="padding: 10px; font-size: 11px; color: var(--text-muted); text-align: center;">ไม่พบโครงการที่ค้นหา</div>`;
+                searchResults.style.display = "block";
+                return;
+            }
+            
+            matches.forEach(p => {
+                const row = document.createElement("div");
+                row.style.cssText = "padding: 8px 12px; font-size: 11px; font-weight: 500; color: var(--navy-dark); cursor: pointer; transition: background 0.2s; border-bottom: 1px solid #f1f5f9; display: flex; flex-direction: column; gap: 2px;";
+                row.innerHTML = `
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                        <span style="font-weight: 700; color: var(--primary-color);">${p.code}</span>
+                        <span style="font-size: 9px; padding: 2px 6px; border-radius: 99px; background: rgba(16, 185, 129, 0.1); color: #10b981; font-weight: 700;">ปี ${p.year}</span>
+                    </div>
+                    <div style="font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;" title="${p.name}">${p.name}</div>
+                    <div style="font-size: 9px; color: var(--text-muted);"><i class="fa-solid fa-hospital"></i> ${p.customer}</div>
+                `;
+                
+                row.addEventListener("mouseenter", () => { row.style.background = "#f1f5f9"; });
+                row.addEventListener("mouseleave", () => { row.style.background = "transparent"; });
+                
+                row.addEventListener("click", () => {
+                    appState.selectedDetailProject = p.code;
+                    sessionStorage.setItem("technical_water_last_detail_project", p.code);
+                    
+                    // Reset year and hospital filters to "all" to guarantee it appears in the select dropdown
+                    const yearFilterEl = document.getElementById("subnav-year-filter");
+                    const hospitalFilterEl = document.getElementById("subnav-hospital-selector");
+                    if (yearFilterEl) yearFilterEl.value = "all";
+                    if (hospitalFilterEl) hospitalFilterEl.value = "all";
+                    
+                    populateSubnavProjects("all");
+                    
+                    const subnavSelector = document.getElementById("subnav-project-selector");
+                    if (subnavSelector) {
+                        subnavSelector.value = p.code;
+                    }
+                    
+                    searchInput.value = p.name;
+                    searchResults.style.display = "none";
+                    
+                    renderSubnavProjectWorkspace();
+                });
+                
+                searchResults.appendChild(row);
+            });
+            
+            searchResults.style.display = "block";
+        };
+        
+        searchInput.addEventListener("input", performSearch);
+        searchInput.addEventListener("focus", performSearch);
+        
+        document.addEventListener("click", function(e) {
+            if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                searchResults.style.display = "none";
+            }
         });
     }
 
