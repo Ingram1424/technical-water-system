@@ -5596,8 +5596,8 @@ function renderHospitalsGrid(activeProjects) {
     const selectedYear = appState.selectedYearFilterB || "2026";
     
     allHospitalsList.forEach(hospital => {
-        // Find all projects of this hospital in the active projects list
-        const hospitalProjects = activeProjects.filter(item => item.customer === hospital);
+        // Find all projects of this hospital in the active projects list that are NOT 100% completed
+        const hospitalProjects = activeProjects.filter(item => item.customer === hospital && (item.progress === undefined || item.progress === null || item.progress < 100));
         
         const card = document.createElement("div");
         
