@@ -4195,11 +4195,11 @@ body.public-view-mode #public-view-header {
                     <div class="form-row-2 mt-3">
                         <div class="form-group">
                             <label class="form-label" for="new-project-value">มูลค่าสัญญา (บาท) <span class="required">*</span></label>
-                            <input type="number" id="new-project-value" class="form-control" placeholder="เช่น 15000000" min="1" required>
+                            <input type="number" id="new-project-value" class="form-control" placeholder="เช่น 15000000" min="0" step="any" required>
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="new-project-cost">ต้นทุนประมาณการ (บาท) <span class="required">*</span></label>
-                            <input type="number" id="new-project-cost" class="form-control" placeholder="เช่น 12000000" min="1" required>
+                            <input type="number" id="new-project-cost" class="form-control" placeholder="เช่น 12000000" min="0" step="any" required>
                         </div>
                     </div>
                     
@@ -4272,7 +4272,7 @@ body.public-view-mode #public-view-header {
                     <div class="form-row-2 mt-3">
                         <div class="form-group">
                             <label class="form-label" for="task-progress-input">เปอร์เซ็นต์ความคืบหน้า (%) <span class="required">*</span></label>
-                            <input type="number" id="task-progress-input" class="form-control" min="0" max="100" placeholder="0 - 100" required>
+                            <input type="number" id="task-progress-input" class="form-control" min="0" max="100" step="any" placeholder="0 - 100" required>
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="task-ref-file">แนบรายงาน PDF (ไม่บังคับ)</label>
@@ -4420,11 +4420,11 @@ body.public-view-mode #public-view-header {
                     <div class="form-row-2 mt-3">
                         <div class="form-group">
                             <label class="form-label" for="edit-project-value">มูลค่าสัญญา (บาท)</label>
-                            <input type="number" id="edit-project-value" class="form-control" min="0" step="1000">
+                            <input type="number" id="edit-project-value" class="form-control" min="0" step="any">
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="edit-project-cost">ต้นทุนจริง (บาท)</label>
-                            <input type="number" id="edit-project-cost" class="form-control" min="0" step="1000">
+                            <input type="number" id="edit-project-cost" class="form-control" min="0" step="any">
                         </div>
                     </div>
                     <div class="form-row-2 mt-3">
@@ -4440,11 +4440,11 @@ body.public-view-mode #public-view-header {
                     <div class="form-row-2 mt-3">
                         <div class="form-group">
                             <label class="form-label" for="edit-project-planned">แผน % (Planned)</label>
-                            <input type="number" id="edit-project-planned" class="form-control" min="0" max="100">
+                            <input type="number" id="edit-project-planned" class="form-control" min="0" max="100" step="any">
                         </div>
                         <div class="form-group">
                             <label class="form-label" for="edit-project-progress">จริง % (Actual)</label>
-                            <input type="number" id="edit-project-progress" class="form-control" min="0" max="100">
+                            <input type="number" id="edit-project-progress" class="form-control" min="0" max="100" step="any">
                         </div>
                     </div>
                     <div class="form-group mt-3">
@@ -7596,9 +7596,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const code = document.getElementById("new-project-code").value.trim().toUpperCase();
             const year = document.getElementById("new-project-year").value;
             const hospital = document.getElementById("new-project-hospital").value;
-            const name = document.getElementById("new-project-name").value.trim();
-            const value = parseInt(document.getElementById("new-project-value").value);
-            const cost = parseInt(document.getElementById("new-project-cost").value);
+            const value = parseFloat(document.getElementById("new-project-value").value) || 0;
+            const cost = parseFloat(document.getElementById("new-project-cost").value) || 0;
             
             if (projectsData[code]) {
                 showToast(`รหัสโครงการ ${code} ซ้ำกับโครงการที่มีอยู่แล้ว!`, "error");
@@ -7854,7 +7853,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const title = document.getElementById("task-title-input").value.trim();
             const startVal = document.getElementById("task-start-input").value;
             const endVal = document.getElementById("task-end-input").value;
-            const progress = parseInt(document.getElementById("task-progress-input").value);
+            const progress = parseFloat(document.getElementById("task-progress-input").value) || 0;
             const fileInput = document.getElementById("task-ref-file");
             
             const startDateObj = new Date(startVal);
