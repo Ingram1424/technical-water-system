@@ -4567,21 +4567,13 @@ async function deleteProjectFromSupabase(code) {
     }
 }
 
-let syncStatusTimeout = null;
-
 function updateCloudSyncStatus(status) {
     const el = document.getElementById("cloud-sync-status");
     const icon = document.getElementById("cloud-sync-icon");
     const text = document.getElementById("cloud-sync-text");
     if (!el || !icon || !text) return;
     
-    // Clear any pending fadeout
-    if (syncStatusTimeout) {
-        clearTimeout(syncStatusTimeout);
-        syncStatusTimeout = null;
-    }
-    
-    // Reset display opacity
+    // Reset display opacity to keep it visible permanently
     el.style.opacity = "1";
     el.style.transform = "translateY(0)";
     el.style.pointerEvents = "auto";
@@ -4600,13 +4592,6 @@ function updateCloudSyncStatus(status) {
         icon.className = "fa-solid fa-circle-check";
         icon.style.color = "#ffffff";
         text.textContent = "บันทึกข้อมูลคลาวด์สำเร็จ";
-        
-        // Auto fadeout after 3 seconds of showing green check
-        syncStatusTimeout = setTimeout(() => {
-            el.style.opacity = "0";
-            el.style.transform = "translateY(10px)";
-            el.style.pointerEvents = "none";
-        }, 3000);
     } else if (status === "error") {
         el.style.backgroundColor = "rgba(239, 68, 68, 0.95)";
         el.style.color = "#ffffff";
