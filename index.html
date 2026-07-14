@@ -4499,7 +4499,7 @@ try {
 // Background sync from Supabase
 async function loadFromSupabase() {
     try {
-        const { data, error } = await supabaseClient.from('projects').select('*');
+        const { data, error } = await supabaseClient.from('projects').select('*').not('code', 'ilike', 'FILE:%');
         if (error) throw error;
         
         if (data && data.length > 0) {
@@ -6331,13 +6331,30 @@ function renderSubnavPhotosFiles(project) {
         const card = document.createElement("div");
         card.className = "gallery-photo-card";
         card.innerHTML = `
-            <img src="${item.img}" alt="${item.title}" class="gallery-img" onerror="this.src='https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&w=250&q=80'">
+            <img src="data:image/svg+xml;charset=utf-8,%3Csvg xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg' viewBox%3D'0 0 250 150'%2F%3E" alt="${item.title}" class="gallery-img" style="background:#f1f5f9; object-fit:cover;" onerror="this.src='https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&w=250&q=80'">
             <div class="photo-info">
                 <span class="title">${item.title}</span>
                 <span class="date">อัปเดต ${item.date}</span>
             </div>
         `;
         grid.appendChild(card);
+        
+        const imgEl = card.querySelector(".gallery-img");
+        if (item.img && item.img.startsWith("FILE:")) {
+            supabaseClient.from('projects').select('data').eq('code', item.img).single()
+                .then(({ data, error }) => {
+                    if (error) throw error;
+                    if (data && data.data && data.data.fileUrl) {
+                        imgEl.src = data.data.fileUrl;
+                    }
+                })
+                .catch(err => {
+                    console.error("Failed to load gallery image:", err);
+                    imgEl.src = 'https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&w=250&q=80';
+                });
+        } else if (item.img) {
+            imgEl.src = item.img;
+        }
     });
 }
 
@@ -7132,6 +7149,35 @@ function renderAllProjectsTable() {
 // --- EVENT ATTACHMENTS & INTERACTION BOOTSTRAP ---
 document.addEventListener("DOMContentLoaded", () => {
     
+    // Global File Download Click Interceptor for File Reference System
+    document.addEventListener("click", async function(e) {
+        const a = e.target.closest("a[download]");
+        if (a) {
+            const href = a.getAttribute("href");
+            if (href && href.startsWith("FILE:")) {
+                e.preventDefault();
+                showToast("กำลังดึงไฟล์ดาวน์โหลดจากคลาวด์...", "info");
+                try {
+                    const { data, error } = await supabaseClient.from('projects').select('data').eq('code', href).single();
+                    if (error) throw error;
+                    if (data && data.data && data.data.fileUrl) {
+                        const tempA = document.createElement("a");
+                        tempA.href = data.data.fileUrl;
+                        tempA.download = a.getAttribute("download") || "downloaded-file";
+                        document.body.appendChild(tempA);
+                        tempA.click();
+                        document.body.removeChild(tempA);
+                        showToast("ดาวน์โหลดไฟล์สำเร็จ", "success");
+                    } else {
+                        throw new Error("ไม่พบไฟล์ในคลาวด์");
+                    }
+                } catch (err) {
+                    showToast("ดาวน์โหลดไฟล์ล้มเหลว: " + err.message, "error");
+                }
+            }
+        }
+    });
+    
     // Mobile Sidebar Toggle Logic
     const mobileToggleBtn = document.getElementById("mobile-sidebar-toggle-btn");
     const sidebarEl = document.querySelector(".sidebar");
@@ -7366,9 +7412,23 @@ document.addEventListener("DOMContentLoaded", () => {
         
         if (!fileInput || !fileInput.files || fileInput.files.length === 0) return;
         
-        // Read file as Base64 for persistent cloud storage
         const result = await readFileAsBase64(fileInput.files[0]);
-        const fileUrl = result.dataUrl;
+        
+        // Save file in separate row
+        const projectCode = appState.selectedDetailProject;
+        const fileKey = `FILE:${projectCode}:DOC:${Date.now()}:${name}`;
+        
+        showToast("กำลังบันทึกเอกสารขึ้นคลาวด์...", "info");
+        const { error: fileErr } = await supabaseClient.from('projects').upsert({
+            code: fileKey,
+            data: { fileUrl: result.dataUrl },
+            updated_at: new Date().toISOString()
+        });
+        if (fileErr) {
+            showToast(`อัปโหลดเอกสารล้มเหลว: ${fileErr.message}`, "error");
+            return;
+        }
+        const fileUrl = fileKey; // Store reference key!
         
         const project = projectsData[appState.selectedDetailProject];
         if (project) {
@@ -7486,7 +7546,22 @@ document.addEventListener("DOMContentLoaded", () => {
             
             if (fileInput && fileInput.files && fileInput.files.length > 0) {
                 const result = await readFileAsBase64(fileInput.files[0]);
-                imgUrl = result.dataUrl || imgUrl;
+                
+                // Save image in separate row
+                const projectCode = appState.selectedDetailProject;
+                const fileKey = `FILE:${projectCode}:MEDIA:${Date.now()}:${fileInput.files[0].name}`;
+                
+                showToast("กำลังบันทึกรูปภาพขึ้นคลาวด์...", "info");
+                const { error: fileErr } = await supabaseClient.from('projects').upsert({
+                    code: fileKey,
+                    data: { fileUrl: result.dataUrl },
+                    updated_at: new Date().toISOString()
+                });
+                if (fileErr) {
+                    showToast(`อัปโหลดรูปภาพล้มเหลว: ${fileErr.message}`, "error");
+                    return;
+                }
+                imgUrl = fileKey; // Store reference key!
             }
             
             const project = projectsData[appState.selectedDetailProject];
@@ -7556,7 +7631,22 @@ document.addEventListener("DOMContentLoaded", () => {
             if (fileInput && fileInput.files && fileInput.files.length > 0) {
                 const result = await readFileAsBase64(fileInput.files[0]);
                 pdfName = result.name;
-                fileUrl = result.dataUrl;
+                
+                // Save file in separate row
+                const projectCode = appState.selectedDetailProject;
+                const fileKey = `FILE:${projectCode}:DAILY:${dateVal}:${pdfName}`;
+                
+                showToast("กำลังบันทึกไฟล์รายงานขึ้นคลาวด์...", "info");
+                const { error: fileErr } = await supabaseClient.from('projects').upsert({
+                    code: fileKey,
+                    data: { fileUrl: result.dataUrl },
+                    updated_at: new Date().toISOString()
+                });
+                if (fileErr) {
+                    showToast(`อัปโหลดไฟล์ล้มเหลว: ${fileErr.message}`, "error");
+                    return;
+                }
+                fileUrl = fileKey; // Store reference key!
             } else {
                 pdfName = `DailyReport_${dateVal}.pdf`;
             }
@@ -7801,8 +7891,21 @@ document.addEventListener("DOMContentLoaded", () => {
                     const task = project.tasks.find(t => t.id === taskId);
                     if (task) {
                         task.file = result.name;
-                        task.fileUrl = result.dataUrl;
                         
+                        // Save file in separate row to keep main project payload tiny
+                        const fileKey = `FILE:${project.code}:TASK:${taskId}:${result.name}`;
+                        showToast("กำลังบันทึกไฟล์รายงานขึ้นคลาวด์...", "info");
+                        const { error: fileErr } = await supabaseClient.from('projects').upsert({
+                            code: fileKey,
+                            data: { fileUrl: result.dataUrl },
+                            updated_at: new Date().toISOString()
+                        });
+                        if (fileErr) {
+                            showToast(`อัปโหลดไฟล์ล้มเหลว: ${fileErr.message}`, "error");
+                            return;
+                        }
+                        
+                        task.fileUrl = fileKey; // Reference key!
                         saveToLocalStorage();
                         showToast(`แนบรายงานความก้าวหน้า ${result.name} เรียบร้อยแล้ว!`, "success");
                         closeTaskPdfModal();
@@ -7882,14 +7985,30 @@ document.addEventListener("DOMContentLoaded", () => {
             const startStr = `${startDateObj.getDate().toString().padStart(2, '0')}/${(startDateObj.getMonth() + 1).toString().padStart(2, '0')}/${startDateObj.getFullYear()}`;
             const endStr = `${endDateObj.getDate().toString().padStart(2, '0')}/${(endDateObj.getMonth() + 1).toString().padStart(2, '0')}/${endDateObj.getFullYear()}`;
             
-            // Convert file to Base64 for persistent storage if a new one is selected
+            // Convert file to Base64 and save to separate row if a new one is selected
             let file = "";
             let fileUrl = "";
             let hasNewFile = false;
             if (fileInput && fileInput.files && fileInput.files.length > 0) {
                 const result = await readFileAsBase64(fileInput.files[0]);
                 file = result.name;
-                fileUrl = result.dataUrl;
+                
+                const projectCode = appState.selectedDetailProject;
+                const tempId = taskIdVal || Date.now();
+                const fileKey = `FILE:${projectCode}:TASK:${tempId}:${file}`;
+                
+                showToast("กำลังบันทึกไฟล์รายงานขึ้นคลาวด์...", "info");
+                const { error: fileErr } = await supabaseClient.from('projects').upsert({
+                    code: fileKey,
+                    data: { fileUrl: result.dataUrl },
+                    updated_at: new Date().toISOString()
+                });
+                if (fileErr) {
+                    showToast(`อัปโหลดไฟล์ล้มเหลว: ${fileErr.message}`, "error");
+                    return;
+                }
+                
+                fileUrl = fileKey; // Store the reference key!
                 hasNewFile = true;
             }
             
@@ -8037,9 +8156,23 @@ document.addEventListener("DOMContentLoaded", () => {
             const uploadedFile = fileInput.files[0];
             const file = uploadedFile.name;
             
-            // Read file as Base64 for persistent cloud storage
             const result = await readFileAsBase64(uploadedFile);
-            const fileUrl = result.dataUrl;
+            
+            // Save file in separate row
+            const projectCode = appState.selectedDetailProject;
+            const fileKey = `FILE:${projectCode}:PLANDOC:${Date.now()}:${file}`;
+            
+            showToast("กำลังบันทึกไฟล์แผนงานขึ้นคลาวด์...", "info");
+            const { error: fileErr } = await supabaseClient.from('projects').upsert({
+                code: fileKey,
+                data: { fileUrl: result.dataUrl },
+                updated_at: new Date().toISOString()
+            });
+            if (fileErr) {
+                showToast(`อัปโหลดไฟล์ล้มเหลว: ${fileErr.message}`, "error");
+                return;
+            }
+            const fileUrl = fileKey; // Store reference key!
             
             const d = new Date();
             const dateStr = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
@@ -8085,20 +8218,38 @@ document.addEventListener("DOMContentLoaded", () => {
     const pdfTitle = document.getElementById("pdf-viewer-title");
     const pdfDownloadBtn = document.getElementById("pdf-viewer-download-btn");
 
-    window.openPdfViewer = function(fileUrl, fileName, title) {
+    window.openPdfViewer = async function(fileUrl, fileName, title) {
         if (!fileUrl) {
             showToast("ไม่พบไฟล์ PDF สำหรับดูตัวอย่าง (กรุณาอัปโหลดไฟล์จริงก่อน)", "warning");
             return;
         }
+        
+        let actualUrl = fileUrl;
+        if (fileUrl.startsWith("FILE:")) {
+            showToast("กำลังดึงไฟล์ PDF จากคลาวด์...", "info");
+            try {
+                const { data, error } = await supabaseClient.from('projects').select('data').eq('code', fileUrl).single();
+                if (error) throw error;
+                if (data && data.data && data.data.fileUrl) {
+                    actualUrl = data.data.fileUrl;
+                } else {
+                    throw new Error("ไม่พบไฟล์ในคลาวด์");
+                }
+            } catch (err) {
+                showToast("ดึงไฟล์ล้มเหลว: " + err.message, "error");
+                return;
+            }
+        }
+        
         if (pdfTitle) pdfTitle.textContent = title || fileName || "ดูเอกสาร PDF";
-        if (pdfEmbed) pdfEmbed.src = fileUrl;
+        if (pdfEmbed) pdfEmbed.src = actualUrl;
         if (pdfDownloadBtn) {
-            pdfDownloadBtn.href = fileUrl;
+            pdfDownloadBtn.href = actualUrl;
             pdfDownloadBtn.download = fileName || "document.pdf";
         }
         const fallbackLink = document.getElementById("pdf-viewer-download-link");
         if (fallbackLink) {
-            fallbackLink.href = fileUrl;
+            fallbackLink.href = actualUrl;
             fallbackLink.download = fileName || "document.pdf";
         }
         if (pdfViewerModal) pdfViewerModal.classList.add("active");
