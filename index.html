@@ -6230,19 +6230,29 @@ function renderSubnavCostTab(project) {
             subtabCostStructureDonut.destroy();
         }
         
-        const cs = project.costStructure;
+        const cs = project.costStructure || { labor: 0, material: 0, other: 0 };
+        const total = (cs.labor || 0) + (cs.material || 0) + (cs.other || 0);
+        const isEmpty = total === 0;
+        
+        const chartData = isEmpty ? [1] : [cs.labor, cs.material, cs.other];
+        const chartLabels = isEmpty 
+            ? ["ยังไม่มีบันทึกต้นทุน"]
+            : [
+                `ค่าแรง ${(cs.labor || 0).toFixed(0)}%`, 
+                `ค่าวัสดุ ${(cs.material || 0).toFixed(0)}%`, 
+                `อื่นๆ ${(cs.other || 0).toFixed(0)}%`
+              ];
+        const chartColors = isEmpty ? ['#f1f5f9'] : ['#1d3557', '#457b9d', '#e63946'];
+        
         subtabCostStructureDonut = new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels: [
-                    `ค่าแรง ${cs.labor}%`, 
-                    `ค่าวัสดุ ${cs.material}%`, 
-                    `อื่นๆ ${cs.other}%`
-                ],
+                labels: chartLabels,
                 datasets: [{
-                    data: [cs.labor, cs.material, cs.other],
-                    backgroundColor: ['#1d3557', '#457b9d', '#e63946'],
-                    borderWidth: 1
+                    data: chartData,
+                    backgroundColor: chartColors,
+                    borderWidth: isEmpty ? 1 : 1,
+                    borderColor: isEmpty ? '#e2e8f0' : '#ffffff'
                 }]
             },
             options: {
@@ -6253,6 +6263,9 @@ function renderSubnavCostTab(project) {
                     legend: {
                         position: 'bottom',
                         labels: { boxWidth: 10, font: { size: 9, family: 'Prompt' } }
+                    },
+                    tooltip: {
+                        enabled: !isEmpty
                     }
                 }
             }
@@ -7121,7 +7134,19 @@ function renderCostManagement() {
         project = projectsData[activeCode];
     }
     
-    if (!project) return;
+    if (!project) {
+        document.getElementById("cost-v-value").textContent = "0";
+        document.getElementById("cost-v-cost").textContent = "0";
+        document.getElementById("cost-v-profit").textContent = "0";
+        document.getElementById("cost-v-net").textContent = "0";
+        document.getElementById("cost-v-percent").textContent = "0.00%";
+        
+        const tbody = document.getElementById("transaction-table-body");
+        if (tbody) tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">ไม่มีรายการบันทึกค่าใช้จ่าย</td></tr>`;
+        
+        renderCostStructureDonutChart({ labor: 0, material: 0, other: 0 });
+        return;
+    }
 
     if (costSelector && costSelector.value !== activeCode) {
         costSelector.value = activeCode;
@@ -7206,19 +7231,29 @@ function renderCostStructureDonutChart(structure) {
             costStructureDonut.destroy();
         }
 
+        const total = (structure.labor || 0) + (structure.material || 0) + (structure.other || 0);
+        const isEmpty = total === 0;
+        
+        const chartData = isEmpty ? [1] : [structure.labor, structure.material, structure.other];
+        const chartLabels = isEmpty 
+            ? ["ยังไม่มีบันทึกต้นทุน"]
+            : [
+                `ค่าแรง ${(structure.labor || 0).toFixed(0)}%`, 
+                `ค่าวัสดุ ${(structure.material || 0).toFixed(0)}%`, 
+                `ค่าใช้จ่ายอื่น ${(structure.other || 0).toFixed(0)}%`
+              ];
+        const chartColors = isEmpty ? ['#f1f5f9'] : ['#10b981', '#3b82f6', '#f59e0b'];
+
         costStructureDonut = new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels: [
-                    `ค่าแรง ${structure.labor}%`, 
-                    `ค่าวัสดุ ${structure.material}%`, 
-                    `ค่าใช้จ่ายอื่น ${structure.other}%`
-                ],
+                labels: chartLabels,
                 datasets: [{
-                    data: [structure.labor, structure.material, structure.other],
-                    backgroundColor: ['#10b981', '#3b82f6', '#f59e0b'],
-                    borderWidth: 2,
-                    hoverOffset: 4
+                    data: chartData,
+                    backgroundColor: chartColors,
+                    borderWidth: isEmpty ? 1 : 2,
+                    borderColor: isEmpty ? '#e2e8f0' : '#ffffff',
+                    hoverOffset: isEmpty ? 0 : 4
                 }]
             },
             options: {
@@ -7233,6 +7268,9 @@ function renderCostStructureDonutChart(structure) {
                             font: { size: 9, family: 'Prompt' },
                             padding: 10
                         }
+                    },
+                    tooltip: {
+                        enabled: !isEmpty
                     }
                 }
             }
