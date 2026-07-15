@@ -3224,28 +3224,23 @@ body.public-view-mode #public-view-header {
                                 <p class="section-subtitle">แสดงภาพรวมทุกโครงการ และสรุปสถานะของงานทั้งหมด</p>
                             </div>
                         </div>
-                        <div class="filter-wrapper" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                        <div class="filter-wrapper" style="display: flex; align-items: center; gap: 8px;">
                             <label for="year-filter-a">เปรียบเทียบปี :</label>
-                            <div class="custom-select-wrapper" style="min-width: 105px;">
+                            <div class="custom-select-wrapper" style="min-width: 115px;">
                                 <select id="year-filter-a" class="form-control">
+                                    <option value="all">ทั้งหมดทุกปี</option>
                                     <option value="2024">ปี 2024</option>
                                     <option value="2025" selected>ปี 2025</option>
                                     <option value="2026">ปี 2026</option>
                                 </select>
                             </div>
                             <label for="year-filter-b">กับปี :</label>
-                            <div class="custom-select-wrapper" style="min-width: 105px;">
+                            <div class="custom-select-wrapper" style="min-width: 115px;">
                                 <select id="year-filter-b" class="form-control">
+                                    <option value="all">ทั้งหมดทุกปี</option>
                                     <option value="2024">ปี 2024</option>
                                     <option value="2025">ปี 2025</option>
                                     <option value="2026" selected>ปี 2026</option>
-                                </select>
-                            </div>
-                            <label for="dashboard-year-sort" style="margin-left: 8px;"><i class="fa-solid fa-sort text-blue"></i> เรียงปีงานค้าง :</label>
-                            <div class="custom-select-wrapper" style="min-width: 160px;">
-                                <select id="dashboard-year-sort" class="form-control">
-                                    <option value="desc" selected>ปีล่าสุดไปเก่า (2026 → 2024)</option>
-                                    <option value="asc">ปีเก่าไปล่าสุด (2024 → 2026)</option>
                                 </select>
                             </div>
                         </div>
@@ -4834,11 +4829,18 @@ function renderOverallDashboard() {
     Object.values(projectsData).forEach(p => recalculateJobsFromTasks(p));
     
     // Active projects for Year A and Year B
-    const projectsA = Object.values(projectsData).filter(p => p.year.toString() === yearAVal);
-    const projectsB = Object.values(projectsData).filter(p => p.year.toString() === yearBVal);
+    const projectsA = yearAVal === "all"
+        ? Object.values(projectsData)
+        : Object.values(projectsData).filter(p => p.year.toString() === yearAVal);
+    const projectsB = yearBVal === "all"
+        ? Object.values(projectsData)
+        : Object.values(projectsData).filter(p => p.year.toString() === yearBVal);
     
-    // For KPIs and general metrics, we show the combined sum of both selected years!
-    const combinedProjects = [...projectsA, ...projectsB];
+    // For KPIs and general metrics, we show the combined sum of both selected years (unique by code)!
+    const combinedProjectsMap = {};
+    projectsA.forEach(p => { combinedProjectsMap[p.code] = p; });
+    projectsB.forEach(p => { combinedProjectsMap[p.code] = p; });
+    const combinedProjects = Object.values(combinedProjectsMap);
     
     let totalJobs = combinedProjects.length;
     let inprogressJobs = 0;
@@ -4963,8 +4965,10 @@ function renderOverallBarChart(labels, inprogressA, completedA, delayedA, inprog
             overallBarChart.destroy();
         }
         
-        const yA = parseInt(yearA) || 0;
-        const yB = parseInt(yearB) || 0;
+        const yA = yearA === "all" ? 9999 : (parseInt(yearA) || 0);
+        const yB = yearB === "all" ? 9999 : (parseInt(yearB) || 0);
+        const dispYearA = yearA === "all" ? "ทุกปี" : yearA;
+        const dispYearB = yearB === "all" ? "ทุกปี" : yearB;
         
         let datasets = [];
         
@@ -4972,19 +4976,19 @@ function renderOverallBarChart(labels, inprogressA, completedA, delayedA, inprog
             // Render single normal stacked bar per category
             datasets = [
                 {
-                    label: 'กำลังดำเนินการ',
+                    label: `กำลังดำเนินการ (${dispYearA})`,
                     data: inprogressA,
                     backgroundColor: '#0d9488', // Teal
                     borderRadius: 4
                 },
                 {
-                    label: 'เสร็จแล้ว',
+                    label: `เสร็จแล้ว (${dispYearA})`,
                     data: completedA,
                     backgroundColor: '#10b981', // Green
                     borderRadius: 4
                 },
                 {
-                    label: 'ล่าช้า',
+                    label: `ล่าช้า (${dispYearA})`,
                     data: delayedA,
                     backgroundColor: '#ef4444', // Red
                     borderRadius: 4
@@ -5029,38 +5033,38 @@ function renderOverallBarChart(labels, inprogressA, completedA, delayedA, inprog
             datasets = [
                 // Year A Datasets
                 {
-                    label: `กำลังดำเนินการ (${yearA})`,
+                    label: `กำลังดำเนินการ (${dispYearA})`,
                     data: inprogressA,
                     stack: `year-${yearA}`,
                     ...styleA.inprogress
                 },
                 {
-                    label: `เสร็จแล้ว (${yearA})`,
+                    label: `เสร็จแล้ว (${dispYearA})`,
                     data: completedA,
                     stack: `year-${yearA}`,
                     ...styleA.completed
                 },
                 {
-                    label: `ล่าช้า (${yearA})`,
+                    label: `ล่าช้า (${dispYearA})`,
                     data: delayedA,
                     stack: `year-${yearA}`,
                     ...styleA.delayed
                 },
                 // Year B Datasets
                 {
-                    label: `กำลังดำเนินการ (${yearB})`,
+                    label: `กำลังดำเนินการ (${dispYearB})`,
                     data: inprogressB,
                     stack: `year-${yearB}`,
                     ...styleB.inprogress
                 },
                 {
-                    label: `เสร็จแล้ว (${yearB})`,
+                    label: `เสร็จแล้ว (${dispYearB})`,
                     data: completedB,
                     stack: `year-${yearB}`,
                     ...styleB.completed
                 },
                 {
-                    label: `ล่าช้า (${yearB})`,
+                    label: `ล่าช้า (${dispYearB})`,
                     data: delayedB,
                     stack: `year-${yearB}`,
                     ...styleB.delayed
@@ -5623,16 +5627,12 @@ function renderHospitalsGrid(activeProjects) {
         "โรงพยาบาลเปาโล โชคชัย 4"
     ];
     
-    const sortOrder = (document.getElementById("dashboard-year-sort") ? document.getElementById("dashboard-year-sort").value : "desc") || "desc";
-    
     allHospitalsList.forEach(hospital => {
         // Find all projects of this hospital in the active projects list that are NOT 100% completed
         const hospitalProjects = activeProjects.filter(item => item.customer === hospital && (item.progress === undefined || item.progress === null || item.progress < 100));
         
-        // Sort projects by year based on selected sort order
-        hospitalProjects.sort((a, b) => {
-            return sortOrder === "asc" ? (a.year - b.year) : (b.year - a.year);
-        });
+        // Sort projects by year descending (newest first)
+        hospitalProjects.sort((a, b) => b.year - a.year);
         
         const card = document.createElement("div");
         
@@ -7489,10 +7489,9 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // 5. Section 1: Overall Dashboard Year Filter Dropdowns (Comparison & Sorting)
+    // 5. Section 1: Overall Dashboard Year Filter Dropdowns (Comparison)
     const yearFilterA = document.getElementById("year-filter-a");
     const yearFilterB = document.getElementById("year-filter-b");
-    const dashboardYearSort = document.getElementById("dashboard-year-sort");
     if (yearFilterA) {
         yearFilterA.addEventListener("change", function() {
             appState.selectedYearFilterA = this.value;
@@ -7502,11 +7501,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (yearFilterB) {
         yearFilterB.addEventListener("change", function() {
             appState.selectedYearFilterB = this.value;
-            renderOverallDashboard();
-        });
-    }
-    if (dashboardYearSort) {
-        dashboardYearSort.addEventListener("change", function() {
             renderOverallDashboard();
         });
     }
