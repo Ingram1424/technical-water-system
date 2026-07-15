@@ -5567,21 +5567,41 @@ function renderHospitalsGrid(activeProjects) {
             let totalValue = 0;
             let totalCost = 0;
             let totalProfit = 0;
-            let totalJobs = 0;
-            let completedJobs = 0;
-            let inprogressJobs = 0;
-            let delayedJobs = 0;
+            
+            // Count projects status for this hospital across all years
+            const allHospitalProjects = Object.values(projectsData).filter(p => p.customer === hospital);
+            let totalProjects = allHospitalProjects.length;
+            let completedProjects = 0;
+            let inprogressProjects = 0;
+            let delayedProjects = 0;
+            
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            allHospitalProjects.forEach(p => {
+                if (p.progress >= 100 || p.status === "เสร็จสิ้น" || p.status === "เสร็จแล้ว") {
+                    completedProjects++;
+                } else {
+                    const parts = (p.end || "").split("/");
+                    let isDelayed = false;
+                    if (parts.length === 3) {
+                        const endDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+                        if (!isNaN(endDate) && endDate < today) {
+                            isDelayed = true;
+                        }
+                    }
+                    if (isDelayed || p.status === "ล่าช้า") {
+                        delayedProjects++;
+                    } else {
+                        inprogressProjects++;
+                    }
+                }
+            });
             
             hospitalProjects.forEach(p => {
                 totalValue += p.value || 0;
                 totalCost += p.cost || 0;
                 totalProfit += (p.value || 0) - (p.cost || 0);
-                if (p.jobs) {
-                    totalJobs += p.jobs.total || 0;
-                    completedJobs += p.jobs.completed || 0;
-                    inprogressJobs += p.jobs.inprogress || 0;
-                    delayedJobs += p.jobs.delayed || 0;
-                }
             });
             
             const hideCost = appState.currentRole === "customer";
@@ -5688,17 +5708,17 @@ function renderHospitalsGrid(activeProjects) {
                 ${financialsHTML}
                 
                 <div class="hospital-card-badges">
-                    <div class="hospital-card-badge total" title="จำนวนงานทั้งหมด">
-                        <i class="fa-solid fa-list-check"></i> ${totalJobs}
+                    <div class="hospital-card-badge total" title="จำนวนโครงการทั้งหมด">
+                        <i class="fa-solid fa-folder-tree"></i> ${totalProjects} โครงการ
                     </div>
-                    <div class="hospital-card-badge completed" title="งานเสร็จแล้ว">
-                        <i class="fa-solid fa-circle-check"></i> ${completedJobs}
+                    <div class="hospital-card-badge completed" title="โครงการเสร็จแล้ว">
+                        <i class="fa-solid fa-circle-check"></i> ${completedProjects}
                     </div>
-                    <div class="hospital-card-badge inprogress" title="งานกำลังทำ">
-                        <i class="fa-solid fa-circle-play"></i> ${inprogressJobs}
+                    <div class="hospital-card-badge inprogress" title="โครงการกำลังทำ">
+                        <i class="fa-solid fa-circle-play"></i> ${inprogressProjects}
                     </div>
-                    <div class="hospital-card-badge delayed" title="งานล่าช้า">
-                        <i class="fa-solid fa-circle-exclamation"></i> ${delayedJobs}
+                    <div class="hospital-card-badge delayed" title="โครงการล่าช้า">
+                        <i class="fa-solid fa-circle-exclamation"></i> ${delayedProjects}
                     </div>
                 </div>
             `;
