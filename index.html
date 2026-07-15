@@ -3314,7 +3314,7 @@ body.public-view-mode #public-view-header {
                     <div class="analytics-grid">
                         <!-- Bar Chart -->
                         <div class="chart-container-card span-2">
-                            <h4 class="chart-title">สรุปจำนวนงาน (ทุกส่วนงาน)</h4>
+                            <h4 class="chart-title">สรุปโครงการแยกตามโรงพยาบาล</h4>
                             <div class="chart-wrapper">
                                 <canvas id="overallBarChart"></canvas>
                             </div>
@@ -4918,42 +4918,46 @@ function renderOverallDashboard() {
     );
     renderHospitalsGrid(gridProjects);
     
-    // Prepare bar chart sums for Year A
-    const categoryLabels = ["Electrical", "HVAC", "Sanitation", "Structure", "Architecture", "Others"];
-    const inprogressSumsA = [0, 0, 0, 0, 0, 0];
-    const completedSumsA = [0, 0, 0, 0, 0, 0];
-    const delayedSumsA = [0, 0, 0, 0, 0, 0];
+    // Prepare bar chart data for all 12 hospitals
+    const hospitalsList = [
+        "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
+        "โรงพยาบาลพญาไท บ่อวิน", "โรงพยาบาลพญาไท พหลโยธิน", "โรงพยาบาลพญาไท ศรีราชา", "โรงพยาบาลเปาโล พระประแดง",
+        "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4"
+    ];
     
-    projectsA.forEach(p => {
-        if (p.workBreakdown && p.workBreakdown.inprogress && p.workBreakdown.completed && p.workBreakdown.delayed) {
-            for (let i = 0; i < 6; i++) {
-                inprogressSumsA[i] += p.workBreakdown.inprogress[i] || 0;
-                completedSumsA[i] += p.workBreakdown.completed[i] || 0;
-                delayedSumsA[i] += p.workBreakdown.delayed[i] || 0;
+    const inprogressCounts = Array(12).fill(0);
+    const completedCounts = Array(12).fill(0);
+    const delayedCounts = Array(12).fill(0);
+    
+    combinedProjects.forEach(p => {
+        const idx = hospitalsList.indexOf(p.customer);
+        if (idx === -1) return;
+        
+        if (p.status === "เสร็จสิ้น" || p.status === "เสร็จแล้ว") {
+            completedCounts[idx]++;
+        } else {
+            // Check if end date is past today
+            const parts = (p.end || "").split("/");
+            let isDelayed = false;
+            if (parts.length === 3) {
+                const endDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
+                if (!isNaN(endDate) && endDate < today) {
+                    isDelayed = true;
+                }
+            }
+            if (isDelayed || p.status === "ล่าช้า") {
+                delayedCounts[idx]++;
+            } else {
+                inprogressCounts[idx]++;
             }
         }
     });
     
-    // Prepare bar chart sums for Year B
-    const inprogressSumsB = [0, 0, 0, 0, 0, 0];
-    const completedSumsB = [0, 0, 0, 0, 0, 0];
-    const delayedSumsB = [0, 0, 0, 0, 0, 0];
-    
-    projectsB.forEach(p => {
-        if (p.workBreakdown && p.workBreakdown.inprogress && p.workBreakdown.completed && p.workBreakdown.delayed) {
-            for (let i = 0; i < 6; i++) {
-                inprogressSumsB[i] += p.workBreakdown.inprogress[i] || 0;
-                completedSumsB[i] += p.workBreakdown.completed[i] || 0;
-                delayedSumsB[i] += p.workBreakdown.delayed[i] || 0;
-            }
-        }
-    });
-    
-    renderOverallBarChart(categoryLabels, inprogressSumsA, completedSumsA, delayedSumsA, inprogressSumsB, completedSumsB, delayedSumsB, yearAVal, yearBVal);
+    renderOverallBarChart(hospitalsList, inprogressCounts, completedCounts, delayedCounts);
     renderOverallDonutChart(inprogressJobs, completedJobs, delayedJobs);
 }
 
-function renderOverallBarChart(labels, inprogressA, completedA, delayedA, inprogressB, completedB, delayedB, yearA, yearB) {
+function renderOverallBarChart(labels, inprogress, completed, delayed) {
     if (typeof Chart === "undefined") {
         console.warn("Chart.js is not loaded.");
         return;
@@ -4965,112 +4969,26 @@ function renderOverallBarChart(labels, inprogressA, completedA, delayedA, inprog
             overallBarChart.destroy();
         }
         
-        const yA = yearA === "all" ? 9999 : (parseInt(yearA) || 0);
-        const yB = yearB === "all" ? 9999 : (parseInt(yearB) || 0);
-        const dispYearA = yearA === "all" ? "ทุกปี" : yearA;
-        const dispYearB = yearB === "all" ? "ทุกปี" : yearB;
-        
-        let datasets = [];
-        
-        if (yA === yB) {
-            // Render single normal stacked bar per category
-            datasets = [
-                {
-                    label: `กำลังดำเนินการ (${dispYearA})`,
-                    data: inprogressA,
-                    backgroundColor: '#0d9488', // Teal
-                    borderRadius: 4
-                },
-                {
-                    label: `เสร็จแล้ว (${dispYearA})`,
-                    data: completedA,
-                    backgroundColor: '#10b981', // Green
-                    borderRadius: 4
-                },
-                {
-                    label: `ล่าช้า (${dispYearA})`,
-                    data: delayedA,
-                    backgroundColor: '#ef4444', // Red
-                    borderRadius: 4
-                }
-            ];
-        } else {
-            // Render two side-by-side stacked bars (Grouped-Stacked)
-            const solidInprogress = {
-                backgroundColor: '#0d9488', // Teal
+        const datasets = [
+            {
+                label: 'กำลังดำเนินการ',
+                data: inprogress,
+                backgroundColor: '#1d4ed8', // Dark Blue / Navy
                 borderRadius: 4
-            };
-            const solidCompleted = {
+            },
+            {
+                label: 'เสร็จแล้ว',
+                data: completed,
                 backgroundColor: '#10b981', // Green
                 borderRadius: 4
-            };
-            const solidDelayed = {
+            },
+            {
+                label: 'ล่าช้า',
+                data: delayed,
                 backgroundColor: '#ef4444', // Red
                 borderRadius: 4
-            };
-            
-            const greyInprogress = {
-                backgroundColor: '#94a3b8', // Cool Slate Grey (light)
-                borderRadius: 4
-            };
-            const greyCompleted = {
-                backgroundColor: '#475569', // Darker Slate Grey (medium)
-                borderRadius: 4
-            };
-            const greyDelayed = {
-                backgroundColor: '#1e293b', // Deep Charcoal/Black (dark)
-                borderRadius: 4
-            };
-            
-            const styleA = yA > yB ? 
-                { inprogress: solidInprogress, completed: solidCompleted, delayed: solidDelayed } :
-                { inprogress: greyInprogress, completed: greyCompleted, delayed: greyDelayed };
-                
-            const styleB = yB > yA ? 
-                { inprogress: solidInprogress, completed: solidCompleted, delayed: solidDelayed } :
-                { inprogress: greyInprogress, completed: greyCompleted, delayed: greyDelayed };
-                
-            datasets = [
-                // Year A Datasets
-                {
-                    label: `กำลังดำเนินการ (${dispYearA})`,
-                    data: inprogressA,
-                    stack: `year-${yearA}`,
-                    ...styleA.inprogress
-                },
-                {
-                    label: `เสร็จแล้ว (${dispYearA})`,
-                    data: completedA,
-                    stack: `year-${yearA}`,
-                    ...styleA.completed
-                },
-                {
-                    label: `ล่าช้า (${dispYearA})`,
-                    data: delayedA,
-                    stack: `year-${yearA}`,
-                    ...styleA.delayed
-                },
-                // Year B Datasets
-                {
-                    label: `กำลังดำเนินการ (${dispYearB})`,
-                    data: inprogressB,
-                    stack: `year-${yearB}`,
-                    ...styleB.inprogress
-                },
-                {
-                    label: `เสร็จแล้ว (${dispYearB})`,
-                    data: completedB,
-                    stack: `year-${yearB}`,
-                    ...styleB.completed
-                },
-                {
-                    label: `ล่าช้า (${dispYearB})`,
-                    data: delayedB,
-                    stack: `year-${yearB}`,
-                    ...styleB.delayed
-                }
-            ];
-        }
+            }
+        ];
             
         overallBarChart = new Chart(ctx, {
             type: 'bar',
@@ -5079,33 +4997,35 @@ function renderOverallBarChart(labels, inprogressA, completedA, delayedA, inprog
                 datasets: datasets
             },
             options: {
+                indexAxis: 'y', // Horizontal Bar Chart
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
                         position: 'top',
-                        labels: {
-                            boxWidth: 10,
-                            font: { size: 9, family: 'Prompt' }
-                        }
+                        labels: { font: { family: 'Prompt', size: 10 } }
+                    },
+                    tooltip: {
+                        titleFont: { family: 'Prompt' },
+                        bodyFont: { family: 'Prompt' }
                     }
                 },
                 scales: {
                     x: {
                         stacked: true,
-                        grid: { display: false },
-                        ticks: { font: { size: 9, family: 'Prompt' } }
+                        grid: { color: '#f1f5f9' },
+                        ticks: { font: { family: 'Prompt' }, precision: 0 }
                     },
                     y: {
                         stacked: true,
-                        beginAtZero: true,
-                        ticks: { font: { size: 9, family: 'Prompt' } }
+                        grid: { display: false },
+                        ticks: { font: { family: 'Prompt', size: 10 } }
                     }
                 }
             }
         });
-    } catch (err) {
-        console.error("Error drawing overall bar chart:", err);
+    } catch (e) {
+        console.error("Failed to render overall bar chart:", e);
     }
 }
 
