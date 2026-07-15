@@ -6880,7 +6880,7 @@ function renderSubnavDailyReports(project) {
     container.querySelectorAll(".btn-edit-daily-report").forEach(btn => {
         btn.addEventListener("click", function() {
             const repIdx = parseInt(this.getAttribute("data-idx"));
-            openDailyReportModal(repIdx);
+            if (window.openDailyReportModal) window.openDailyReportModal(repIdx);
         });
     });
 
@@ -8106,7 +8106,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    const openDailyReportModal = (editIdx = -1) => {
+    window.openDailyReportModal = (editIdx = -1) => {
         const project = projectsData[appState.selectedDetailProject];
         if (!project) {
             showToast("ไม่พบข้อมูลโครงการ", "error");
@@ -8215,7 +8215,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Event delegation for opening the modal
     document.addEventListener("click", function(e) {
         if (e.target && (e.target.id === "subnav-open-daily-report-modal-btn" || e.target.closest("#subnav-open-daily-report-modal-btn"))) {
-            openDailyReportModal();
+            if (window.openDailyReportModal) window.openDailyReportModal();
         }
     });
 
