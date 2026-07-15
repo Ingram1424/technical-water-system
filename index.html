@@ -5019,7 +5019,10 @@ function renderOverallBarChart(labels, inprogress, completed, delayed) {
                     y: {
                         stacked: true,
                         grid: { display: false },
-                        ticks: { font: { family: 'Prompt', size: 10 } }
+                        ticks: { 
+                            font: { family: 'Prompt', size: 10 },
+                            autoSkip: false
+                        }
                     }
                 }
             }
