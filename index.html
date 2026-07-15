@@ -3224,7 +3224,7 @@ body.public-view-mode #public-view-header {
                                 <p class="section-subtitle">แสดงภาพรวมทุกโครงการ และสรุปสถานะของงานทั้งหมด</p>
                             </div>
                         </div>
-                        <div class="filter-wrapper" style="display: flex; align-items: center; gap: 8px;">
+                        <div class="filter-wrapper" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                             <label for="year-filter-a">เปรียบเทียบปี :</label>
                             <div class="custom-select-wrapper" style="min-width: 105px;">
                                 <select id="year-filter-a" class="form-control">
@@ -3239,6 +3239,13 @@ body.public-view-mode #public-view-header {
                                     <option value="2024">ปี 2024</option>
                                     <option value="2025">ปี 2025</option>
                                     <option value="2026" selected>ปี 2026</option>
+                                </select>
+                            </div>
+                            <label for="dashboard-year-sort" style="margin-left: 8px;"><i class="fa-solid fa-sort text-blue"></i> เรียงปีงานค้าง :</label>
+                            <div class="custom-select-wrapper" style="min-width: 160px;">
+                                <select id="dashboard-year-sort" class="form-control">
+                                    <option value="desc" selected>ปีล่าสุดไปเก่า (2026 → 2024)</option>
+                                    <option value="asc">ปีเก่าไปล่าสุด (2024 → 2026)</option>
                                 </select>
                             </div>
                         </div>
@@ -4903,9 +4910,9 @@ function renderOverallDashboard() {
     document.getElementById("fin-profit-summary").textContent = formatNumber(profitSum);
     document.getElementById("fin-netprofit-summary").textContent = formatNumber(profitSum);
     
-    // Render Bottom Hospital Cards Grid (Show projects for both compared years A and B)
+    // Render Bottom Hospital Cards Grid (Show all projects that are not completed across all years)
     const gridProjects = Object.values(projectsData).filter(p => 
-        p.year.toString() === yearAVal || p.year.toString() === yearBVal
+        p.progress < 100
     );
     renderHospitalsGrid(gridProjects);
     
@@ -5616,11 +5623,16 @@ function renderHospitalsGrid(activeProjects) {
         "โรงพยาบาลเปาโล โชคชัย 4"
     ];
     
-    const selectedYear = appState.selectedYearFilterB || "2026";
+    const sortOrder = (document.getElementById("dashboard-year-sort") ? document.getElementById("dashboard-year-sort").value : "desc") || "desc";
     
     allHospitalsList.forEach(hospital => {
         // Find all projects of this hospital in the active projects list that are NOT 100% completed
         const hospitalProjects = activeProjects.filter(item => item.customer === hospital && (item.progress === undefined || item.progress === null || item.progress < 100));
+        
+        // Sort projects by year based on selected sort order
+        hospitalProjects.sort((a, b) => {
+            return sortOrder === "asc" ? (a.year - b.year) : (b.year - a.year);
+        });
         
         const card = document.createElement("div");
         
@@ -5805,13 +5817,12 @@ function renderHospitalsGrid(activeProjects) {
             card.className = "hospital-card inactive-hospital-card";
             card.style = "opacity: 0.55; cursor: not-allowed; border: 1px dashed var(--border-color); background-color: var(--bg-light); box-shadow: none;";
             
-            const yearText = selectedYear === "all" ? "" : `ในปี ${selectedYear}`;
             card.innerHTML = `
                 <div class="hospital-card-header" style="border-bottom: none; margin-bottom: 0;">
                     <div class="hospital-card-title-group">
                         <h4 class="hospital-card-title" style="color: var(--text-muted);">${hospital}</h4>
                         <div style="margin-top: 4px;">
-                            <span class="badge" style="font-size: 9px; padding: 2px 6px; background-color: #e2e8f0; color: #64748b; border-radius: 4px; font-weight:600;">ไม่มีโครงการ${yearText}</span>
+                            <span class="badge" style="font-size: 9px; padding: 2px 6px; background-color: #e2e8f0; color: #64748b; border-radius: 4px; font-weight:600;">ไม่มีโครงการดำเนินการ</span>
                         </div>
                     </div>
                 </div>
@@ -7478,9 +7489,10 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // 5. Section 1: Overall Dashboard Year Filter Dropdowns (Comparison)
+    // 5. Section 1: Overall Dashboard Year Filter Dropdowns (Comparison & Sorting)
     const yearFilterA = document.getElementById("year-filter-a");
     const yearFilterB = document.getElementById("year-filter-b");
+    const dashboardYearSort = document.getElementById("dashboard-year-sort");
     if (yearFilterA) {
         yearFilterA.addEventListener("change", function() {
             appState.selectedYearFilterA = this.value;
@@ -7490,6 +7502,11 @@ document.addEventListener("DOMContentLoaded", () => {
     if (yearFilterB) {
         yearFilterB.addEventListener("change", function() {
             appState.selectedYearFilterB = this.value;
+            renderOverallDashboard();
+        });
+    }
+    if (dashboardYearSort) {
+        dashboardYearSort.addEventListener("change", function() {
             renderOverallDashboard();
         });
     }
