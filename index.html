@@ -4139,7 +4139,7 @@ body.public-view-mode #public-view-header {
                     
                     <!-- Photos Attachment Section -->
                     <div class="form-group mt-3" style="border-top: 1px dashed var(--border-color); padding-top: 14px;">
-                        <label class="form-label" style="font-weight: 600; color: var(--navy-dark);"><i class="fa-solid fa-images text-blue mr-1"></i> แนบรูปภาพการปฏิบัติงาน (อัปโหลดภาพหน้างาน - สูงสุด 4 ภาพ)</label>
+                        <label class="form-label" style="font-weight: 600; color: var(--navy-dark);"><i class="fa-solid fa-images text-blue mr-1"></i> แนบรูปภาพการปฏิบัติงาน (อัปโหลดภาพหน้างาน - สูงสุด 10 ภาพ)</label>
                         <input type="file" id="report-photos" class="form-control" accept="image/*" multiple style="padding: 6px 12px; height: auto; margin-top: 6px;">
                         <div id="report-photos-preview" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;"></div>
                     </div>
@@ -6729,12 +6729,19 @@ function renderSubnavDailyReports(project) {
         card.className = "feed-item";
         card.style = "position: relative; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; margin-bottom: 16px; background: #fff; box-shadow: var(--card-shadow);";
         
-        const deleteButtonHTML = isPM 
-            ? `<button class="btn btn-xs btn-outline-red btn-delete-daily-report" 
+        const actionsHTML = isPM 
+            ? `
+               <button class="btn btn-xs btn-outline-blue btn-edit-daily-report" 
+                   data-idx="${idx}"
+                   style="font-size: 10.5px; padding: 3px 8px; display: flex; align-items: center; gap: 4px; background: none; border: 1px solid #1d4ed8; color: #1d4ed8; border-radius: 4px; cursor: pointer;">
+                   <i class="fa-solid fa-pen"></i> แก้ไข
+               </button>
+               <button class="btn btn-xs btn-outline-red btn-delete-daily-report" 
                    data-idx="${idx}"
                    style="font-size: 10.5px; padding: 3px 8px; display: flex; align-items: center; gap: 4px; background: none; border: 1px solid #ef4444; color: #ef4444; border-radius: 4px; cursor: pointer;">
                    <i class="fa-solid fa-trash-can"></i> ลบ
-               </button>` 
+               </button>
+              ` 
             : ``;
 
         card.innerHTML = `
@@ -6761,7 +6768,7 @@ function renderSubnavDailyReports(project) {
                             <i class="fa-solid fa-eye"></i> ดู PDF แนบ
                         </button>
                     ` : ''}
-                    ${deleteButtonHTML}
+                    ${actionsHTML}
                 </div>
             </div>
             
@@ -6866,6 +6873,14 @@ function renderSubnavDailyReports(project) {
             const fileName = this.getAttribute("data-file");
             const title = this.getAttribute("data-title");
             if (window.openPdfViewer) window.openPdfViewer(fileUrl, fileName, title);
+        });
+    });
+
+    // Hook Edit Daily Report handler
+    container.querySelectorAll(".btn-edit-daily-report").forEach(btn => {
+        btn.addEventListener("click", function() {
+            const repIdx = parseInt(this.getAttribute("data-idx"));
+            openDailyReportModal(repIdx);
         });
     });
 
@@ -7871,6 +7886,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // 13. MODAL: Write / Upload Daily Report
+    let editingReportIndex = -1;
+    let currentPhotosList = []; // Array of { type: 'cloud' | 'base64', val: string, fileObj?: File }
+
     const dailyReportModal = document.getElementById("daily-report-modal");
     const closeDailyReportBtn = document.getElementById("close-daily-report-modal");
     const cancelDailyReportBtn = document.getElementById("btn-cancel-report");
@@ -7944,7 +7962,11 @@ document.addEventListener("DOMContentLoaded", () => {
         };
     }
     
-    function addSignerRow() {
+    function addSignerRow(existingSig = null) {
+        if (existingSig && (existingSig instanceof Event || typeof existingSig.name !== 'string')) {
+            existingSig = null;
+        }
+
         const container = document.getElementById("report-signers-container");
         if (!container) return;
         
@@ -7958,7 +7980,7 @@ document.addEventListener("DOMContentLoaded", () => {
         box.className = "signer-box";
         box.style.cssText = "padding: 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: #f8fafc; position: relative; margin-bottom: 10px;";
         box.innerHTML = `
-            <button type="button" class="btn-remove-signer" style="position: absolute; top: 8px; right: 8px; background: none; border: none; font-size: 16px; color: #ef4444; cursor: pointer; font-weight: bold;">&times;</button>
+            <button type="button" class="btn-remove-signer" style="position: absolute; top: 8px; right: 8px; background: none; border: none; font-size: 16px; color: #ef4444; cursor: pointer; font-weight: bold; z-index: 10;">&times;</button>
             <div style="font-size: 11.5px; font-weight: 700; color: var(--primary-color); margin-bottom: 8px;">ผู้ลงลายเซ็นคนที่ ${index + 1}</div>
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
@@ -7972,18 +7994,31 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
             </div>
             
-            <div>
+            <div class="sig-draw-area">
                 <label class="form-label" style="font-size: 10px; font-weight: 600; display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
                     <span>วาดลายเซ็นลงบนพื้นที่ด้านล่าง <span class="required">*</span></span>
                     <button type="button" class="btn-clear-sig" style="background: none; border: none; font-size: 10px; color: #3b82f6; cursor: pointer; text-decoration: underline; padding: 0;">ล้างลายเซ็น</button>
                 </label>
                 <canvas class="signature-canvas" width="400" height="120" style="border: 1px dashed var(--border-color); border-radius: 4px; background: #ffffff; cursor: crosshair; display: block; touch-action: none; width: 100%; height: 120px;"></canvas>
             </div>
+
+            <div class="sig-preview-area" style="display: none; align-items: center; gap: 12px; background: #ffffff; border: 1px solid var(--border-color); padding: 8px; border-radius: 4px; justify-content: space-between;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 10px; font-weight: 600; color: var(--text-muted);">ลายเซ็นเดิม:</span>
+                    <img class="existing-sig-img" src="data:image/svg+xml;charset=utf-8,%3Csvg xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg' viewBox%3D'0 0 120 40'%2F%3E" style="height: 40px; max-width: 150px; object-fit: contain; background: #fff; border: 1px solid #f1f5f9; padding: 2px;">
+                </div>
+                <button type="button" class="btn-redraw-sig btn btn-xs btn-outline-blue" style="font-size: 10px; padding: 3px 8px; cursor: pointer;">เขียนใหม่</button>
+            </div>
         `;
         
         container.appendChild(box);
         
         const canvas = box.querySelector(".signature-canvas");
+        const drawArea = box.querySelector(".sig-draw-area");
+        const previewArea = box.querySelector(".sig-preview-area");
+        const sigImg = box.querySelector(".existing-sig-img");
+        const redrawBtn = box.querySelector(".btn-redraw-sig");
+        
         initSignaturePad(canvas);
         
         box.querySelector(".btn-clear-sig").addEventListener("click", () => canvas.clear());
@@ -7995,11 +8030,126 @@ document.addEventListener("DOMContentLoaded", () => {
                 el.querySelector("div").textContent = `ผู้ลงลายเซ็นคนที่ ${idx + 1}`;
             });
         });
+
+        if (existingSig) {
+            box.querySelector(".signer-name").value = existingSig.name || "";
+            box.querySelector(".signer-role").value = existingSig.role || "";
+            
+            drawArea.style.display = "none";
+            previewArea.style.display = "flex";
+            box.setAttribute("data-existing-sig", existingSig.image);
+            box.setAttribute("data-needs-redraw", "false");
+            
+            if (existingSig.image && existingSig.image.startsWith("FILE:")) {
+                supabaseClient.from('projects').select('data').eq('code', existingSig.image).single()
+                    .then(({ data }) => {
+                        if (data && data.data && data.data.fileUrl) {
+                            sigImg.src = data.data.fileUrl;
+                        }
+                    })
+                    .catch(err => console.error("Failed to load edit signature:", err));
+            } else if (existingSig.image) {
+                sigImg.src = existingSig.image;
+            }
+            
+            redrawBtn.addEventListener("click", () => {
+                drawArea.style.display = "block";
+                previewArea.style.display = "none";
+                box.setAttribute("data-needs-redraw", "true");
+            });
+        } else {
+            box.setAttribute("data-needs-redraw", "true");
+        }
     }
 
-    const openDailyReportModal = () => {
-        document.getElementById("report-date").value = new Date().toISOString().substring(0, 10);
-        document.getElementById("report-desc").value = "";
+    function renderReportPhotosPreview() {
+        const previewContainer = document.getElementById("report-photos-preview");
+        if (!previewContainer) return;
+        previewContainer.innerHTML = "";
+        
+        currentPhotosList.forEach((photo, index) => {
+            const itemBox = document.createElement("div");
+            itemBox.style.cssText = "position: relative; width: 70px; height: 70px; border-radius: 4px; border: 1px solid var(--border-color); overflow: hidden; background: #fafafa;";
+            
+            const img = document.createElement("img");
+            img.style.cssText = "width: 100%; height: 100%; object-fit: cover;";
+            
+            if (photo.type === "cloud") {
+                img.src = "data:image/svg+xml;charset=utf-8,%3Csvg xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg' viewBox%3D'0 0 100 100'%2F%3E";
+                if (photo.val.startsWith("FILE:")) {
+                    supabaseClient.from('projects').select('data').eq('code', photo.val).single()
+                        .then(({ data }) => {
+                            if (data && data.data && data.data.fileUrl) {
+                                img.src = data.data.fileUrl;
+                            }
+                        })
+                        .catch(err => console.error("Failed to load thumbnail:", err));
+                } else {
+                    img.src = photo.val;
+                }
+            } else {
+                img.src = photo.val;
+            }
+            
+            const delBtn = document.createElement("button");
+            delBtn.type = "button";
+            delBtn.innerHTML = "&times;";
+            delBtn.style.cssText = "position: absolute; top: 2px; right: 2px; background: rgba(239, 68, 68, 0.85); color: white; border: none; border-radius: 50%; width: 16px; height: 16px; font-size: 11px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-weight: bold; line-height: 1; z-index: 10;";
+            delBtn.addEventListener("click", () => {
+                currentPhotosList.splice(index, 1);
+                renderReportPhotosPreview();
+            });
+            
+            itemBox.appendChild(img);
+            itemBox.appendChild(delBtn);
+            previewContainer.appendChild(itemBox);
+        });
+    }
+
+    const openDailyReportModal = (editIdx = -1) => {
+        const project = projectsData[appState.selectedDetailProject];
+        if (!project) {
+            showToast("ไม่พบข้อมูลโครงการ", "error");
+            return;
+        }
+
+        editingReportIndex = editIdx;
+        currentPhotosList = [];
+        
+        const modalTitle = dailyReportModal.querySelector(".modal-title");
+        const submitBtn = dailyReportForm.querySelector("button[type='submit']");
+        
+        if (editIdx === -1) {
+            if (modalTitle) modalTitle.innerHTML = `<i class="fa-solid fa-file-signature"></i> เขียน / อัปโหลดรายงานรายวัน`;
+            if (submitBtn) submitBtn.textContent = "ส่งรายงาน";
+            document.getElementById("report-date").value = new Date().toISOString().substring(0, 10);
+            document.getElementById("report-desc").value = "";
+        } else {
+            if (modalTitle) modalTitle.innerHTML = `<i class="fa-solid fa-pen-to-square"></i> แก้ไขรายงานการปฏิบัติงานรายวัน`;
+            if (submitBtn) submitBtn.textContent = "บันทึกการแก้ไข";
+            
+            const rep = project.dailyReports[editIdx];
+            if (!rep) return;
+            
+            // Format date back to yyyy-mm-dd
+            if (rep.date) {
+                const parts = rep.date.split("/");
+                if (parts.length === 3) {
+                    document.getElementById("report-date").value = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                } else {
+                    document.getElementById("report-date").value = new Date().toISOString().substring(0, 10);
+                }
+            } else {
+                document.getElementById("report-date").value = new Date().toISOString().substring(0, 10);
+            }
+            
+            document.getElementById("report-desc").value = rep.desc || "";
+            
+            // Pre-populate photos
+            if (rep.images && rep.images.length > 0) {
+                currentPhotosList = rep.images.map(imgKey => ({ type: "cloud", val: imgKey }));
+            }
+        }
         
         const reportFileEl = document.getElementById("report-file");
         if (reportFileEl) reportFileEl.value = "";
@@ -8007,11 +8157,21 @@ document.addEventListener("DOMContentLoaded", () => {
         const reportPhotosEl = document.getElementById("report-photos");
         if (reportPhotosEl) reportPhotosEl.value = "";
         
-        const previewContainer = document.getElementById("report-photos-preview");
-        if (previewContainer) previewContainer.innerHTML = "";
+        renderReportPhotosPreview();
         
         const signersContainer = document.getElementById("report-signers-container");
-        if (signersContainer) signersContainer.innerHTML = "";
+        if (signersContainer) {
+            signersContainer.innerHTML = "";
+            if (editIdx >= 0) {
+                const project = projectsData[appState.selectedDetailProject];
+                const rep = project.dailyReports[editIdx];
+                if (rep.signatures && rep.signatures.length > 0) {
+                    rep.signatures.forEach(sig => {
+                        addSignerRow(sig);
+                    });
+                }
+            }
+        }
         
         dailyReportModal.classList.add("active");
     };
@@ -8022,25 +8182,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Photo input change listener for preview
     const photoInputEl = document.getElementById("report-photos");
-    const previewContainerEl = document.getElementById("report-photos-preview");
-    if (photoInputEl && previewContainerEl) {
+    if (photoInputEl) {
         photoInputEl.addEventListener("change", async function() {
-            previewContainerEl.innerHTML = "";
             const files = Array.from(photoInputEl.files);
             
-            if (files.length > 4) {
-                showToast("สามารถแนบรูปภาพได้สูงสุด 4 ภาพ", "warning");
+            if (currentPhotosList.length + files.length > 10) {
+                showToast("สามารถแนบรูปภาพได้สูงสุด 10 ภาพ", "warning");
                 photoInputEl.value = "";
                 return;
             }
             
             for (const file of files) {
                 const result = await readFileAsBase64(file);
-                const img = document.createElement("img");
-                img.src = result.dataUrl;
-                img.style.cssText = "width: 70px; height: 70px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-color);";
-                previewContainerEl.appendChild(img);
+                currentPhotosList.push({
+                    type: "base64",
+                    val: result.dataUrl,
+                    fileObj: file
+                });
             }
+            
+            photoInputEl.value = "";
+            renderReportPhotosPreview();
         });
     }
 
@@ -8067,7 +8229,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const dateVal = document.getElementById("report-date").value;
             const descVal = document.getElementById("report-desc").value;
             const fileInput = document.getElementById("report-file");
-            const photosInput = document.getElementById("report-photos");
             
             // Validate signers signatures are drawn
             const signerBoxes = document.querySelectorAll("#report-signers-container .signer-box");
@@ -8078,39 +8239,50 @@ document.addEventListener("DOMContentLoaded", () => {
                 const canvas = box.querySelector(".signature-canvas");
                 const name = box.querySelector(".signer-name").value.trim();
                 const role = box.querySelector(".signer-role").value.trim();
+                const needsRedraw = box.getAttribute("data-needs-redraw") === "true";
+                const existingSigKey = box.getAttribute("data-existing-sig");
                 
-                if (!canvas || canvas.isEmpty()) {
-                    showToast(`กรุณาวาดลายเซ็นสำหรับผู้ลงนามคนที่ ${i + 1} (${name || 'ไม่ระบุชื่อ'})`, "warning");
-                    return;
+                if (needsRedraw) {
+                    if (!canvas || canvas.isEmpty()) {
+                        showToast(`กรุณาวาดลายเซ็นสำหรับผู้ลงนามคนที่ ${i + 1} (${name || 'ไม่ระบุชื่อ'})`, "warning");
+                        return;
+                    }
+                    
+                    // Convert signature pad to Data URL
+                    const sigDataUrl = canvas.toDataURL("image/png");
+                    
+                    // Save signature image in Supabase as a separate row
+                    const projectCode = appState.selectedDetailProject;
+                    const sigKey = `FILE:${projectCode}:DAILY_SIG:${dateVal}:${Date.now()}:${i}:${name}`;
+                    
+                    showToast(`กำลังบันทึกลายเซ็นผู้รับรองคนที่ ${i + 1}...`, "info");
+                    const { error: sigErr } = await supabaseClient.from('projects').upsert({
+                        code: sigKey,
+                        data: { fileUrl: sigDataUrl },
+                        updated_at: new Date().toISOString()
+                    });
+                    if (sigErr) {
+                        showToast(`บันทึกลายเซ็นล้มเหลว: ${sigErr.message}`, "error");
+                        return;
+                    }
+                    
+                    signaturesRefs.push({
+                        name: name,
+                        role: role,
+                        image: sigKey // Reference key
+                    });
+                } else {
+                    // Keep existing signature reference key
+                    signaturesRefs.push({
+                        name: name,
+                        role: role,
+                        image: existingSigKey
+                    });
                 }
-                
-                // Convert signature pad to Data URL
-                const sigDataUrl = canvas.toDataURL("image/png");
-                
-                // Save signature image in Supabase as a separate row
-                const projectCode = appState.selectedDetailProject;
-                const sigKey = `FILE:${projectCode}:DAILY_SIG:${dateVal}:${Date.now()}:${i}:${name}`;
-                
-                showToast(`กำลังบันทึกลายเซ็นผู้รับรองคนที่ ${i + 1}...`, "info");
-                const { error: sigErr } = await supabaseClient.from('projects').upsert({
-                    code: sigKey,
-                    data: { fileUrl: sigDataUrl },
-                    updated_at: new Date().toISOString()
-                });
-                if (sigErr) {
-                    showToast(`บันทึกลายเซ็นล้มเหลว: ${sigErr.message}`, "error");
-                    return;
-                }
-                
-                signaturesRefs.push({
-                    name: name,
-                    role: role,
-                    image: sigKey // Reference key
-                });
             }
             
-            const d = new Date(dateVal);
-            const formattedDate = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+            const parts = dateVal.split("-");
+            const formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
             
             // Save attached PDF if selected
             let pdfName = "";
@@ -8137,21 +8309,20 @@ document.addEventListener("DOMContentLoaded", () => {
                 pdfName = `DailyReport_${dateVal}.pdf`;
             }
             
-            // Save attached Photos if selected
+            // Save attached Photos
             const imagesRefs = [];
-            if (photosInput && photosInput.files && photosInput.files.length > 0) {
-                const files = Array.from(photosInput.files);
-                for (let i = 0; i < files.length; i++) {
-                    const file = files[i];
-                    const result = await readFileAsBase64(file);
-                    
+            for (let i = 0; i < currentPhotosList.length; i++) {
+                const photo = currentPhotosList[i];
+                if (photo.type === "cloud") {
+                    imagesRefs.push(photo.val);
+                } else if (photo.type === "base64") {
                     const projectCode = appState.selectedDetailProject;
-                    const fileKey = `FILE:${projectCode}:DAILY_PHOTO:${dateVal}:${Date.now()}:${i}:${file.name}`;
+                    const fileKey = `FILE:${projectCode}:DAILY_PHOTO:${dateVal}:${Date.now()}:${i}:${photo.fileObj ? photo.fileObj.name : 'photo.png'}`;
                     
                     showToast(`กำลังบันทึกรูปภาพที่ ${i + 1} ขึ้นคลาวด์...`, "info");
                     const { error: photoErr } = await supabaseClient.from('projects').upsert({
                         code: fileKey,
-                        data: { fileUrl: result.dataUrl },
+                        data: { fileUrl: photo.val },
                         updated_at: new Date().toISOString()
                     });
                     if (photoErr) {
@@ -8166,17 +8337,24 @@ document.addEventListener("DOMContentLoaded", () => {
             if (project) {
                 if (!project.dailyReports) project.dailyReports = [];
                 
-                project.dailyReports.unshift({
+                const reportPayload = {
                     date: formattedDate,
                     desc: descVal,
-                    file: fileInput && fileInput.files && fileInput.files.length > 0 ? pdfName : "",
-                    fileUrl: fileUrl,
+                    file: fileInput && fileInput.files && fileInput.files.length > 0 ? pdfName : (editingReportIndex >= 0 ? project.dailyReports[editingReportIndex].file : ""),
+                    fileUrl: fileInput && fileInput.files && fileInput.files.length > 0 ? fileUrl : (editingReportIndex >= 0 ? project.dailyReports[editingReportIndex].fileUrl : ""),
                     images: imagesRefs,
                     signatures: signaturesRefs
-                });
+                };
+                
+                if (editingReportIndex >= 0) {
+                    project.dailyReports[editingReportIndex] = reportPayload;
+                    showToast(`แก้ไขรายงานประจำวันที่ ${formattedDate} สำเร็จ!`, "success");
+                } else {
+                    project.dailyReports.unshift(reportPayload);
+                    showToast(`ส่งรายงานการปฏิบัติงานรายวันประจำวันที่ ${formattedDate} สำเร็จ!`, "success");
+                }
                 
                 saveToLocalStorage();
-                showToast(`ส่งรายงานการปฏิบัติงานรายวันประจำวันที่ ${formattedDate} สำเร็จ!`, "success");
                 closeDailyReportModal();
                 renderSubnavProjectWorkspace();
             }
