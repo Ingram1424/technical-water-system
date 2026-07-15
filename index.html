@@ -7285,15 +7285,9 @@ function deleteExpense(index) {
     if (!project) return;
     
     const exp = project.expenses[index];
-    
-    // Deduct cost and recalculate profit
-    project.cost -= exp.amount;
-    project.profit = project.value - project.cost;
-    
-    // Recalculate cost structure fractions (simplified mock update)
-    // In a real database, we would sum up each type. Let's do a quick calculation!
     project.expenses.splice(index, 1);
     recalculateCostStructure(project);
+    saveToLocalStorage();
     
     showToast(`ลบรายการ ${exp.title} สำเร็จ!`, "success");
     renderCostManagement();
@@ -7301,8 +7295,15 @@ function deleteExpense(index) {
 }
 
 function recalculateCostStructure(project) {
-    if (project.expenses.length === 0) {
+    if (!project.costStructure) {
         project.costStructure = { labor: 0, material: 0, other: 0 };
+    }
+    
+    if (!project.expenses || project.expenses.length === 0) {
+        project.expenses = [];
+        project.costStructure = { labor: 0, material: 0, other: 0 };
+        project.cost = 0;
+        project.profit = project.value || 0;
         return;
     }
     
@@ -7317,10 +7318,15 @@ function recalculateCostStructure(project) {
     });
     
     const sum = laborSum + materialSum + otherSum;
+    project.cost = sum;
+    project.profit = (project.value || 0) - sum;
+    
     if (sum > 0) {
         project.costStructure.labor = parseFloat(((laborSum / sum) * 100).toFixed(1));
         project.costStructure.material = parseFloat(((materialSum / sum) * 100).toFixed(1));
         project.costStructure.other = parseFloat((100 - project.costStructure.labor - project.costStructure.material).toFixed(1));
+    } else {
+        project.costStructure = { labor: 0, material: 0, other: 0 };
     }
 }
 
@@ -7786,9 +7792,8 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!project.expenses) project.expenses = [];
             project.expenses.unshift({ date, title, type, amount, file, fileUrl });
             
-            project.cost += amount;
-            project.profit = project.value - project.cost;
             recalculateCostStructure(project);
+            saveToLocalStorage();
             
             showToast(`บันทึกรายการจ่าย: ${title} จำนวน ${formatNumber(amount)} บาท สำเร็จ!`, "success");
             closeExpenseModal();
