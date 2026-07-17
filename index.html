@@ -2528,7 +2528,7 @@ select.form-control {
 
 .project-charts-row {
     display: grid;
-    grid-template-columns: 1fr 1.5fr;
+    grid-template-columns: 100%;
     gap: 16px;
 }
 
@@ -3757,13 +3757,6 @@ body.public-view-mode #public-view-header {
                                     <div class="only-customer text-center py-4 text-muted font-sm">
                                         <i class="fa-solid fa-eye-slash mb-2 fs-4"></i>
                                         <p>ไม่ได้รับสิทธิ์ให้เห็นข้อมูลต้นทุนและค่าใช้จ่าย</p>
-                                    </div>
-                                </div>
-                                <!-- Yearly Comparison Chart Card -->
-                                <div class="chart-container-card">
-                                    <h4 class="chart-title">เปรียบเทียบความก้าวหน้าโครงการรายปี (2024 - 2026)</h4>
-                                    <div class="chart-wrapper">
-                                        <canvas id="projectYearlyComparisonChart"></canvas>
                                     </div>
                                 </div>
                             </div>
@@ -6241,12 +6234,14 @@ function renderSubnavProjectDonutChart(inprogress, completed, delayed) {
 }
 
 function renderSubnavYearlyComparisonChart(customerName) {
+    const canvas = document.getElementById('projectYearlyComparisonChart');
+    if (!canvas) return;
     if (typeof Chart === "undefined") {
         console.warn("Chart.js is not loaded.");
         return;
     }
     try {
-        const ctx = document.getElementById('projectYearlyComparisonChart').getContext('2d');
+        const ctx = canvas.getContext('2d');
         if (projectYearlyComparisonChart) {
             projectYearlyComparisonChart.destroy();
         }
