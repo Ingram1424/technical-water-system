@@ -3675,19 +3675,11 @@ body.public-view-mode #public-view-header {
                         <!-- Subtab 1: ข้อมูลโครงการ (General Info Dashboard) -->
                         <div id="subtab-general-info-view" class="subtab-panel active">
                             <!-- Project-level KPI Summary -->
-                            <div class="mini-kpi-grid">
+                            <div class="mini-kpi-grid" style="grid-template-columns: repeat(3, 1fr);">
                                 <div class="mini-kpi-card blue">
-                                    <div class="mini-icon"><i class="fa-solid fa-folder-tree"></i></div>
-                                    <div class="mini-lbl-val">
-                                        <span class="lbl">งานย่อยทั้งหมด</span>
-                                        <h3 class="val" id="detail-total-jobs">0</h3>
-                                    </div>
-                                    <span class="unit">รายการ</span>
-                                </div>
-                                <div class="mini-kpi-card green">
                                     <div class="mini-icon"><i class="fa-solid fa-circle-play"></i></div>
                                     <div class="mini-lbl-val">
-                                        <span class="lbl">งานย่อยกำลังทำ</span>
+                                        <span class="lbl">งานที่กำลังเสนอราคา</span>
                                         <h3 class="val" id="detail-inprogress-jobs">0</h3>
                                     </div>
                                     <span class="unit">รายการ</span>
@@ -3695,15 +3687,15 @@ body.public-view-mode #public-view-header {
                                 <div class="mini-kpi-card teal">
                                     <div class="mini-icon"><i class="fa-solid fa-circle-check"></i></div>
                                     <div class="mini-lbl-val">
-                                        <span class="lbl">งานย่อยเสร็จแล้ว</span>
+                                        <span class="lbl">งานเสร็จแล้วรอส่งงาน</span>
                                         <h3 class="val" id="detail-completed-jobs">0</h3>
                                     </div>
                                     <span class="unit">รายการ</span>
                                 </div>
-                                <div class="mini-kpi-card red">
-                                    <div class="mini-icon"><i class="fa-solid fa-circle-exclamation"></i></div>
+                                <div class="mini-kpi-card orange">
+                                    <div class="mini-icon"><i class="fa-solid fa-circle-check"></i></div>
                                     <div class="mini-lbl-val">
-                                        <span class="lbl">งานย่อยล่าช้า</span>
+                                        <span class="lbl">งานอนุมัติ</span>
                                         <h3 class="val" id="detail-delayed-jobs">0</h3>
                                     </div>
                                     <span class="unit">รายการ</span>
@@ -6108,7 +6100,6 @@ function renderSubnavProjectWorkspace() {
 
 function renderSubnavGeneralInfo(project) {
     // Mini KPIs
-    document.getElementById("detail-total-jobs").textContent = project.jobs.total;
     document.getElementById("detail-inprogress-jobs").textContent = project.jobs.inprogress;
     document.getElementById("detail-completed-jobs").textContent = project.jobs.completed;
     document.getElementById("detail-delayed-jobs").textContent = project.jobs.delayed;
@@ -6161,27 +6152,21 @@ function renderSubnavProjectBarChart(wb) {
                 labels: categories,
                 datasets: [
                     {
-                        label: 'ทั้งหมด',
-                        data: total,
-                        backgroundColor: '#64748b', // Cool grey
-                        borderRadius: 2
-                    },
-                    {
-                        label: 'กำลังดำเนินการ',
+                        label: 'กำลังเสนอราคา',
                         data: inprogress,
                         backgroundColor: '#1d4ed8', // Dark Blue
                         borderRadius: 2
                     },
                     {
-                        label: 'เสร็จแล้ว',
+                        label: 'เสร็จแล้วรอส่งงาน',
                         data: completed,
                         backgroundColor: '#10b981', // Green
                         borderRadius: 2
                     },
                     {
-                        label: 'ล่าช้า',
+                        label: 'งานอนุมัติ',
                         data: delayed,
-                        backgroundColor: '#ef4444', // Red
+                        backgroundColor: '#f59e0b', // Amber/Orange
                         borderRadius: 2
                     }
                 ]
@@ -6234,13 +6219,13 @@ function renderSubnavProjectDonutChart(inprogress, completed, delayed) {
             type: 'doughnut',
             data: {
                 labels: [
-                    `กำลังดำเนินการ ${ipPercent}%`, 
-                    `เสร็จแล้ว ${compPercent}%`, 
-                    `ล่าช้า ${delayPercent}%`
+                    `กำลังเสนอราคา ${ipPercent}%`, 
+                    `เสร็จแล้วรอส่งงาน ${compPercent}%`, 
+                    `งานอนุมัติ ${delayPercent}%`
                 ],
                 datasets: [{
                     data: [inprogress, completed, delayed],
-                    backgroundColor: ['#134074', '#10b981', '#ef4444'],
+                    backgroundColor: ['#134074', '#10b981', '#f59e0b'],
                     borderWidth: 2,
                     hoverOffset: 4
                 }]
