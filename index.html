@@ -4173,7 +4173,7 @@ body.public-view-mode #public-view-header {
                     
                     <!-- Photos Attachment Section -->
                     <div class="form-group mt-3" style="border-top: 1px dashed var(--border-color); padding-top: 14px;">
-                        <label class="form-label" style="font-weight: 600; color: var(--navy-dark);"><i class="fa-solid fa-images text-blue mr-1"></i> แนบรูปภาพการปฏิบัติงาน (อัปโหลดภาพหน้างาน - สูงสุด 10 ภาพ)</label>
+                        <label class="form-label" style="font-weight: 600; color: var(--navy-dark);"><i class="fa-solid fa-images text-blue mr-1"></i> แนบรูปภาพการปฏิบัติงาน (อัปโหลดภาพหน้างาน - สูงสุด 20 ภาพ)</label>
                         <input type="file" id="report-photos" class="form-control" accept="image/*" multiple style="padding: 6px 12px; height: auto; margin-top: 6px;">
                         <div id="report-photos-preview" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px;"></div>
                     </div>
@@ -8344,8 +8344,8 @@ document.addEventListener("DOMContentLoaded", () => {
         photoInputEl.addEventListener("change", async function() {
             const files = Array.from(photoInputEl.files);
             
-            if (currentPhotosList.length + files.length > 10) {
-                showToast("สามารถแนบรูปภาพได้สูงสุด 10 ภาพ", "warning");
+            if (currentPhotosList.length + files.length > 20) {
+                showToast("สามารถแนบรูปภาพได้สูงสุด 20 ภาพ", "warning");
                 photoInputEl.value = "";
                 return;
             }
