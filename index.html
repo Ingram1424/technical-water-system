@@ -725,6 +725,10 @@ select.form-control {
 .kpi-card.red .kpi-icon-container { background-color: rgba(220, 38, 38, 0.08); color: var(--color-delayed); }
 .kpi-card.red .kpi-value { color: var(--color-delayed); }
 
+.kpi-card.orange { border-top: 4px solid #f59e0b; }
+.kpi-card.orange .kpi-icon-container { background-color: rgba(245, 158, 11, 0.08); color: #f59e0b; }
+.kpi-card.orange .kpi-value { color: #f59e0b; }
+
 .kpi-card.purple { 
     border-top: 4px solid var(--color-branches); 
     overflow: visible !important;
@@ -798,6 +802,12 @@ select.form-control {
 
 .chart-container-card.span-2 {
     grid-column: span 2;
+}
+.chart-container-card.span-3 {
+    grid-column: span 3;
+}
+.chart-container-card.span-4 {
+    grid-column: span 4;
 }
 
 .chart-title {
@@ -1984,7 +1994,9 @@ select.form-control {
     .analytics-grid {
         grid-template-columns: repeat(2, 1fr);
     }
-    .analytics-grid .chart-container-card.span-2 {
+    .analytics-grid .chart-container-card.span-2,
+    .analytics-grid .chart-container-card.span-3,
+    .analytics-grid .chart-container-card.span-4 {
         grid-column: span 2;
     }
     .dashboard-double-column {
@@ -2063,7 +2075,9 @@ select.form-control {
     .analytics-grid {
         grid-template-columns: 100%;
     }
-    .analytics-grid .chart-container-card.span-2 {
+    .analytics-grid .chart-container-card.span-2,
+    .analytics-grid .chart-container-card.span-3,
+    .analytics-grid .chart-container-card.span-4 {
         grid-column: 1;
     }
     .benefits-grid {
@@ -3254,8 +3268,8 @@ body.public-view-mode #public-view-header {
                                 <i class="fa-solid fa-folder-tree"></i>
                             </div>
                             <div class="kpi-content">
-                                <span class="kpi-label">งานทั้งหมด</span>
-                                <h3 class="kpi-value" id="kpi-total-jobs">268</h3>
+                                <span class="kpi-label">งาน PO ทั้งหมด</span>
+                                <h3 class="kpi-value" id="kpi-total-jobs">0</h3>
                                 <span class="kpi-unit">รายการ</span>
                             </div>
                             <div class="kpi-glow"></div>
@@ -3267,7 +3281,7 @@ body.public-view-mode #public-view-header {
                             </div>
                             <div class="kpi-content">
                                 <span class="kpi-label">งานที่กำลังดำเนินการ</span>
-                                <h3 class="kpi-value" id="kpi-inprogress-jobs">152</h3>
+                                <h3 class="kpi-value" id="kpi-inprogress-jobs">0</h3>
                                 <span class="kpi-unit">รายการ</span>
                             </div>
                             <div class="kpi-glow"></div>
@@ -3279,19 +3293,19 @@ body.public-view-mode #public-view-header {
                             </div>
                             <div class="kpi-content">
                                 <span class="kpi-label">งานที่เสร็จ</span>
-                                <h3 class="kpi-value" id="kpi-completed-jobs">86</h3>
+                                <h3 class="kpi-value" id="kpi-completed-jobs">0</h3>
                                 <span class="kpi-unit">รายการ</span>
                             </div>
                             <div class="kpi-glow"></div>
                         </div>
                         <!-- KPI 4 -->
-                        <div class="kpi-card red">
+                        <div class="kpi-card orange">
                             <div class="kpi-icon-container">
-                                <i class="fa-solid fa-circle-exclamation"></i>
+                                <i class="fa-solid fa-circle-pause"></i>
                             </div>
                             <div class="kpi-content">
-                                <span class="kpi-label">งานที่ล่าช้า</span>
-                                <h3 class="kpi-value" id="kpi-delayed-jobs">30</h3>
+                                <span class="kpi-label">งานรออนุมัติ</span>
+                                <h3 class="kpi-value" id="kpi-pending-approval-jobs">0</h3>
                                 <span class="kpi-unit">รายการ</span>
                             </div>
                             <div class="kpi-glow"></div>
@@ -3313,73 +3327,110 @@ body.public-view-mode #public-view-header {
                     <!-- Visual Analytics Grid -->
                     <div class="analytics-grid">
                         <!-- Bar Chart -->
-                        <div class="chart-container-card span-2">
+                        <div class="chart-container-card span-3">
                             <h4 class="chart-title">สรุปโครงการแยกตามโรงพยาบาล</h4>
-                            <div class="chart-wrapper">
+                            <div class="chart-wrapper" style="height: 320px;">
                                 <canvas id="overallBarChart"></canvas>
                             </div>
                         </div>
                         <!-- Donut Chart -->
-                        <div class="chart-container-card">
+                        <div class="chart-container-card span-1">
                             <h4 class="chart-title">สถานะภาพรวมของโครงการ</h4>
-                            <div class="chart-wrapper donut-wrapper">
+                            <div class="chart-wrapper donut-wrapper" style="height: 320px; display: flex; align-items: center; justify-content: center;">
                                 <canvas id="overallDonutChart"></canvas>
                             </div>
                         </div>
-                        <!-- Progress & Financial Card -->
-                        <div class="chart-container-card">
-                            <h4 class="chart-title">ความก้าวหน้าโครงการ</h4>
-                            <div class="progress-section">
-                                <div class="progress-item-group">
-                                    <div class="progress-text-label">
-                                        <span>แผนงาน (Planned)</span>
-                                        <span class="progress-val-text" id="prog-planned-text">68%</span>
+                        <!-- Progress & Financial Card (Wide layout) -->
+                        <div class="chart-container-card span-4" style="margin-top: 8px;">
+                            <div style="display: grid; grid-template-columns: 1.2fr 1.3fr 1.5fr; gap: 24px; align-items: start;">
+                                <!-- Left Column: Dropdowns -->
+                                <div style="display: flex; flex-direction: column; gap: 12px; padding-right: 20px; border-right: 1px solid var(--border-color);">
+                                    <h4 class="chart-title" style="margin-bottom: 4px;">ตัวเลือกการกรองข้อมูล</h4>
+                                    <div class="form-group">
+                                        <label class="form-label" style="font-size: 11px; font-weight: 700; color: var(--navy-medium);">เลือกโรงพยาบาล</label>
+                                        <select id="kpi-filter-hospital" class="form-control" style="font-size: 12px; padding: 6px 10px;">
+                                            <option value="all">ทั้งหมดทุกโรงพยาบาล</option>
+                                            <option value="โรงพยาบาลพญาไท 1">โรงพยาบาลพญาไท 1</option>
+                                            <option value="โรงพยาบาลพญาไท 2">โรงพยาบาลพญาไท 2</option>
+                                            <option value="โรงพยาบาลพญาไท 3">โรงพยาบาลพญาไท 3</option>
+                                            <option value="โรงพยาบาลพญาไท นวมินทร์">โรงพยาบาลพญาไท นวมินทร์</option>
+                                            <option value="โรงพยาบาลพญาไท บ่อวิน">โรงพยาบาลพญาไท บ่อวิน</option>
+                                            <option value="โรงพยาบาลพญาไท พหลโยธิน">โรงพยาบาลพญาไท พหลโยธิน</option>
+                                            <option value="โรงพยาบาลพญาไท ศรีราชา">โรงพยาบาลพญาไท ศรีราชา</option>
+                                            <option value="โรงพยาบาลเปาโล พระประแดง">โรงพยาบาลเปาโล พระประแดง</option>
+                                            <option value="โรงพยาบาลเปาโล รังสิต">โรงพยาบาลเปาโล รังสิต</option>
+                                            <option value="โรงพยาบาลเปาโล สมุทรปราการ">โรงพยาบาลเปาโล สมุทรปราการ</option>
+                                            <option value="โรงพยาบาลเปาโล เกษตร">โรงพยาบาลเปาโล เกษตร</option>
+                                            <option value="โรงพยาบาลเปาโล โชคชัย 4">โรงพยาบาลเปาโล โชคชัย 4</option>
+                                        </select>
                                     </div>
-                                    <div class="progress-bar-bg">
-                                        <div class="progress-bar-fill blue-fill" id="prog-planned-bar" style="width: 68%"></div>
-                                    </div>
-                                </div>
-                                <div class="progress-item-group">
-                                    <div class="progress-text-label">
-                                        <span>ผลงานจริง (Actual)</span>
-                                        <span class="progress-val-text" id="prog-actual-text">62%</span>
-                                    </div>
-                                    <div class="progress-bar-bg">
-                                        <div class="progress-bar-fill green-fill" id="prog-actual-bar" style="width: 62%"></div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <h4 class="chart-title mt-4">สรุปค่าใช้จ่ายโครงการ</h4>
-                            <div class="financial-summary-widget hide-customer">
-                                <div class="fin-row">
-                                    <div class="fin-box">
-                                        <span class="fin-lbl">ต้นทุนรวม</span>
-                                        <span class="fin-val text-navy" id="fin-cost-summary">12,850,000</span>
-                                        <span class="fin-unit">บาท</span>
-                                    </div>
-                                    <div class="fin-box">
-                                        <span class="fin-lbl">กำไร</span>
-                                        <span class="fin-val text-green" id="fin-profit-summary">2,350,000</span>
-                                        <span class="fin-unit">บาท</span>
+                                    <div class="form-group">
+                                        <label class="form-label" style="font-size: 11px; font-weight: 700; color: var(--navy-medium);">เลือกโครงการ</label>
+                                        <select id="kpi-filter-project" class="form-control" style="font-size: 12px; padding: 6px 10px;">
+                                            <option value="all">ทั้งหมดทุกโครงการ</option>
+                                        </select>
                                     </div>
                                 </div>
-                                <div class="fin-row mt-2">
-                                    <div class="fin-box">
-                                        <span class="fin-lbl">ขาดทุน</span>
-                                        <span class="fin-val text-muted" id="fin-loss-summary">-</span>
-                                        <span class="fin-unit">บาท</span>
-                                    </div>
-                                    <div class="fin-box highlighted-profit">
-                                        <span class="fin-lbl">กำไรสุทธิ</span>
-                                        <span class="fin-val text-orange" id="fin-netprofit-summary">2,350,000</span>
-                                        <span class="fin-unit">บาท</span>
+                                
+                                <!-- Middle Column: Progress -->
+                                <div style="padding-right: 20px; border-right: 1px solid var(--border-color);">
+                                    <h4 class="chart-title">ความก้าวหน้าโครงการ</h4>
+                                    <div class="progress-section" style="margin-top: 16px;">
+                                        <div class="progress-item-group">
+                                            <div class="progress-text-label">
+                                                <span>แผนงาน (Planned)</span>
+                                                <span class="progress-val-text" id="prog-planned-text">0%</span>
+                                            </div>
+                                            <div class="progress-bar-bg">
+                                                <div class="progress-bar-fill blue-fill" id="prog-planned-bar" style="width: 0%"></div>
+                                            </div>
+                                        </div>
+                                        <div class="progress-item-group" style="margin-top: 20px;">
+                                            <div class="progress-text-label">
+                                                <span>ผลงานจริง (Actual)</span>
+                                                <span class="progress-val-text" id="prog-actual-text">0%</span>
+                                            </div>
+                                            <div class="progress-bar-bg">
+                                                <div class="progress-bar-fill green-fill" id="prog-actual-bar" style="width: 0%"></div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="only-customer text-center py-4 text-muted font-sm">
-                                <i class="fa-solid fa-eye-slash mb-2 fs-4"></i>
-                                <p>ไม่ได้รับสิทธิ์ให้เห็นข้อมูลต้นทุนและค่าใช้จ่าย</p>
+                                
+                                <!-- Right Column: Financials -->
+                                <div>
+                                    <h4 class="chart-title">สรุปค่าใช้จ่ายโครงการ</h4>
+                                    <div class="financial-summary-widget hide-customer" style="margin-top: 8px;">
+                                        <div class="fin-row">
+                                            <div class="fin-box" style="padding: 10px;">
+                                                <span class="fin-lbl">ต้นทุนรวม</span>
+                                                <span class="fin-val text-navy" id="fin-cost-summary">0</span>
+                                                <span class="fin-unit">บาท</span>
+                                            </div>
+                                            <div class="fin-box" style="padding: 10px;">
+                                                <span class="fin-lbl">กำไร</span>
+                                                <span class="fin-val text-green" id="fin-profit-summary">0</span>
+                                                <span class="fin-unit">บาท</span>
+                                            </div>
+                                        </div>
+                                        <div class="fin-row mt-2">
+                                            <div class="fin-box" style="padding: 10px;">
+                                                <span class="fin-lbl">ขาดทุน</span>
+                                                <span class="fin-val text-muted" id="fin-loss-summary">-</span>
+                                                <span class="fin-unit">บาท</span>
+                                            </div>
+                                            <div class="fin-box highlighted-profit" style="padding: 10px;">
+                                                <span class="fin-lbl">กำไรสุทธิ</span>
+                                                <span class="fin-val text-orange" id="fin-netprofit-summary">0</span>
+                                                <span class="fin-unit">บาท</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="only-customer text-center py-4 text-muted font-sm">
+                                        <i class="fa-solid fa-eye-slash mb-2 fs-4"></i>
+                                        <p>ไม่ได้รับสิทธิ์ให้เห็นข้อมูลต้นทุนและค่าใช้จ่าย</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -4478,6 +4529,7 @@ body.public-view-mode #public-view-header {
                             <option value="เสร็จสิ้น">เสร็จสิ้น</option>
                             <option value="หยุดชั่วคราว">หยุดชั่วคราว</option>
                             <option value="รอดำเนินการ">รอดำเนินการ</option>
+                            <option value="รออนุมัติ">รออนุมัติ</option>
                         </select>
                     </div>
                     <div class="form-group mt-3">
@@ -4821,6 +4873,123 @@ function updateSelectedCostProject(code) {
     sessionStorage.setItem("technical_water_last_cost_project", code);
 }
 
+function populateDashboardKpiProjects() {
+    const hospitalSelect = document.getElementById("kpi-filter-hospital");
+    const projectSelect = document.getElementById("kpi-filter-project");
+    if (!hospitalSelect || !projectSelect) return;
+    
+    const hospitalVal = hospitalSelect.value;
+    const yearAVal = appState.selectedYearFilterA || "2025";
+    const yearBVal = appState.selectedYearFilterB || "2026";
+    
+    const projectsA = yearAVal === "all"
+        ? Object.values(projectsData)
+        : Object.values(projectsData).filter(p => p.year.toString() === yearAVal);
+    const projectsB = yearBVal === "all"
+        ? Object.values(projectsData)
+        : Object.values(projectsData).filter(p => p.year.toString() === yearBVal);
+        
+    const combinedProjectsMap = {};
+    projectsA.forEach(p => { combinedProjectsMap[p.code] = p; });
+    projectsB.forEach(p => { combinedProjectsMap[p.code] = p; });
+    const combinedProjects = Object.values(combinedProjectsMap);
+    
+    let filtered = combinedProjects;
+    if (hospitalVal !== "all") {
+        filtered = filtered.filter(p => p.customer === hospitalVal);
+    }
+    
+    const currentVal = projectSelect.value;
+    
+    projectSelect.innerHTML = '<option value="all">ทั้งหมดทุกโครงการ</option>';
+    
+    filtered.forEach(p => {
+        const opt = document.createElement("option");
+        opt.value = p.code;
+        opt.textContent = `${p.code} : ${p.name.replace(/ \(\d{4}\)$/, '')}`;
+        projectSelect.appendChild(opt);
+    });
+    
+    if ([...projectSelect.options].some(opt => opt.value === currentVal)) {
+        projectSelect.value = currentVal;
+    } else {
+        projectSelect.value = "all";
+    }
+}
+
+function updateDashboardProgressAndFinancials() {
+    const hospitalSelect = document.getElementById("kpi-filter-hospital");
+    const projectSelect = document.getElementById("kpi-filter-project");
+    if (!hospitalSelect || !projectSelect) return;
+    
+    const hospitalVal = hospitalSelect.value;
+    const projectVal = projectSelect.value;
+    
+    const yearAVal = appState.selectedYearFilterA || "2025";
+    const yearBVal = appState.selectedYearFilterB || "2026";
+    
+    const projectsA = yearAVal === "all"
+        ? Object.values(projectsData)
+        : Object.values(projectsData).filter(p => p.year.toString() === yearAVal);
+    const projectsB = yearBVal === "all"
+        ? Object.values(projectsData)
+        : Object.values(projectsData).filter(p => p.year.toString() === yearBVal);
+        
+    const combinedProjectsMap = {};
+    projectsA.forEach(p => { combinedProjectsMap[p.code] = p; });
+    projectsB.forEach(p => { combinedProjectsMap[p.code] = p; });
+    const combinedProjects = Object.values(combinedProjectsMap);
+    
+    let filtered = combinedProjects;
+    if (hospitalVal !== "all") {
+        filtered = filtered.filter(p => p.customer === hospitalVal);
+    }
+    if (projectVal !== "all") {
+        filtered = filtered.filter(p => p.code === projectVal);
+    }
+    
+    let plannedProg = 0;
+    let actualProg = 0;
+    let costSum = 0;
+    let profitSum = 0;
+    
+    filtered.forEach(p => {
+        plannedProg += p.plannedProgress || 0;
+        actualProg += p.progress || 0;
+        costSum += p.cost || 0;
+        profitSum += p.profit || 0;
+    });
+    
+    const count = filtered.length;
+    if (count > 0) {
+        plannedProg = Math.round(plannedProg / count);
+        actualProg = Math.round(actualProg / count);
+    } else {
+        plannedProg = 0;
+        actualProg = 0;
+    }
+    
+    document.getElementById("prog-planned-text").textContent = `${plannedProg}%`;
+    document.getElementById("prog-planned-bar").style.width = `${plannedProg}%`;
+    document.getElementById("prog-actual-text").textContent = `${actualProg}%`;
+    document.getElementById("prog-actual-bar").style.width = `${actualProg}%`;
+    
+    document.getElementById("fin-cost-summary").textContent = formatNumber(costSum);
+    document.getElementById("fin-profit-summary").textContent = formatNumber(profitSum);
+    document.getElementById("fin-netprofit-summary").textContent = formatNumber(profitSum);
+    
+    const lossEl = document.getElementById("fin-loss-summary");
+    if (lossEl) {
+        if (profitSum < 0) {
+            lossEl.textContent = formatNumber(Math.abs(profitSum));
+            lossEl.className = "fin-val text-red";
+        } else {
+            lossEl.textContent = "-";
+            lossEl.className = "fin-val text-muted";
+        }
+    }
+}
+
 function renderOverallDashboard() {
     const yearAVal = appState.selectedYearFilterA || "2025";
     const yearBVal = appState.selectedYearFilterB || "2026";
@@ -4845,72 +5014,25 @@ function renderOverallDashboard() {
     let totalJobs = combinedProjects.length;
     let inprogressJobs = 0;
     let completedJobs = 0;
-    let delayedJobs = 0;
-    
-    let plannedProg = 0;
-    let actualProg = 0;
-    
-    let costSum = 0;
-    let profitSum = 0;
-    
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    let pendingApprovalJobs = 0;
     
     combinedProjects.forEach(p => {
-        plannedProg += p.plannedProgress || 0;
-        actualProg += p.progress || 0;
-        
-        costSum += p.cost || 0;
-        profitSum += p.profit || 0;
-        
         // Count projects by status
         if (p.status === "เสร็จสิ้น" || p.status === "เสร็จแล้ว") {
             completedJobs++;
+        } else if (p.status === "รออนุมัติ") {
+            pendingApprovalJobs++;
         } else {
-            // Check if end date is past today
-            const parts = (p.end || "").split("/");
-            let isDelayed = false;
-            if (parts.length === 3) {
-                const endDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-                if (!isNaN(endDate) && endDate < today) {
-                    isDelayed = true;
-                }
-            }
-            if (isDelayed || p.status === "ล่าช้า") {
-                delayedJobs++;
-            } else {
-                inprogressJobs++;
-            }
+            inprogressJobs++;
         }
     });
-    
-    // Average progress values
-    const count = combinedProjects.length;
-    if (count > 0) {
-        plannedProg = Math.round(plannedProg / count);
-        actualProg = Math.round(actualProg / count);
-    } else {
-        plannedProg = 0;
-        actualProg = 0;
-    }
     
     // Bind KPI values
     document.getElementById("kpi-total-jobs").textContent = totalJobs;
     document.getElementById("kpi-inprogress-jobs").textContent = inprogressJobs;
     document.getElementById("kpi-completed-jobs").textContent = completedJobs;
-    document.getElementById("kpi-delayed-jobs").textContent = delayedJobs;
+    document.getElementById("kpi-pending-approval-jobs").textContent = pendingApprovalJobs;
     document.getElementById("kpi-total-branches").textContent = 12; // Always show total branches (12)
-    
-    // Bind Progress Bars
-    document.getElementById("prog-planned-text").textContent = `${plannedProg}%`;
-    document.getElementById("prog-planned-bar").style.width = `${plannedProg}%`;
-    document.getElementById("prog-actual-text").textContent = `${actualProg}%`;
-    document.getElementById("prog-actual-bar").style.width = `${actualProg}%`;
-    
-    // Bind Financial Summary
-    document.getElementById("fin-cost-summary").textContent = formatNumber(costSum);
-    document.getElementById("fin-profit-summary").textContent = formatNumber(profitSum);
-    document.getElementById("fin-netprofit-summary").textContent = formatNumber(profitSum);
     
     // Render Bottom Hospital Cards Grid (Show all projects that are not completed across all years)
     const gridProjects = Object.values(projectsData).filter(p => 
@@ -4927,7 +5049,7 @@ function renderOverallDashboard() {
     
     const inprogressCounts = Array(12).fill(0);
     const completedCounts = Array(12).fill(0);
-    const delayedCounts = Array(12).fill(0);
+    const pendingApprovalCounts = Array(12).fill(0);
     
     combinedProjects.forEach(p => {
         const idx = hospitalsList.indexOf(p.customer);
@@ -4935,29 +5057,22 @@ function renderOverallDashboard() {
         
         if (p.status === "เสร็จสิ้น" || p.status === "เสร็จแล้ว") {
             completedCounts[idx]++;
+        } else if (p.status === "รออนุมัติ") {
+            pendingApprovalCounts[idx]++;
         } else {
-            // Check if end date is past today
-            const parts = (p.end || "").split("/");
-            let isDelayed = false;
-            if (parts.length === 3) {
-                const endDate = new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]));
-                if (!isNaN(endDate) && endDate < today) {
-                    isDelayed = true;
-                }
-            }
-            if (isDelayed || p.status === "ล่าช้า") {
-                delayedCounts[idx]++;
-            } else {
-                inprogressCounts[idx]++;
-            }
+            inprogressCounts[idx]++;
         }
     });
     
-    renderOverallBarChart(hospitalsList, inprogressCounts, completedCounts, delayedCounts);
-    renderOverallDonutChart(inprogressJobs, completedJobs, delayedJobs);
+    renderOverallBarChart(hospitalsList, inprogressCounts, completedCounts, pendingApprovalCounts);
+    renderOverallDonutChart(inprogressJobs, completedJobs, pendingApprovalJobs);
+    
+    // Populate dropdowns & update progress/financials
+    populateDashboardKpiProjects();
+    updateDashboardProgressAndFinancials();
 }
 
-function renderOverallBarChart(labels, inprogress, completed, delayed) {
+function renderOverallBarChart(labels, inprogress, completed, pendingApproval) {
     if (typeof Chart === "undefined") {
         console.warn("Chart.js is not loaded.");
         return;
@@ -4983,9 +5098,9 @@ function renderOverallBarChart(labels, inprogress, completed, delayed) {
                 borderRadius: 4
             },
             {
-                label: 'ล่าช้า',
-                data: delayed,
-                backgroundColor: '#ef4444', // Red
+                label: 'รออนุมัติ',
+                data: pendingApproval,
+                backgroundColor: '#f59e0b', // Amber/Orange
                 borderRadius: 4
             }
         ];
@@ -5477,7 +5592,7 @@ function switchRole(roleName) {
 // --- RENDERING FUNCTIONS ---
 
 // 1. Overall Dashboard (Section 1)
-function renderOverallDonutChart(inprogress, completed, delayed) {
+function renderOverallDonutChart(inprogress, completed, pendingApproval) {
     if (typeof Chart === "undefined") {
         console.warn("Chart.js is not loaded.");
         return;
@@ -5489,10 +5604,10 @@ function renderOverallDonutChart(inprogress, completed, delayed) {
             overallDonutChart.destroy();
         }
         
-        const total = inprogress + completed + delayed;
+        const total = inprogress + completed + pendingApproval;
         const ipPercent = total > 0 ? Math.round((inprogress / total) * 100) : 0;
         const compPercent = total > 0 ? Math.round((completed / total) * 100) : 0;
-        const delayPercent = total > 0 ? 100 - ipPercent - compPercent : 0;
+        const pendingPercent = total > 0 ? 100 - ipPercent - compPercent : 0;
 
         overallDonutChart = new Chart(ctx, {
             type: 'doughnut',
@@ -5500,11 +5615,11 @@ function renderOverallDonutChart(inprogress, completed, delayed) {
                 labels: [
                     `กำลังดำเนินการ ${ipPercent}%`, 
                     `เสร็จแล้ว ${compPercent}%`, 
-                    `ล่าช้า ${delayPercent}%`
+                    `รออนุมัติ ${pendingPercent}%`
                 ],
                 datasets: [{
-                    data: [inprogress, completed, delayed],
-                    backgroundColor: ['#134074', '#10b981', '#ef4444'],
+                    data: [inprogress, completed, pendingApproval],
+                    backgroundColor: ['#134074', '#10b981', '#f59e0b'],
                     borderWidth: 2,
                     hoverOffset: 4
                 }]
@@ -7502,6 +7617,21 @@ document.addEventListener("DOMContentLoaded", () => {
         yearFilterB.addEventListener("change", function() {
             appState.selectedYearFilterB = this.value;
             renderOverallDashboard();
+        });
+    }
+
+    // Dashboard KPI Filters (Hospital and Project)
+    const kpiFilterHospital = document.getElementById("kpi-filter-hospital");
+    const kpiFilterProject = document.getElementById("kpi-filter-project");
+    if (kpiFilterHospital) {
+        kpiFilterHospital.addEventListener("change", function() {
+            populateDashboardKpiProjects();
+            updateDashboardProgressAndFinancials();
+        });
+    }
+    if (kpiFilterProject) {
+        kpiFilterProject.addEventListener("change", function() {
+            updateDashboardProgressAndFinancials();
         });
     }
 
