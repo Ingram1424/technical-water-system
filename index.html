@@ -3128,6 +3128,13 @@ body.public-view-mode #public-view-header {
                         <span class="sub-label">ค่าใช้จ่ายโครงการ</span>
                     </div>
                 </a>
+                <a href="#" class="nav-item hide-accounting hide-customer" data-view="permissions-mgmt">
+                    <i class="fa-solid fa-user-shield"></i>
+                    <div class="nav-label">
+                        <span class="main-label">Permissions</span>
+                        <span class="sub-label">จัดการสิทธิ์ผู้ใช้</span>
+                    </div>
+                </a>
             </nav>
             <div class="sidebar-footer">
                 <span class="version">v1.4.2 PRO</span>
@@ -3216,11 +3223,27 @@ body.public-view-mode #public-view-header {
                                     <div class="role-desc">เข้าถึงข้อมูลได้ทุกอย่างยกเว้นลบข้อมูล</div>
                                 </div>
                             </a>
-                            <a href="#" class="role-option" data-role="customer">
+                            <div style="border-top: 1px solid var(--border-color); margin: 4px 0;"></div>
+                            <div style="font-size: 10px; font-weight: 700; color: var(--text-muted); padding: 4px 6px; letter-spacing: 0.6px; text-transform: uppercase;">บัญชีลูกค้า (Customer Users)</div>
+                            <a href="#" class="role-option" data-role="customer" data-customer-user="user1">
                                 <i class="fa-solid fa-user-tie"></i>
                                 <div>
-                                    <div class="role-name">Customer (ลูกค้า รพ.)</div>
-                                    <div class="role-desc">เข้าถึงได้เฉพาะสิทธิ์โครงการตนเอง ไม่เห็นต้นทุน</div>
+                                    <div class="role-name">Customer 1 : BKK Hospital Rep</div>
+                                    <div class="role-desc">สิทธิ์ตาม PM กำหนด · ไม่เห็นต้นทุน</div>
+                                </div>
+                            </a>
+                            <a href="#" class="role-option" data-role="customer" data-customer-user="user2">
+                                <i class="fa-solid fa-user-tie"></i>
+                                <div>
+                                    <div class="role-name">Customer 2 : Paolo Rep</div>
+                                    <div class="role-desc">สิทธิ์ตาม PM กำหนด · ไม่เห็นต้นทุน</div>
+                                </div>
+                            </a>
+                            <a href="#" class="role-option" data-role="customer" data-customer-user="user3">
+                                <i class="fa-solid fa-user-tie"></i>
+                                <div>
+                                    <div class="role-name">Customer 3 : Phyathai Rep</div>
+                                    <div class="role-desc">สิทธิ์ตาม PM กำหนด · ไม่เห็นต้นทุน</div>
                                 </div>
                             </a>
                             <div style="border-top: 1px solid var(--border-color); margin-top: 8px; padding-top: 8px; display: flex; flex-direction: column; gap: 6px;">
@@ -3663,6 +3686,66 @@ body.public-view-mode #public-view-header {
                         <i class="fa-solid fa-eye-slash mb-3 fs-1 text-danger"></i>
                         <h3>ไม่มีสิทธิ์เข้าถึงหน้านี้</h3>
                         <p class="max-w-md mx-auto mt-2">ในฐานะลูกค้า (Customer) ข้อมูลทางการเงิน เช่น ต้นทุนของโครงการ โครงสร้างต้นทุน และรายละเอียดธุรกรรมจะถูกปิดกั้นเพื่อรักษาความลับทางการค้า</p>
+                    </div>
+                </section>
+            </div>
+
+            <div id="permissions-mgmt-view" class="view-panel">
+                <section class="section-card">
+                    <div class="section-header">
+                        <h2 class="section-title"><i class="fa-solid fa-user-shield text-blue mr-2"></i> ระบบจัดการสิทธิ์ผู้ใช้งาน (User Access Permissions Management)</h2>
+                        <span style="font-size: 12px; color: var(--text-muted); font-weight: 500;">กำหนดสิทธิ์ให้บัญชีลูกค้า (Customer) ในการเข้าถึงโรงพยาบาลและโครงการย่อย</span>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 24px; margin-top: 16px;">
+                        <!-- Select User to Manage -->
+                        <div style="background: var(--bg-light); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; display: flex; align-items: center; gap: 16px;">
+                            <label style="font-weight: 700; color: var(--navy-dark); font-size: 13.5px; white-space: nowrap; margin: 0;">
+                                <i class="fa-solid fa-user text-blue mr-1"></i> เลือกบัญชีลูกค้าผู้ใช้งาน (Customer User):
+                            </label>
+                            <select id="perm-user-selector" class="form-control" style="max-width: 320px; font-family: 'Prompt'; font-weight: 600;">
+                                <option value="user1">Customer 1 : BKK Hospital Representative</option>
+                                <option value="user2">Customer 2 : Paolo Representative</option>
+                                <option value="user3">Customer 3 : Phyathai Representative</option>
+                            </select>
+                        </div>
+
+                        <!-- 2 Columns Checklist Layout -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                            <!-- Column 1: Allowed Hospitals -->
+                            <div style="border: 1px solid var(--border-color); border-radius: var(--radius-md); background: #ffffff; display: flex; flex-direction: column; overflow: hidden; box-shadow: var(--card-shadow);">
+                                <div style="background: var(--bg-light); padding: 12px 16px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+                                    <h4 style="font-size: 13.5px; font-weight: 700; color: var(--navy-dark); margin: 0;">
+                                        <i class="fa-solid fa-square-check text-blue mr-1"></i> สิทธิ์เข้าถึงโรงพยาบาล (Allowed Hospitals)
+                                    </h4>
+                                    <button type="button" id="btn-toggle-all-hospitals" class="btn btn-xs btn-outline-blue" style="font-size: 10px; padding: 2px 6px; cursor: pointer;">เลือกทั้งหมด</button>
+                                </div>
+                                <div id="perm-hospitals-checkbox-list" style="padding: 16px; display: flex; flex-direction: column; gap: 10px; max-height: 380px; overflow-y: auto; scrollbar-width: thin;">
+                                    <!-- Populated dynamically -->
+                                </div>
+                            </div>
+
+                            <!-- Column 2: Allowed Projects -->
+                            <div style="border: 1px solid var(--border-color); border-radius: var(--radius-md); background: #ffffff; display: flex; flex-direction: column; overflow: hidden; box-shadow: var(--card-shadow);">
+                                <div style="background: var(--bg-light); padding: 12px 16px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between;">
+                                    <h4 style="font-size: 13.5px; font-weight: 700; color: var(--navy-dark); margin: 0;">
+                                        <i class="fa-solid fa-folder-tree text-blue mr-1"></i> สิทธิ์เข้าถึงโครงการรายชิ้น (Allowed Projects)
+                                    </h4>
+                                    <button type="button" id="btn-toggle-all-projects" class="btn btn-xs btn-outline-blue" style="font-size: 10px; padding: 2px 6px; cursor: pointer;">เลือกทั้งหมด</button>
+                                </div>
+                                <div id="perm-projects-checkbox-list" style="padding: 16px; display: flex; flex-direction: column; gap: 10px; max-height: 380px; overflow-y: auto; scrollbar-width: thin;">
+                                    <!-- Populated dynamically -->
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Footer Control Actions -->
+                        <div style="display: flex; justify-content: flex-end; gap: 12px; border-top: 1px solid var(--border-color); padding-top: 16px; margin-top: 8px;">
+                            <button type="button" id="btn-reset-permissions" class="btn btn-outline" style="font-family: 'Prompt'; font-size: 12px; padding: 8px 18px; cursor: pointer;">รีเซ็ตสิทธิ์เริ่มต้น</button>
+                            <button type="button" id="btn-save-permissions" class="btn btn-primary" style="font-family: 'Prompt'; font-size: 12px; padding: 8px 24px; background: linear-gradient(135deg, var(--primary-blue), #0d47a1); border: none; cursor: pointer;">
+                                <i class="fa-solid fa-floppy-disk mr-1"></i> บันทึกการมอบสิทธิ์
+                            </button>
+                        </div>
                     </div>
                 </section>
             </div>
@@ -4763,18 +4846,33 @@ function populateSubnavHospitals() {
     }
     
     selector.innerHTML = "";
-    
-    // Add "All Hospitals" option
-    const allOpt = document.createElement("option");
-    allOpt.value = "all";
-    allOpt.textContent = "ทั้งหมดทุกโรงพยาบาล";
-    selector.appendChild(allOpt);
 
-    const hospitals = [
+    const allHospitals = [
         "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
         "โรงพยาบาลพญาไท บ่อวิน", "โรงพยาบาลพญาไท พหลโยธิน", "โรงพยาบาลพญาไท ศรีราชา", "โรงพยาบาลเปาโล พระประแดง",
         "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4"
     ];
+
+    // For customer role: filter to allowed hospitals only
+    let hospitals = allHospitals;
+    if (appState.currentRole === "customer") {
+        const cUserKey = appState.currentCustomerUser || "user1";
+        const perms = appState.userPermissions[cUserKey] || { hospitals: [], projects: [] };
+        const allowedH = perms.hospitals || [];
+        const allowedP = perms.projects || [];
+        // Include hospitals where they have direct project access too
+        const extraHospitals = Object.values(projectsData)
+            .filter(p => allowedP.includes(p.code))
+            .map(p => p.customer);
+        const effectiveH = [...new Set([...allowedH, ...extraHospitals])];
+        hospitals = allHospitals.filter(h => effectiveH.includes(h));
+    } else {
+        // Add "All Hospitals" option only for non-customer roles
+        const allOpt = document.createElement("option");
+        allOpt.value = "all";
+        allOpt.textContent = "ทั้งหมดทุกโรงพยาบาล";
+        selector.appendChild(allOpt);
+    }
     
     hospitals.forEach(h => {
         const opt = document.createElement("option");
@@ -4799,11 +4897,20 @@ function populateSubnavProjects(yearFilter) {
     projectSelector.innerHTML = "";
     
     // Filter projects based on hospital and year
-    const projects = Object.values(projectsData).filter(p => {
+    let projects = Object.values(projectsData).filter(p => {
         const hospitalMatch = selectedHospital === "all" || p.customer === selectedHospital;
         const yearMatch = yearFilter === "all" || p.year === parseInt(yearFilter);
         return hospitalMatch && yearMatch;
     });
+
+    // For customer role: further filter by permissions
+    if (appState.currentRole === "customer") {
+        const cUserKey = appState.currentCustomerUser || "user1";
+        const perms = appState.userPermissions[cUserKey] || { hospitals: [], projects: [] };
+        const allowedH = perms.hospitals || [];
+        const allowedP = perms.projects || [];
+        projects = projects.filter(p => allowedH.includes(p.customer) || allowedP.includes(p.code));
+    }
     
     if (projects.length === 0) {
         const opt = document.createElement("option");
@@ -5227,8 +5334,33 @@ const appState = {
     activeProjectTab: "general-info",
     selectedYearFilterA: "2025",
     selectedYearFilterB: "2026",
-    selectedCostYearFilter: "all"
+    selectedCostYearFilter: "all",
+    currentCustomerUser: localStorage.getItem("technical_water_current_customer_user") || "user1",
+    userPermissions: null // Loaded below
 };
+
+// Define default permissions mapping
+const defaultPermissions = {
+    user1: {
+        hospitals: ["โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3"],
+        projects: []
+    },
+    user2: {
+        hospitals: ["โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4"],
+        projects: []
+    },
+    user3: {
+        hospitals: [],
+        projects: [Object.keys(projectsData)[0] || "PO 22026005032"]
+    }
+};
+
+try {
+    const raw = localStorage.getItem("technical_water_user_permissions");
+    appState.userPermissions = raw ? JSON.parse(raw) : defaultPermissions;
+} catch (e) {
+    appState.userPermissions = defaultPermissions;
+}
 
 // --- CHART INSTANCES ---
 let overallBarChart = null;
@@ -5401,7 +5533,7 @@ function showToast(message, type = "success") {
 // View Navigation Handler
 function switchView(viewName) {
     // Check permission rules first
-    if (appState.currentRole === "customer" && (viewName === "cost" || viewName === "dashboard")) {
+    if (appState.currentRole === "customer" && (viewName === "cost" || viewName === "dashboard" || viewName === "permissions-mgmt")) {
         showToast("สิทธิ์ลูกค้าเข้าดูได้เฉพาะหน้าโครงการของตนเองเท่านั้น", "info");
         viewName = "projects-list";
     }
@@ -5448,6 +5580,8 @@ function switchView(viewName) {
         renderCostManagement();
     } else if (viewName === "projects-list") {
         renderSubnavProjectWorkspace();
+    } else if (viewName === "permissions-mgmt") {
+        renderPermissionsManagement();
     }
 }
 
@@ -5474,18 +5608,35 @@ function switchRole(roleName) {
         usernameDisplay.textContent = "Account System";
         showToast("สลับบทบาทเป็น: Accounting (บัญชี) ห้ามลบข้อมูลหลัก", "info");
     } else if (roleName === "customer") {
-        roleBadge.innerHTML = `<i class="fa-solid fa-user-tie"></i> CS (Customer)`;
+        // Determine which customer user and their permissions
+        const cUserKey = appState.currentCustomerUser || "user1";
+        localStorage.setItem("technical_water_current_customer_user", cUserKey);
+        const cUserNames = {
+            user1: "BKK Hospital Rep (Customer 1)",
+            user2: "Paolo Rep (Customer 2)",
+            user3: "Phyathai Rep (Customer 3)"
+        };
+        roleBadge.innerHTML = `<i class="fa-solid fa-user-tie"></i> CS (${cUserNames[cUserKey] || 'Customer'})`;
         roleDisplay.textContent = "Customer View";
-        usernameDisplay.textContent = "BKK Hospital Rep";
-        showToast("สลับบทบาทเป็น: Customer (ลูกค้า) จำกัดสิทธิ์การมองเห็นและปกปิดข้อมูลต้นทุน", "info");
+        usernameDisplay.textContent = cUserNames[cUserKey] || "Customer";
+        showToast(`สลับบทบาทเป็น: ${cUserNames[cUserKey] || 'Customer'} — สิทธิ์จำกัดตาม PM กำหนด`, "info");
+
+        // Get allowed hospitals and projects for this user
+        const perms = appState.userPermissions[cUserKey] || { hospitals: [], projects: [] };
+        const allowedHospitals = perms.hospitals || [];
+        const allowedProjects = perms.projects || [];
+
+        // Find first accessible project for this customer user
+        const accessibleProjects = Object.values(projectsData).filter(p => {
+            return allowedHospitals.includes(p.customer) || allowedProjects.includes(p.code);
+        });
         
-        // Customers are restricted to the first available project
-        const firstCode = Object.keys(projectsData)[0] || "";
-        const firstProj = projectsData[firstCode];
+        const firstProj = accessibleProjects[0] || null;
+        const firstCode = firstProj ? firstProj.code : "";
         
         appState.selectedDetailProject = firstCode;
         sessionStorage.setItem("technical_water_last_detail_project", firstCode);
-        updateSelectedCostProject(firstCode);
+        if (firstCode) updateSelectedCostProject(firstCode);
         
         const subnavYearFilter = document.getElementById("subnav-year-filter");
         if (subnavYearFilter) {
@@ -5500,7 +5651,7 @@ function switchRole(roleName) {
             hospitalSelector.disabled = true;
         }
 
-        populateSubnavProjects(subnavYearFilter ? subnavYearFilter.value : "all");
+        populateSubnavProjects("all");
         
         const projectSelector = document.getElementById("subnav-project-selector");
         if (projectSelector) {
@@ -5529,7 +5680,7 @@ function switchRole(roleName) {
             costSelector.disabled = true;
         }
 
-        // If customer switches to Customer, boot them to project workspace (projects-list)
+        // Boot customer to project workspace
         switchView("projects-list");
         return;
     }
@@ -7615,6 +7766,11 @@ document.addEventListener("DOMContentLoaded", () => {
             this.classList.add("active");
             
             const role = this.getAttribute("data-role");
+            // If it's a customer option, set which customer user first
+            const customerUser = this.getAttribute("data-customer-user");
+            if (role === "customer" && customerUser) {
+                appState.currentCustomerUser = customerUser;
+            }
             switchRole(role);
             
             profileDropdown.classList.remove("active");
@@ -9650,6 +9806,158 @@ function initPublicView(projectCode) {
         });
     }
 })();
+
+// ============================================================
+// USER PERMISSIONS MANAGEMENT
+// ============================================================
+
+function renderPermissionsManagement() {
+    const userSelector = document.getElementById("perm-user-selector");
+    if (!userSelector) return;
+
+    const allHospitals = [
+        "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
+        "โรงพยาบาลพญาไท บ่อวิน", "โรงพยาบาลพญาไท พหลโยธิน", "โรงพยาบาลพญาไท ศรีราชา", "โรงพยาบาลเปาโล พระประแดง",
+        "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4"
+    ];
+
+    function loadCheckboxes(cUserKey) {
+        const perms = appState.userPermissions[cUserKey] || { hospitals: [], projects: [] };
+        const allowedH = perms.hospitals || [];
+        const allowedP = perms.projects || [];
+
+        // Render hospitals
+        const hList = document.getElementById("perm-hospitals-checkbox-list");
+        if (hList) {
+            hList.innerHTML = "";
+            allHospitals.forEach(h => {
+                const isChecked = allowedH.includes(h);
+                const id = `perm-h-${h.replace(/\s+/g, "-")}`;
+                const wrapper = document.createElement("label");
+                wrapper.style.cssText = "display: flex; align-items: center; gap: 10px; cursor: pointer; padding: 8px 10px; border-radius: 6px; border: 1px solid " + (isChecked ? "#bfdbfe" : "var(--border-color)") + "; background: " + (isChecked ? "#eff6ff" : "transparent") + "; transition: all 0.15s;";
+                wrapper.htmlFor = id;
+                wrapper.innerHTML = `
+                    <input type="checkbox" id="${id}" data-hospital="${h}" ${isChecked ? "checked" : ""} style="width: 15px; height: 15px; accent-color: var(--primary-blue); cursor: pointer; flex-shrink: 0;">
+                    <div>
+                        <div style="font-size: 12.5px; font-weight: 600; color: var(--navy-dark);">${h}</div>
+                    </div>`;
+                // Style update on check/uncheck
+                const cb = wrapper.querySelector("input");
+                cb.addEventListener("change", () => {
+                    wrapper.style.borderColor = cb.checked ? "#bfdbfe" : "var(--border-color)";
+                    wrapper.style.background = cb.checked ? "#eff6ff" : "transparent";
+                });
+                hList.appendChild(wrapper);
+            });
+        }
+
+        // Render projects
+        const pList = document.getElementById("perm-projects-checkbox-list");
+        if (pList) {
+            pList.innerHTML = "";
+            const allProjects = Object.values(projectsData);
+            if (allProjects.length === 0) {
+                pList.innerHTML = `<div style="text-align:center; color: var(--text-muted); font-size: 12px; padding: 16px;">ยังไม่มีโครงการในระบบ</div>`;
+                return;
+            }
+            // Group by hospital
+            const grouped = {};
+            allProjects.forEach(p => {
+                if (!grouped[p.customer]) grouped[p.customer] = [];
+                grouped[p.customer].push(p);
+            });
+            Object.keys(grouped).forEach(hosp => {
+                const groupHeader = document.createElement("div");
+                groupHeader.style.cssText = "font-size: 10px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-muted); margin-top: 6px; margin-bottom: 2px;";
+                groupHeader.textContent = hosp.replace("โรงพยาบาล", "รพ.");
+                pList.appendChild(groupHeader);
+
+                grouped[hosp].forEach(p => {
+                    const isChecked = allowedP.includes(p.code);
+                    const id = `perm-p-${p.code.replace(/\s+/g, "-")}`;
+                    const wrapper = document.createElement("label");
+                    wrapper.style.cssText = "display: flex; align-items: flex-start; gap: 10px; cursor: pointer; padding: 8px 10px; border-radius: 6px; border: 1px solid " + (isChecked ? "#bfdbfe" : "var(--border-color)") + "; background: " + (isChecked ? "#eff6ff" : "transparent") + "; transition: all 0.15s;";
+                    wrapper.htmlFor = id;
+                    wrapper.innerHTML = `
+                        <input type="checkbox" id="${id}" data-project="${p.code}" ${isChecked ? "checked" : ""} style="width: 15px; height: 15px; accent-color: var(--primary-blue); cursor: pointer; flex-shrink: 0; margin-top: 1px;">
+                        <div>
+                            <div style="font-size: 12px; font-weight: 700; color: var(--navy-dark);">${p.code}</div>
+                            <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 1px;">${p.name.replace(/ \(\d{4}\)$/, '')}</div>
+                        </div>`;
+                    const cb = wrapper.querySelector("input");
+                    cb.addEventListener("change", () => {
+                        wrapper.style.borderColor = cb.checked ? "#bfdbfe" : "var(--border-color)";
+                        wrapper.style.background = cb.checked ? "#eff6ff" : "transparent";
+                    });
+                    pList.appendChild(wrapper);
+                });
+            });
+        }
+    }
+
+    // Initial load
+    loadCheckboxes(userSelector.value || "user1");
+
+    // On user selector change
+    userSelector.addEventListener("change", function() {
+        loadCheckboxes(this.value);
+    });
+
+    // Toggle-all hospitals
+    const toggleAllHospitalsBtn = document.getElementById("btn-toggle-all-hospitals");
+    if (toggleAllHospitalsBtn) {
+        toggleAllHospitalsBtn.onclick = function() {
+            const checkboxes = document.querySelectorAll("#perm-hospitals-checkbox-list input[type='checkbox']");
+            const allChecked = [...checkboxes].every(cb => cb.checked);
+            checkboxes.forEach(cb => {
+                cb.checked = !allChecked;
+                cb.dispatchEvent(new Event("change"));
+            });
+            toggleAllHospitalsBtn.textContent = allChecked ? "เลือกทั้งหมด" : "ยกเลิกทั้งหมด";
+        };
+    }
+
+    // Toggle-all projects
+    const toggleAllProjectsBtn = document.getElementById("btn-toggle-all-projects");
+    if (toggleAllProjectsBtn) {
+        toggleAllProjectsBtn.onclick = function() {
+            const checkboxes = document.querySelectorAll("#perm-projects-checkbox-list input[type='checkbox']");
+            const allChecked = [...checkboxes].every(cb => cb.checked);
+            checkboxes.forEach(cb => {
+                cb.checked = !allChecked;
+                cb.dispatchEvent(new Event("change"));
+            });
+            toggleAllProjectsBtn.textContent = allChecked ? "เลือกทั้งหมด" : "ยกเลิกทั้งหมด";
+        };
+    }
+
+    // Save permissions
+    const saveBtn = document.getElementById("btn-save-permissions");
+    if (saveBtn) {
+        saveBtn.onclick = function() {
+            const cUserKey = document.getElementById("perm-user-selector").value || "user1";
+            const hospitals = [...document.querySelectorAll("#perm-hospitals-checkbox-list input[type='checkbox']:checked")].map(cb => cb.getAttribute("data-hospital")).filter(Boolean);
+            const projects = [...document.querySelectorAll("#perm-projects-checkbox-list input[type='checkbox']:checked")].map(cb => cb.getAttribute("data-project")).filter(Boolean);
+            if (!appState.userPermissions) appState.userPermissions = {};
+            appState.userPermissions[cUserKey] = { hospitals, projects };
+            localStorage.setItem("technical_water_user_permissions", JSON.stringify(appState.userPermissions));
+            const userNameMap = { user1: "BKK Hospital Rep (Customer 1)", user2: "Paolo Rep (Customer 2)", user3: "Phyathai Rep (Customer 3)" };
+            showToast(`✅ บันทึกสิทธิ์ของ ${userNameMap[cUserKey] || cUserKey} เรียบร้อยแล้ว (โรงพยาบาล: ${hospitals.length} แห่ง, โครงการ: ${projects.length} รายการ)`, "success");
+        };
+    }
+
+    // Reset permissions
+    const resetBtn = document.getElementById("btn-reset-permissions");
+    if (resetBtn) {
+        resetBtn.onclick = function() {
+            if (!confirm("ยืนยันการรีเซ็ตสิทธิ์ทั้งหมด (ทุก Customer User) กลับสู่ค่าเริ่มต้น?")) return;
+            appState.userPermissions = defaultPermissions;
+            localStorage.setItem("technical_water_user_permissions", JSON.stringify(defaultPermissions));
+            loadCheckboxes(document.getElementById("perm-user-selector").value || "user1");
+            showToast("🔄 รีเซ็ตสิทธิ์ทั้งหมดกลับสู่ค่าเริ่มต้นเรียบร้อยแล้ว", "info");
+        };
+    }
+}
 
 // ============================================================
 // FORM DRAFT AUTO-SAVE SYSTEM
