@@ -6037,43 +6037,76 @@ function renderSubnavProjectWorkspace() {
     document.getElementById("subnav-doc-value").textContent = `${formatNumber(project.value)} บาท`;
     document.getElementById("subnav-doc-desc").textContent = project.description;
     
-    // Load active subtab panel view
-    const activeSubtab = appState.activeProjectTab || "general-info";
+    const isCustomer = appState.currentRole === "customer";
     
-    // Update active class on tab buttons
-    document.querySelectorAll(".subnav-tab-item").forEach(btn => {
-        if (btn.getAttribute("data-subtab") === activeSubtab) {
-            btn.classList.add("active");
-        } else {
-            btn.classList.remove("active");
-        }
-    });
-    
-    // Update active class on panels
-    document.querySelectorAll(".subtab-panel").forEach(panel => {
-        panel.classList.remove("active");
-    });
-    
-    const activePanel = document.getElementById(`subtab-${activeSubtab}-view`);
-    if (activePanel) {
-        activePanel.classList.add("active");
+    // Toggle sidebar subnav tabs container visibility
+    const subnavTabsEl = document.querySelector(".subnav-tabs");
+    if (subnavTabsEl) {
+        subnavTabsEl.style.display = isCustomer ? "none" : "";
     }
     
-    // Render view based on active tab
-    if (activeSubtab === "general-info") {
+    if (isCustomer) {
+        // For customer, make all views active (except cost) and render everything in a stacked list
+        document.querySelectorAll(".subtab-panel").forEach(panel => {
+            if (panel.id !== "subtab-cost-tab-view") {
+                panel.classList.add("active");
+                panel.style.marginBottom = "24px";
+            } else {
+                panel.classList.remove("active");
+            }
+        });
+        
+        // Render all views sequentially
         renderSubnavGeneralInfo(project);
-    } else if (activeSubtab === "cost-tab") {
-        renderSubnavCostTab(project);
-    } else if (activeSubtab === "documents-tab") {
-        renderSubnavDocumentsTab(project);
-    } else if (activeSubtab === "photos-files") {
-        renderSubnavPhotosFiles(project);
-    } else if (activeSubtab === "daily-report") {
-        renderSubnavDailyReports(project);
-    } else if (activeSubtab === "actual-progress") {
-        renderSubnavActualProgress(project);
-    } else if (activeSubtab === "plan-work") {
         renderSubnavPlanWork(project);
+        renderSubnavActualProgress(project);
+        renderSubnavDailyReports(project);
+        renderSubnavPhotosFiles(project);
+        renderSubnavDocumentsTab(project);
+    } else {
+        // Restore standard tab behaviors
+        document.querySelectorAll(".subtab-panel").forEach(panel => {
+            panel.style.marginBottom = "";
+        });
+        
+        // Load active subtab panel view
+        const activeSubtab = appState.activeProjectTab || "general-info";
+        
+        // Update active class on tab buttons
+        document.querySelectorAll(".subnav-tab-item").forEach(btn => {
+            if (btn.getAttribute("data-subtab") === activeSubtab) {
+                btn.classList.add("active");
+            } else {
+                btn.classList.remove("active");
+            }
+        });
+        
+        // Update active class on panels
+        document.querySelectorAll(".subtab-panel").forEach(panel => {
+            panel.classList.remove("active");
+        });
+        
+        const activePanel = document.getElementById(`subtab-${activeSubtab}-view`);
+        if (activePanel) {
+            activePanel.classList.add("active");
+        }
+        
+        // Render view based on active tab
+        if (activeSubtab === "general-info") {
+            renderSubnavGeneralInfo(project);
+        } else if (activeSubtab === "cost-tab") {
+            renderSubnavCostTab(project);
+        } else if (activeSubtab === "documents-tab") {
+            renderSubnavDocumentsTab(project);
+        } else if (activeSubtab === "photos-files") {
+            renderSubnavPhotosFiles(project);
+        } else if (activeSubtab === "daily-report") {
+            renderSubnavDailyReports(project);
+        } else if (activeSubtab === "actual-progress") {
+            renderSubnavActualProgress(project);
+        } else if (activeSubtab === "plan-work") {
+            renderSubnavPlanWork(project);
+        }
     }
 }
 
