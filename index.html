@@ -2528,7 +2528,7 @@ select.form-control {
 
 .project-charts-row {
     display: grid;
-    grid-template-columns: 2fr 1.2fr 1.2fr;
+    grid-template-columns: 1fr 1.5fr;
     gap: 16px;
 }
 
@@ -3704,20 +3704,6 @@ body.public-view-mode #public-view-header {
                             
                             <!-- Project charts -->
                             <div class="project-charts-row">
-                                <!-- Bar Chart -->
-                                <div class="chart-container-card span-2">
-                                    <h4 class="chart-title">สรุปสถานะงานในโครงการนี้ (แยกตามส่วนงาน)</h4>
-                                    <div class="chart-wrapper">
-                                        <canvas id="detailProjectBarChart"></canvas>
-                                    </div>
-                                </div>
-                                <!-- Donut Chart & Progress/Cost Sidebar -->
-                                <div class="chart-container-card">
-                                    <h4 class="chart-title">สถานะงานรวมของโครงการ</h4>
-                                    <div class="chart-wrapper donut-wrapper-detail">
-                                        <canvas id="detailProjectDonutChart"></canvas>
-                                    </div>
-                                </div>
                                 <div class="chart-container-card">
                                     <h4 class="chart-title">ความก้าวหน้าโครงการ</h4>
                                     <div class="progress-section">
@@ -3774,7 +3760,7 @@ body.public-view-mode #public-view-header {
                                     </div>
                                 </div>
                                 <!-- Yearly Comparison Chart Card -->
-                                <div class="chart-container-card span-2">
+                                <div class="chart-container-card">
                                     <h4 class="chart-title">เปรียบเทียบความก้าวหน้าโครงการรายปี (2024 - 2026)</h4>
                                     <div class="chart-wrapper">
                                         <canvas id="projectYearlyComparisonChart"></canvas>
@@ -6126,12 +6112,14 @@ function renderSubnavGeneralInfo(project) {
 }
 
 function renderSubnavProjectBarChart(wb) {
+    const canvas = document.getElementById('detailProjectBarChart');
+    if (!canvas) return;
     if (typeof Chart === "undefined") {
         console.warn("Chart.js is not loaded.");
         return;
     }
     try {
-        const ctx = document.getElementById('detailProjectBarChart').getContext('2d');
+        const ctx = canvas.getContext('2d');
         
         if (detailProjectBarChart) {
             detailProjectBarChart.destroy();
@@ -6199,12 +6187,14 @@ function renderSubnavProjectBarChart(wb) {
 }
 
 function renderSubnavProjectDonutChart(inprogress, completed, delayed) {
+    const canvas = document.getElementById('detailProjectDonutChart');
+    if (!canvas) return;
     if (typeof Chart === "undefined") {
         console.warn("Chart.js is not loaded.");
         return;
     }
     try {
-        const ctx = document.getElementById('detailProjectDonutChart').getContext('2d');
+        const ctx = canvas.getContext('2d');
         
         if (detailProjectDonutChart) {
             detailProjectDonutChart.destroy();
