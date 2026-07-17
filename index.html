@@ -6016,33 +6016,42 @@ function renderSubnavProjectBarChart(wb) {
             detailProjectBarChart.destroy();
         }
         
+        const categories = ["งานไฟฟ้า", "งานปรับอากาศ", "งานระบบน้ำ", "งานโครงสร้าง", "งานสถาปัตย์", "งานอื่น ๆ"];
+        const inprogress = wb.inprogress || [0, 0, 0, 0, 0, 0];
+        const completed = wb.completed || [0, 0, 0, 0, 0, 0];
+        const delayed = wb.delayed || [0, 0, 0, 0, 0, 0];
+        
+        const total = categories.map((_, i) => {
+            return (inprogress[i] || 0) + (completed[i] || 0) + (delayed[i] || 0);
+        });
+        
         detailProjectBarChart = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: wb.categories,
+                labels: categories,
                 datasets: [
                     {
                         label: 'ทั้งหมด',
-                        data: wb.total,
-                        backgroundColor: '#2a6f97',
+                        data: total,
+                        backgroundColor: '#64748b', // Cool grey
                         borderRadius: 2
                     },
                     {
                         label: 'กำลังดำเนินการ',
-                        data: wb.inprogress,
-                        backgroundColor: '#10b981',
+                        data: inprogress,
+                        backgroundColor: '#1d4ed8', // Dark Blue
                         borderRadius: 2
                     },
                     {
                         label: 'เสร็จแล้ว',
-                        data: wb.completed,
-                        backgroundColor: '#0ea5e9',
+                        data: completed,
+                        backgroundColor: '#10b981', // Green
                         borderRadius: 2
                     },
                     {
                         label: 'ล่าช้า',
-                        data: wb.delayed,
-                        backgroundColor: '#ef4444',
+                        data: delayed,
+                        backgroundColor: '#ef4444', // Red
                         borderRadius: 2
                     }
                 ]
@@ -6051,7 +6060,11 @@ function renderSubnavProjectBarChart(wb) {
                 responsive: true,
                 maintainAspectRatio: false,
                 plugins: {
-                    legend: { display: false }
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: { font: { size: 9, family: 'Prompt' } }
+                    }
                 },
                 scales: {
                     x: {
@@ -6060,7 +6073,7 @@ function renderSubnavProjectBarChart(wb) {
                     },
                     y: {
                         beginAtZero: true,
-                        ticks: { font: { size: 9, family: 'Prompt' } }
+                        ticks: { font: { size: 9, family: 'Prompt' }, precision: 0 }
                     }
                 }
             }
