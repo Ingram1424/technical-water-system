@@ -5757,7 +5757,7 @@ function renderHospitalsGrid(activeProjects) {
                     <h5 style="font-size: 12px; font-weight: 700; color: var(--navy-dark); margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
                         <i class="fa-solid fa-folder-open text-blue"></i> รายการโครงการกำลังดำเนินการ (${hospitalProjects.length})
                     </h5>
-                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <div style="display: flex; flex-direction: column; gap: 10px; max-height: 280px; overflow-y: auto; padding-right: 6px; scrollbar-width: thin;">
             `;
             
             hospitalProjects.forEach(p => {
