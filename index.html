@@ -3048,14 +3048,14 @@ body.public-view-mode #public-view-header {
                         <span class="sub-label">ภาพรวมโครงการ</span>
                     </div>
                 </a>
-                <a href="#" class="nav-item" data-view="quoting-projects-list">
+                <a href="#" class="nav-item" data-view="quoting-projects-list" id="nav-item-quoting">
                     <i class="fa-solid fa-file-invoice"></i>
                     <div class="nav-label">
                         <span class="main-label">งานที่กำลังเสนอราคา</span>
                         <span class="sub-label">รายการเสนอราคา</span>
                     </div>
                 </a>
-                <a href="#" class="nav-item" data-view="projects-list">
+                <a href="#" class="nav-item" data-view="projects-list" id="nav-item-projects">
                     <i class="fa-solid fa-folder-open"></i>
                     <div class="nav-label">
                         <span class="main-label">Project</span>
@@ -3073,6 +3073,31 @@ body.public-view-mode #public-view-header {
                         </div>
                     </div>
                     
+                    <!-- Subtab Items (Immediately visible right under header) -->
+                    <nav class="subnav-tabs">
+                        <a href="#" class="subnav-tab-item active" data-subtab="general-info">
+                            <i class="fa-solid fa-circle-info"></i> ข้อมูลโครงการ
+                        </a>
+                        <a href="#" class="subnav-tab-item" data-subtab="plan-work">
+                            <i class="fa-solid fa-calendar-check"></i> Plan Work
+                        </a>
+                        <a href="#" class="subnav-tab-item" data-subtab="actual-progress">
+                            <i class="fa-solid fa-bars-progress"></i> Actual Progress
+                        </a>
+                        <a href="#" class="subnav-tab-item" data-subtab="daily-report">
+                            <i class="fa-solid fa-file-signature"></i> Daily Report
+                        </a>
+                        <a href="#" class="subnav-tab-item" data-subtab="photos-files">
+                            <i class="fa-solid fa-images"></i> รูปภาพ / ไฟล์
+                        </a>
+                        <a href="#" class="subnav-tab-item hide-customer" data-subtab="cost-tab">
+                            <i class="fa-solid fa-hand-holding-dollar"></i> ค่าใช้จ่ายโครงการ
+                        </a>
+                        <a href="#" class="subnav-tab-item" data-subtab="documents-tab">
+                            <i class="fa-solid fa-file-invoice"></i> เอกสารโครงการ
+                        </a>
+                    </nav>
+
                     <div class="sidebar-project-selector-wrapper">
                         <!-- Year selector for the project page -->
                         <label for="subnav-year-filter" class="selector-label" style="margin-top: 8px;">ปีโครงการ :</label>
@@ -3125,30 +3150,6 @@ body.public-view-mode #public-view-header {
                             <i class="fa-solid fa-share-nodes"></i> คัดลอกลิงก์แชร์โครงการ
                         </button>
                     </div>
-                    
-                    <nav class="subnav-tabs">
-                        <a href="#" class="subnav-tab-item active" data-subtab="general-info">
-                            <i class="fa-solid fa-circle-info"></i> ข้อมูลโครงการ
-                        </a>
-                        <a href="#" class="subnav-tab-item" data-subtab="plan-work">
-                            <i class="fa-solid fa-calendar-check"></i> Plan Work
-                        </a>
-                        <a href="#" class="subnav-tab-item" data-subtab="actual-progress">
-                            <i class="fa-solid fa-bars-progress"></i> Actual Progress
-                        </a>
-                        <a href="#" class="subnav-tab-item" data-subtab="daily-report">
-                            <i class="fa-solid fa-file-signature"></i> Daily Report
-                        </a>
-                        <a href="#" class="subnav-tab-item" data-subtab="photos-files">
-                            <i class="fa-solid fa-images"></i> รูปภาพ / ไฟล์
-                        </a>
-                        <a href="#" class="subnav-tab-item hide-customer" data-subtab="cost-tab">
-                            <i class="fa-solid fa-hand-holding-dollar"></i> ค่าใช้จ่ายโครงการ
-                        </a>
-                        <a href="#" class="subnav-tab-item" data-subtab="documents-tab">
-                            <i class="fa-solid fa-file-invoice"></i> เอกสารโครงการ
-                        </a>
-                    </nav>
                 </div>
                 
                 <a href="#" class="nav-item" data-view="cost">
@@ -5672,14 +5673,22 @@ function switchView(viewName) {
     const sidebarSubnav = document.getElementById("sidebar-project-subnav");
     const subnavHeaderIcon = document.getElementById("subnav-header-icon");
     const subnavHeaderTitle = document.getElementById("subnav-header-title");
+    const navItemQuoting = document.getElementById("nav-item-quoting");
+    const navItemProjects = document.getElementById("nav-item-projects");
     
     if (sidebarSubnav) {
         if (viewName === "projects-list" || viewName === "quoting-projects-list") {
             sidebarSubnav.style.display = "block";
             if (viewName === "quoting-projects-list") {
+                if (navItemQuoting && sidebarSubnav.previousElementSibling !== navItemQuoting) {
+                    navItemQuoting.insertAdjacentElement("afterend", sidebarSubnav);
+                }
                 if (subnavHeaderIcon) subnavHeaderIcon.className = "fa-solid fa-file-invoice sidebar-proj-icon";
                 if (subnavHeaderTitle) subnavHeaderTitle.textContent = "Quotation Detail";
             } else {
+                if (navItemProjects && sidebarSubnav.previousElementSibling !== navItemProjects) {
+                    navItemProjects.insertAdjacentElement("afterend", sidebarSubnav);
+                }
                 if (subnavHeaderIcon) subnavHeaderIcon.className = "fa-solid fa-folder-open sidebar-proj-icon";
                 if (subnavHeaderTitle) subnavHeaderTitle.textContent = "Project Detail";
             }
