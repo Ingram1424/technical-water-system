@@ -3096,16 +3096,12 @@ body.public-view-mode #public-view-header {
                         <div class="hide-customer" style="margin-top: 4px; margin-bottom: 12px;">
                             <label for="subnav-project-status-selector" class="selector-label" style="display: flex; align-items: center; justify-content: space-between;">
                                 <span>ปรับสถานะโครงการ :</span>
-                                <span id="subnav-status-badge" style="font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: #e0f2fe; color: #0369a1;">กำลังดำเนินการ</span>
+                                <span id="subnav-status-badge" style="font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: #dcfce7; color: #15803d;">งานที่กำลังเสนอราคา</span>
                             </label>
                             <select id="subnav-project-status-selector" class="form-control" style="font-size: 11.5px; padding: 6px; height: auto; font-weight: 600; border-radius: var(--radius-sm); background-color: #f8fafc;">
-                                <option value="กำลังดำเนินการ">🟢 กำลังดำเนินการ</option>
-                                <option value="กำลังเสนอราคา">🟢 กำลังเสนอราคา</option>
-                                <option value="เสร็จแล้วรอส่งงาน">🔵 เสร็จแล้วรอส่งงาน</option>
-                                <option value="เสร็จสิ้น">🔵 เสร็จสิ้น</option>
-                                <option value="รออนุมัติ">🟠 รออนุมัติ</option>
-                                <option value="รอดำเนินการ">🟡 รอดำเนินการ</option>
-                                <option value="หยุดชั่วคราว">🔴 หยุดชั่วคราว</option>
+                                <option value="งานที่กำลังเสนอราคา">🟢 งานที่กำลังเสนอราคา</option>
+                                <option value="งานเสร็จแล้วรอส่งงาน">🔵 งานเสร็จแล้วรอส่งงาน</option>
+                                <option value="งานรออนุมัติ">🟠 งานรออนุมัติ</option>
                             </select>
                         </div>
                         
@@ -4713,13 +4709,9 @@ body.public-view-mode #public-view-header {
                     <div class="form-group mt-3">
                         <label class="form-label" for="edit-project-status">สถานะโครงการ</label>
                         <select id="edit-project-status" class="form-control">
-                            <option value="กำลังดำเนินการ">กำลังดำเนินการ</option>
-                            <option value="กำลังเสนอราคา">กำลังเสนอราคา</option>
-                            <option value="เสร็จแล้วรอส่งงาน">เสร็จแล้วรอส่งงาน</option>
-                            <option value="เสร็จสิ้น">เสร็จสิ้น</option>
-                            <option value="รออนุมัติ">รออนุมัติ</option>
-                            <option value="รอดำเนินการ">รอดำเนินการ</option>
-                            <option value="หยุดชั่วคราว">หยุดชั่วคราว</option>
+                            <option value="งานที่กำลังเสนอราคา">งานที่กำลังเสนอราคา</option>
+                            <option value="งานเสร็จแล้วรอส่งงาน">งานเสร็จแล้วรอส่งงาน</option>
+                            <option value="งานรออนุมัติ">งานรออนุมัติ</option>
                         </select>
                     </div>
                     <div class="form-group mt-3">
@@ -5232,9 +5224,9 @@ function renderOverallDashboard() {
     
     combinedProjects.forEach(p => {
         // Count projects by status
-        if (p.status === "เสร็จสิ้น" || p.status === "เสร็จแล้ว") {
+        if (p.status === "เสร็จสิ้น" || p.status === "เสร็จแล้ว" || p.status === "งานเสร็จแล้วรอส่งงาน") {
             completedJobs++;
-        } else if (p.status === "รออนุมัติ") {
+        } else if (p.status === "รออนุมัติ" || p.status === "งานรออนุมัติ") {
             pendingApprovalJobs++;
         } else {
             inprogressJobs++;
@@ -5269,9 +5261,9 @@ function renderOverallDashboard() {
         const idx = hospitalsList.indexOf(p.customer);
         if (idx === -1) return;
         
-        if (p.status === "เสร็จสิ้น" || p.status === "เสร็จแล้ว") {
+        if (p.status === "เสร็จสิ้น" || p.status === "เสร็จแล้ว" || p.status === "งานเสร็จแล้วรอส่งงาน") {
             completedCounts[idx]++;
-        } else if (p.status === "รออนุมัติ") {
+        } else if (p.status === "รออนุมัติ" || p.status === "งานรออนุมัติ") {
             pendingApprovalCounts[idx]++;
         } else {
             inprogressCounts[idx]++;
@@ -5958,7 +5950,7 @@ function renderHospitalsGrid(activeProjects) {
             today.setHours(0, 0, 0, 0);
             
             allHospitalProjects.forEach(p => {
-                if (p.progress >= 100 || p.status === "เสร็จสิ้น" || p.status === "เสร็จแล้ว") {
+                if (p.progress >= 100 || p.status === "เสร็จสิ้น" || p.status === "เสร็จแล้ว" || p.status === "งานเสร็จแล้วรอส่งงาน") {
                     completedProjects++;
                 } else {
                     const parts = (p.end || "").split("/");
@@ -5969,7 +5961,7 @@ function renderHospitalsGrid(activeProjects) {
                             isDelayed = true;
                         }
                     }
-                    if (isDelayed || p.status === "รออนุมัติ") {
+                    if (isDelayed || p.status === "รออนุมัติ" || p.status === "งานรออนุมัติ") {
                         delayedProjects++;
                     } else {
                         inprogressProjects++;
@@ -6307,14 +6299,17 @@ function renderSubnavProjectWorkspace() {
             }
         } else {
             subnavStatusSelect.disabled = false;
-            const currentStatus = project.status || "กำลังดำเนินการ";
+            let currentStatus = project.status || "งานที่กำลังเสนอราคา";
+            if (currentStatus === "กำลังดำเนินการ") currentStatus = "งานที่กำลังเสนอราคา";
+            if (currentStatus === "เสร็จสิ้น") currentStatus = "งานเสร็จแล้วรอส่งงาน";
+            if (currentStatus === "รออนุมัติ") currentStatus = "งานรออนุมัติ";
             subnavStatusSelect.value = currentStatus;
             if (subnavStatusBadge) {
                 subnavStatusBadge.textContent = currentStatus;
-                if (currentStatus === "เสร็จสิ้น" || currentStatus === "เสร็จแล้วรอส่งงาน") {
+                if (currentStatus === "งานเสร็จแล้วรอส่งงาน") {
                     subnavStatusBadge.style.background = "#e0f2fe";
                     subnavStatusBadge.style.color = "#0369a1";
-                } else if (currentStatus === "รออนุมัติ" || currentStatus === "หยุดชั่วคราว" || currentStatus === "รอดำเนินการ") {
+                } else if (currentStatus === "งานรออนุมัติ") {
                     subnavStatusBadge.style.background = "#fef3c7";
                     subnavStatusBadge.style.color = "#b45309";
                 } else {
