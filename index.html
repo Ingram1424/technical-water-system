@@ -9957,12 +9957,14 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     // --- EXPORT PROJECT PDF REPORT SYSTEM ---
-    window.exportProjectPDF = function(projectCode) {
+    window.exportProjectPDF = async function(projectCode) {
         const code = projectCode || appState.selectedDetailProject;
         if (!code) {
             showToast("กรุณาเลือกโครงการที่ต้องการส่งออก PDF", "warning");
             return;
         }
+
+        showToast("กำลังจัดเตรียมข้อมูลและรูปภาพสำหรับเอกสาร PDF...", "info");
 
         const isCustomer = appState.currentRole === "customer";
         const now = new Date();
@@ -9990,6 +9992,23 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
+        // Helper to resolve Supabase or Base64 images
+        async function resolveImgSrc(imgRef) {
+            if (!imgRef) return null;
+            if (typeof imgRef === "string" && imgRef.startsWith("FILE:")) {
+                try {
+                    if (typeof supabaseClient !== "undefined") {
+                        const { data } = await supabaseClient.from('projects').select('data').eq('code', imgRef).single();
+                        if (data && data.data && data.data.fileUrl) return data.data.fileUrl;
+                    }
+                } catch (e) {
+                    console.warn("Supabase image fetch failed:", e);
+                }
+                return null;
+            }
+            return imgRef;
+        }
+
         try {
             const printWindow = window.open("", "_blank");
             if (!printWindow) {
@@ -9998,7 +10017,9 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             let projectsHTML = "";
-            projectsToExport.forEach((proj, idx) => {
+            for (let idx = 0; idx < projectsToExport.length; idx++) {
+                const proj = projectsToExport[idx];
+
                 // Financial details (hidden for customer role)
                 const finHTML = isCustomer ? "" : `
                     <div class="financial-grid">
@@ -10016,6 +10037,15 @@ document.addEventListener("DOMContentLoaded", () => {
                         </div>
                     </div>
                 `;
+
+                // Project Description / Scope Box
+                let descHTML = "";
+                if (proj.description) {
+                    descHTML = `
+                        <div class="section-title"><i class="fa-solid fa-align-left"></i> รายละเอียดขอบเขตงานโครงการ (Project Description & Scope)</div>
+                        <div class="desc-box">${proj.description}</div>
+                    `;
+                }
 
                 // Tasks List Table
                 let tasksHTML = "";
@@ -10049,15 +10079,15 @@ document.addEventListener("DOMContentLoaded", () => {
                     `;
                 }
 
-                // Daily Reports Summary
+                // Daily Reports Summary (fixing dr.desc property so no undefined)
                 let dailyReportsHTML = "";
                 if (proj.dailyReports && proj.dailyReports.length > 0) {
-                    let rows = proj.dailyReports.slice(-5).map((dr, i) => `
+                    let rows = proj.dailyReports.map((dr, i) => `
                         <tr>
                             <td style="text-align: center;">${i + 1}</td>
-                            <td style="text-align: center;">${dr.date}</td>
-                            <td>${dr.description}</td>
-                            <td style="text-align: center;">${dr.reporter || 'ทีมวิศวกร'}</td>
+                            <td style="text-align: center;">${dr.date || '-'}</td>
+                            <td>${dr.desc || dr.description || dr.detail || '-'}</td>
+                            <td style="text-align: center;">${dr.reporter || dr.author || 'ทีมวิศวกร'}</td>
                         </tr>
                     `).join("");
 
@@ -10074,6 +10104,105 @@ document.addEventListener("DOMContentLoaded", () => {
                             </thead>
                             <tbody>${rows}</tbody>
                         </table>
+                    `;
+                }
+
+                // Expenses Table (Hidden for customer)
+                let expensesHTML = "";
+                if (!isCustomer && proj.expenses && proj.expenses.length > 0) {
+                    let rows = proj.expenses.map((exp, i) => `
+                        <tr>
+                            <td style="text-align: center;">${i + 1}</td>
+                            <td style="text-align: center;">${exp.date || '-'}</td>
+                            <td><strong>${exp.title}</strong></td>
+                            <td style="text-align: center;">${exp.type || 'ค่าใช้จ่ายทั่วไป'}</td>
+                            <td style="text-align: right; font-weight: 700; color: #0f172a;">${formatNumber(exp.amount || 0)} บาท</td>
+                        </tr>
+                    `).join("");
+
+                    expensesHTML = `
+                        <div class="section-title"><i class="fa-solid fa-receipt"></i> สรุปรายการค่าใช้จ่ายโครงการ (Project Expenses)</div>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40px; text-align: center;">#</th>
+                                    <th style="width: 100px; text-align: center;">วันที่</th>
+                                    <th>รายการค่าใช้จ่าย</th>
+                                    <th style="width: 120px; text-align: center;">หมวดหมู่</th>
+                                    <th style="width: 130px; text-align: right;">จำนวนเงิน</th>
+                                </tr>
+                            </thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                    `;
+                }
+
+                // Documents Table
+                let documentsHTML = "";
+                if (proj.documents && proj.documents.length > 0) {
+                    let rows = proj.documents.map((doc, i) => `
+                        <tr>
+                            <td style="text-align: center;">${i + 1}</td>
+                            <td><strong>${doc.name}</strong></td>
+                            <td style="text-align: center;">${doc.type || 'เอกสารทั่วไป'}</td>
+                            <td style="text-align: center;">${doc.date || '-'}</td>
+                        </tr>
+                    `).join("");
+
+                    documentsHTML = `
+                        <div class="section-title"><i class="fa-solid fa-folder-closed"></i> รายการเอกสารโครงการ (Project Documents)</div>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40px; text-align: center;">#</th>
+                                    <th>ชื่อไฟล์เอกสาร</th>
+                                    <th style="width: 120px; text-align: center;">ประเภท</th>
+                                    <th style="width: 100px; text-align: center;">วันที่อัปโหลด</th>
+                                </tr>
+                            </thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                    `;
+                }
+
+                // Gather and resolve all photos (from proj.media and dailyReports)
+                let photoList = [];
+                if (proj.media && proj.media.length > 0) {
+                    for (const item of proj.media) {
+                        const rawRef = item.img || item.fileUrl || item.dataUrl || item.file || item.url;
+                        const src = await resolveImgSrc(rawRef);
+                        if (src) {
+                            photoList.push({ src: src, title: item.title || 'รูปภาพโครงการ', date: item.date || '' });
+                        }
+                    }
+                }
+                if (proj.dailyReports && proj.dailyReports.length > 0) {
+                    for (const dr of proj.dailyReports) {
+                        if (dr.images && dr.images.length > 0) {
+                            for (const imgKey of dr.images) {
+                                const src = await resolveImgSrc(imgKey);
+                                if (src) {
+                                    photoList.push({ src: src, title: `ภาพงานวันที่ ${dr.date}`, date: dr.date });
+                                }
+                            }
+                        }
+                    }
+                }
+
+                let galleryHTML = "";
+                if (photoList.length > 0) {
+                    const cards = photoList.map(p => `
+                        <div class="photo-card">
+                            <img src="${p.src}" alt="${p.title}" class="photo-img">
+                            <div class="photo-caption">${p.title} ${p.date ? `(${p.date})` : ''}</div>
+                        </div>
+                    `).join("");
+
+                    galleryHTML = `
+                        <div class="section-title"><i class="fa-solid fa-images"></i> รูปภาพความก้าวหน้าและภาพถ่ายหน้างาน (Work Progress & Site Photos)</div>
+                        <div class="photo-grid">
+                            ${cards}
+                        </div>
                     `;
                 }
 
@@ -10140,8 +10269,12 @@ document.addEventListener("DOMContentLoaded", () => {
                         </div>
 
                         ${finHTML}
+                        ${descHTML}
                         ${tasksHTML}
                         ${dailyReportsHTML}
+                        ${expensesHTML}
+                        ${documentsHTML}
+                        ${galleryHTML}
 
                         <!-- Official Signatures Box -->
                         <div class="signatures-box">
@@ -10163,7 +10296,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         </div>
                     </div>
                 `;
-            });
+            }
 
             printWindow.document.write(`
                 <!DOCTYPE html>
@@ -10316,6 +10449,16 @@ document.addEventListener("DOMContentLoaded", () => {
                             font-size: 14px;
                             color: #0f172a;
                         }
+                        .desc-box {
+                            background: #f8fafc;
+                            border: 1px solid #e2e8f0;
+                            border-radius: 6px;
+                            padding: 12px;
+                            font-size: 12px;
+                            color: #334155;
+                            margin-bottom: 16px;
+                            white-space: pre-wrap;
+                        }
                         .text-green { color: #059669 !important; }
                         .section-title {
                             font-size: 13px;
@@ -10339,6 +10482,33 @@ document.addEventListener("DOMContentLoaded", () => {
                             background: #f1f5f9;
                             font-weight: 600;
                             color: #334155;
+                        }
+                        .photo-grid {
+                            display: grid;
+                            grid-template-columns: repeat(2, 1fr);
+                            gap: 12px;
+                            margin-bottom: 16px;
+                            page-break-inside: avoid;
+                        }
+                        .photo-card {
+                            background: #f8fafc;
+                            border: 1px solid #e2e8f0;
+                            border-radius: 6px;
+                            padding: 8px;
+                            text-align: center;
+                        }
+                        .photo-img {
+                            width: 100%;
+                            height: 180px;
+                            object-fit: cover;
+                            border-radius: 4px;
+                            border: 1px solid #cbd5e1;
+                        }
+                        .photo-caption {
+                            font-size: 10.5px;
+                            font-weight: 600;
+                            color: #334155;
+                            margin-top: 6px;
                         }
                         .signatures-box {
                             display: grid;
