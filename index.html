@@ -3092,6 +3092,23 @@ body.public-view-mode #public-view-header {
                             <!-- Populated dynamically with projects of selected hospital -->
                         </select>
                         
+                        <!-- Quick Project Status Selector -->
+                        <div class="hide-customer" style="margin-top: 4px; margin-bottom: 12px;">
+                            <label for="subnav-project-status-selector" class="selector-label" style="display: flex; align-items: center; justify-content: space-between;">
+                                <span>ปรับสถานะโครงการ :</span>
+                                <span id="subnav-status-badge" style="font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: #e0f2fe; color: #0369a1;">กำลังดำเนินการ</span>
+                            </label>
+                            <select id="subnav-project-status-selector" class="form-control" style="font-size: 11.5px; padding: 6px; height: auto; font-weight: 600; border-radius: var(--radius-sm); background-color: #f8fafc;">
+                                <option value="กำลังดำเนินการ">🟢 กำลังดำเนินการ</option>
+                                <option value="กำลังเสนอราคา">🟢 กำลังเสนอราคา</option>
+                                <option value="เสร็จแล้วรอส่งงาน">🔵 เสร็จแล้วรอส่งงาน</option>
+                                <option value="เสร็จสิ้น">🔵 เสร็จสิ้น</option>
+                                <option value="รออนุมัติ">🟠 รออนุมัติ</option>
+                                <option value="รอดำเนินการ">🟡 รอดำเนินการ</option>
+                                <option value="หยุดชั่วคราว">🔴 หยุดชั่วคราว</option>
+                            </select>
+                        </div>
+                        
                         <!-- Create New Project Button (Only visible for PM role) -->
                         <button class="btn btn-sm btn-primary btn-block hide-accounting hide-customer" id="sidebar-create-project-btn" style="width: 100%; font-size: 11px; padding: 5px; height: auto; border-radius: var(--radius-sm); margin-top: 6px;">
                             <i class="fa-solid fa-plus-circle"></i> สร้างโครงการใหม่
@@ -4697,10 +4714,12 @@ body.public-view-mode #public-view-header {
                         <label class="form-label" for="edit-project-status">สถานะโครงการ</label>
                         <select id="edit-project-status" class="form-control">
                             <option value="กำลังดำเนินการ">กำลังดำเนินการ</option>
+                            <option value="กำลังเสนอราคา">กำลังเสนอราคา</option>
+                            <option value="เสร็จแล้วรอส่งงาน">เสร็จแล้วรอส่งงาน</option>
                             <option value="เสร็จสิ้น">เสร็จสิ้น</option>
-                            <option value="หยุดชั่วคราว">หยุดชั่วคราว</option>
-                            <option value="รอดำเนินการ">รอดำเนินการ</option>
                             <option value="รออนุมัติ">รออนุมัติ</option>
+                            <option value="รอดำเนินการ">รอดำเนินการ</option>
+                            <option value="หยุดชั่วคราว">หยุดชั่วคราว</option>
                         </select>
                     </div>
                     <div class="form-group mt-3">
@@ -6273,6 +6292,37 @@ function renderSubnavProjectWorkspace() {
     if (hospitalSelector && activeCode !== "all" && hospitalSelector.value !== project.customer) {
         hospitalSelector.value = project.customer;
         populateSubnavProjects(subnavYearFilter ? subnavYearFilter.value : "all");
+    }
+    
+    // Update subnav status selector and badge
+    const subnavStatusSelect = document.getElementById("subnav-project-status-selector");
+    const subnavStatusBadge = document.getElementById("subnav-status-badge");
+    if (subnavStatusSelect) {
+        if (activeCode === "all") {
+            subnavStatusSelect.disabled = true;
+            if (subnavStatusBadge) {
+                subnavStatusBadge.textContent = "ALL";
+                subnavStatusBadge.style.background = "#e2e8f0";
+                subnavStatusBadge.style.color = "#475569";
+            }
+        } else {
+            subnavStatusSelect.disabled = false;
+            const currentStatus = project.status || "กำลังดำเนินการ";
+            subnavStatusSelect.value = currentStatus;
+            if (subnavStatusBadge) {
+                subnavStatusBadge.textContent = currentStatus;
+                if (currentStatus === "เสร็จสิ้น" || currentStatus === "เสร็จแล้วรอส่งงาน") {
+                    subnavStatusBadge.style.background = "#e0f2fe";
+                    subnavStatusBadge.style.color = "#0369a1";
+                } else if (currentStatus === "รออนุมัติ" || currentStatus === "หยุดชั่วคราว" || currentStatus === "รอดำเนินการ") {
+                    subnavStatusBadge.style.background = "#fef3c7";
+                    subnavStatusBadge.style.color = "#b45309";
+                } else {
+                    subnavStatusBadge.style.background = "#dcfce7";
+                    subnavStatusBadge.style.color = "#15803d";
+                }
+            }
+        }
     }
     
     // Toggle visibility of add buttons if showing All Projects
@@ -7944,6 +7994,20 @@ document.addEventListener("DOMContentLoaded", () => {
     if (subnavSelector) {
         subnavSelector.addEventListener("change", function() {
             updateSelectedDetailProject();
+            renderSubnavProjectWorkspace();
+        });
+    }
+
+    const subnavStatusSelect = document.getElementById("subnav-project-status-selector");
+    if (subnavStatusSelect) {
+        subnavStatusSelect.addEventListener("change", function() {
+            const activeCode = appState.selectedDetailProject;
+            if (!activeCode || activeCode === "all" || !projectsData[activeCode]) return;
+            const newStatus = this.value;
+            projectsData[activeCode].status = newStatus;
+            localStorage.setItem("technical_water_projects_data_v2", JSON.stringify(projectsData));
+            showToast(`ปรับสถานะโครงการ ${activeCode} เป็น "${newStatus}" เรียบร้อยแล้ว!`, "success");
+            renderOverallDashboard();
             renderSubnavProjectWorkspace();
         });
     }
