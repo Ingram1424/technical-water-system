@@ -8125,13 +8125,30 @@ document.addEventListener("DOMContentLoaded", () => {
         item.addEventListener("click", function(e) {
             e.preventDefault();
             const viewName = this.getAttribute("data-view");
-            switchView(viewName);
+            
+            // If clicking on the currently active tab (e.g. quoting-projects-list or projects-list), collapse and return to dashboard
+            if (appState.currentView === viewName && (viewName === "quoting-projects-list" || viewName === "projects-list")) {
+                switchView("dashboard");
+            } else {
+                switchView(viewName);
+            }
+
             // On mobile, keep sidebar open for 'projects-list' or 'quoting-projects-list' so user can select project details
-            if (viewName !== "projects-list" && viewName !== "quoting-projects-list") {
+            if (appState.currentView !== "projects-list" && appState.currentView !== "quoting-projects-list") {
                 closeMobileSidebar();
             }
         });
     });
+
+    // 1.1 Header click to collapse subnav and return to dashboard
+    const sidebarProjHeader = document.querySelector(".sidebar-project-header");
+    if (sidebarProjHeader) {
+        sidebarProjHeader.style.cursor = "pointer";
+        sidebarProjHeader.title = "คลิกเพื่อย่อแท็บและกลับสู่หน้า Dashboard";
+        sidebarProjHeader.addEventListener("click", function() {
+            switchView("dashboard");
+        });
+    }
 
     // 2. Profile Dropdown Toggle
     const profileBtn = document.getElementById("profile-trigger-btn");
