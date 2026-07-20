@@ -3096,10 +3096,10 @@ body.public-view-mode #public-view-header {
                         <div class="hide-customer" style="margin-top: 4px; margin-bottom: 12px;">
                             <label for="subnav-project-status-selector" class="selector-label" style="display: flex; align-items: center; justify-content: space-between;">
                                 <span>ปรับสถานะโครงการ :</span>
-                                <span id="subnav-status-badge" style="font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: #dcfce7; color: #15803d;">งานที่กำลังเสนอราคา</span>
+                                <span id="subnav-status-badge" style="font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: #dcfce7; color: #15803d;">งานที่กำลังดำเนินการ</span>
                             </label>
                             <select id="subnav-project-status-selector" class="form-control" style="font-size: 11.5px; padding: 6px; height: auto; font-weight: 600; border-radius: var(--radius-sm); background-color: #f8fafc;">
-                                <option value="งานที่กำลังเสนอราคา">🟢 งานที่กำลังเสนอราคา</option>
+                                <option value="งานที่กำลังดำเนินการ">🟢 งานที่กำลังดำเนินการ</option>
                                 <option value="งานเสร็จแล้วรอส่งงาน">🔵 งานเสร็จแล้วรอส่งงาน</option>
                                 <option value="งานรออนุมัติ">🟠 งานรออนุมัติ</option>
                             </select>
@@ -3355,7 +3355,7 @@ body.public-view-mode #public-view-header {
                                 <i class="fa-solid fa-circle-play"></i>
                             </div>
                             <div class="kpi-content">
-                                <span class="kpi-label">งานที่กำลังเสนอราคา</span>
+                                <span class="kpi-label">งานที่กำลังดำเนินการ</span>
                                 <h3 class="kpi-value" id="kpi-inprogress-jobs">0</h3>
                                 <span class="kpi-unit">รายการ</span>
                             </div>
@@ -3882,7 +3882,7 @@ body.public-view-mode #public-view-header {
                                 <div class="mini-kpi-card blue">
                                     <div class="mini-icon"><i class="fa-solid fa-circle-play"></i></div>
                                     <div class="mini-lbl-val">
-                                        <span class="lbl">งานที่กำลังเสนอราคา</span>
+                                        <span class="lbl">งานที่กำลังดำเนินการ</span>
                                         <h3 class="val" id="detail-inprogress-jobs">0</h3>
                                     </div>
                                     <span class="unit">รายการ</span>
@@ -4709,7 +4709,7 @@ body.public-view-mode #public-view-header {
                     <div class="form-group mt-3">
                         <label class="form-label" for="edit-project-status">สถานะโครงการ</label>
                         <select id="edit-project-status" class="form-control">
-                            <option value="งานที่กำลังเสนอราคา">งานที่กำลังเสนอราคา</option>
+                            <option value="งานที่กำลังดำเนินการ">งานที่กำลังดำเนินการ</option>
                             <option value="งานเสร็จแล้วรอส่งงาน">งานเสร็จแล้วรอส่งงาน</option>
                             <option value="งานรออนุมัติ">งานรออนุมัติ</option>
                         </select>
@@ -5292,7 +5292,7 @@ function renderOverallBarChart(labels, inprogress, completed, pendingApproval) {
         
         const datasets = [
             {
-                label: 'กำลังเสนอราคา',
+                label: 'งานที่กำลังดำเนินการ',
                 data: inprogress,
                 backgroundColor: '#059669', // Green (matches KPI card)
                 borderRadius: 4
@@ -5868,7 +5868,7 @@ function renderOverallDonutChart(inprogress, completed, pendingApproval) {
             type: 'doughnut',
             data: {
                 labels: [
-                    `กำลังเสนอราคา ${ipPercent}%`, 
+                    `งานที่กำลังดำเนินการ ${ipPercent}%`, 
                     `เสร็จแล้วรอส่งงาน ${compPercent}%`, 
                     `รออนุมัติ ${pendingPercent}%`
                 ],
@@ -6299,8 +6299,8 @@ function renderSubnavProjectWorkspace() {
             }
         } else {
             subnavStatusSelect.disabled = false;
-            let currentStatus = project.status || "งานที่กำลังเสนอราคา";
-            if (currentStatus === "กำลังดำเนินการ") currentStatus = "งานที่กำลังเสนอราคา";
+            let currentStatus = project.status || "งานที่กำลังดำเนินการ";
+            if (currentStatus === "กำลังดำเนินการ" || currentStatus === "งานที่กำลังเสนอราคา" || currentStatus === "กำลังเสนอราคา") currentStatus = "งานที่กำลังดำเนินการ";
             if (currentStatus === "เสร็จสิ้น") currentStatus = "งานเสร็จแล้วรอส่งงาน";
             if (currentStatus === "รออนุมัติ") currentStatus = "งานรออนุมัติ";
             subnavStatusSelect.value = currentStatus;
@@ -6474,7 +6474,7 @@ function renderSubnavProjectBarChart(wb) {
                 labels: categories,
                 datasets: [
                     {
-                        label: 'กำลังเสนอราคา',
+                        label: 'งานที่กำลังดำเนินการ',
                         data: inprogress,
                         backgroundColor: '#059669', // Green (matches KPI card)
                         borderRadius: 2
@@ -6543,7 +6543,7 @@ function renderSubnavProjectDonutChart(inprogress, completed, delayed) {
             type: 'doughnut',
             data: {
                 labels: [
-                    `กำลังเสนอราคา ${ipPercent}%`, 
+                    `งานที่กำลังดำเนินการ ${ipPercent}%`, 
                     `เสร็จแล้วรอส่งงาน ${compPercent}%`, 
                     `งานอนุมัติ ${delayPercent}%`
                 ],
