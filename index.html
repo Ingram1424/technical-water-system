@@ -5226,12 +5226,8 @@ function populateSubnavProjects(yearFilter) {
     if (activeCode && [...projectSelector.options].some(opt => opt.value === activeCode)) {
         projectSelector.value = activeCode;
     } else {
-        // Default to the first actual project (index 1) if available, otherwise "all" (index 0)
-        if (projectSelector.options.length > 1) {
-            projectSelector.selectedIndex = 1;
-        } else {
-            projectSelector.selectedIndex = 0;
-        }
+        // Default to "all" when switching hospital (index 0) — never auto-pick first project
+        projectSelector.selectedIndex = 0;
         appState.selectedDetailProject = projectSelector.value;
         sessionStorage.setItem("technical_water_last_detail_project", appState.selectedDetailProject);
     }
@@ -8351,6 +8347,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const hospitalSelector = document.getElementById("subnav-hospital-selector");
     if (hospitalSelector) {
         hospitalSelector.addEventListener("change", function() {
+            // Auto-reset project selection to "all" when switching hospitals
+            appState.selectedDetailProject = "all";
+            sessionStorage.setItem("technical_water_last_detail_project", "all");
+            const projSel = document.getElementById("subnav-project-selector");
+            if (projSel) projSel.value = "all";
             populateSubnavProjects(subnavYearFilter ? subnavYearFilter.value : "all");
             updateSelectedDetailProject();
             renderSubnavProjectWorkspace();
