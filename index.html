@@ -4424,7 +4424,7 @@ body.public-view-mode #public-view-header {
             </div>
             <form id="create-project-form">
                 <div class="modal-body">
-                    <div class="form-row-2">
+                    <div class="form-row-2" id="create-proj-code-year-row">
                         <div class="form-group">
                             <label class="form-label" for="new-project-code">รหัสโครงการ <span class="required">*</span></label>
                             <input type="text" id="new-project-code" class="form-control" placeholder="เช่น PRJ-2613" required>
@@ -4438,8 +4438,12 @@ body.public-view-mode #public-view-header {
                             </select>
                         </div>
                     </div>
-                    <div class="form-group mt-3">
-                        <label class="form-label" for="new-project-hospital">โรงพยาบาล / ลูกค้า <span class="required">*</span></label>
+                    <div class="form-group mt-3" id="create-proj-name-group">
+                        <label class="form-label" for="new-project-name">ชื่องาน <span class="required">*</span></label>
+                        <input type="text" id="new-project-name" class="form-control" placeholder="เช่น ติดตั้งระบบบำบัดน้ำเสียประหยัดพลังงาน" required>
+                    </div>
+                    <div class="form-group mt-3" id="create-proj-hospital-group">
+                        <label class="form-label" for="new-project-hospital">ระบุโรงพยาบาล <span class="required">*</span></label>
                         <select id="new-project-hospital" class="form-control" required>
                             <option value="โรงพยาบาลพญาไท 1">โรงพยาบาลพญาไท 1</option>
                             <option value="โรงพยาบาลพญาไท 2">โรงพยาบาลพญาไท 2</option>
@@ -4455,11 +4459,11 @@ body.public-view-mode #public-view-header {
                             <option value="โรงพยาบาลเปาโล โชคชัย 4">โรงพยาบาลเปาโล โชคชัย 4</option>
                         </select>
                     </div>
-                    <div class="form-group mt-3">
-                        <label class="form-label" for="new-project-name">ชื่องานพัฒนาโครงการ <span class="required">*</span></label>
-                        <input type="text" id="new-project-name" class="form-control" placeholder="เช่น ติดตั้งระบบบำบัดน้ำเสียประหยัดพลังงาน (2026)" required>
+                    <div class="form-group mt-3" id="create-proj-progress-group">
+                        <label class="form-label" for="new-project-progress">ความคืบหน้า (%) <span class="required">*</span></label>
+                        <input type="number" id="new-project-progress" class="form-control" min="0" max="100" step="any" placeholder="0 - 100" value="0">
                     </div>
-                    <div class="form-row-2 mt-3">
+                    <div class="form-row-2 mt-3" id="create-proj-val-cost-row">
                         <div class="form-group">
                             <label class="form-label" for="new-project-value">มูลค่าสัญญา (บาท) <span class="required">*</span></label>
                             <input type="number" id="new-project-value" class="form-control" placeholder="เช่น 15000000" min="0" step="any" required>
@@ -4471,7 +4475,7 @@ body.public-view-mode #public-view-header {
                     </div>
                     
                     <!-- Excel/CSV Import Section -->
-                    <div style="border-top: 1px dashed var(--border-color); margin-top: 16px; padding-top: 16px;">
+                    <div id="create-proj-csv-section" style="border-top: 1px dashed var(--border-color); margin-top: 16px; padding-top: 16px;">
                         <label class="form-label" style="font-weight: 600; color: var(--navy-medium);"><i class="fa-solid fa-file-csv text-green mr-1"></i> หรือ นำเข้าหลายโครงการพร้อมกัน (Import CSV)</label>
                         <div style="display: flex; gap: 8px; align-items: center; margin-top: 8px;">
                             <input type="file" id="import-projects-csv" class="form-control" accept=".csv" style="padding: 5px; height: auto; flex-grow: 1;">
@@ -4482,7 +4486,7 @@ body.public-view-mode #public-view-header {
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline" id="btn-cancel-create-project">ยกเลิก</button>
-                    <button type="submit" class="btn btn-primary">สร้างโครงการ</button>
+                    <button type="submit" class="btn btn-primary" id="btn-submit-create-project">สร้างโครงการ</button>
                 </div>
             </form>
         </div>
@@ -4681,10 +4685,27 @@ body.public-view-mode #public-view-header {
                         <input type="text" id="edit-project-code-display" class="form-control" disabled style="background: var(--bg-light); color: var(--text-muted);">
                     </div>
                     <div class="form-group mt-3">
-                        <label class="form-label" for="edit-project-name">ชื่อโครงการ <span class="required">*</span></label>
+                        <label class="form-label" for="edit-project-name">ชื่องาน <span class="required">*</span></label>
                         <input type="text" id="edit-project-name" class="form-control" required>
                     </div>
-                    <div class="form-row-2 mt-3">
+                    <div class="form-group mt-3" id="edit-proj-customer-group">
+                        <label class="form-label" for="edit-project-customer">ระบุโรงพยาบาล <span class="required">*</span></label>
+                        <select id="edit-project-customer" class="form-control">
+                            <option value="โรงพยาบาลพญาไท 1">โรงพยาบาลพญาไท 1</option>
+                            <option value="โรงพยาบาลพญาไท 2">โรงพยาบาลพญาไท 2</option>
+                            <option value="โรงพยาบาลพญาไท 3">โรงพยาบาลพญาไท 3</option>
+                            <option value="โรงพยาบาลพญาไท นวมินทร์">โรงพยาบาลพญาไท นวมินทร์</option>
+                            <option value="โรงพยาบาลพญาไท บ่อวิน">โรงพยาบาลพญาไท บ่อวิน</option>
+                            <option value="โรงพยาบาลพญาไท พหลโยธิน">โรงพยาบาลพญาไท พหลโยธิน</option>
+                            <option value="โรงพยาบาลพญาไท ศรีราชา">โรงพยาบาลพญาไท ศรีราชา</option>
+                            <option value="โรงพยาบาลเปาโล พระประแดง">โรงพยาบาลเปาโล พระประแดง</option>
+                            <option value="โรงพยาบาลเปาโล รังสิต">โรงพยาบาลเปาโล รังสิต</option>
+                            <option value="โรงพยาบาลเปาโล สมุทรปราการ">โรงพยาบาลเปาโล สมุทรปราการ</option>
+                            <option value="โรงพยาบาลเปาโล เกษตร">โรงพยาบาลเปาโล เกษตร</option>
+                            <option value="โรงพยาบาลเปาโล โชคชัย 4">โรงพยาบาลเปาโล โชคชัย 4</option>
+                        </select>
+                    </div>
+                    <div class="form-row-2 mt-3" id="edit-proj-val-cost-row">
                         <div class="form-group">
                             <label class="form-label" for="edit-project-value">มูลค่าสัญญา (บาท)</label>
                             <input type="number" id="edit-project-value" class="form-control" min="0" step="any">
@@ -4694,7 +4715,7 @@ body.public-view-mode #public-view-header {
                             <input type="number" id="edit-project-cost" class="form-control" min="0" step="any">
                         </div>
                     </div>
-                    <div class="form-row-2 mt-3">
+                    <div class="form-row-2 mt-3" id="edit-proj-dates-row">
                         <div class="form-group">
                             <label class="form-label" for="edit-project-start">วันที่เริ่มต้น</label>
                             <input type="date" id="edit-project-start" class="form-control">
@@ -4704,13 +4725,13 @@ body.public-view-mode #public-view-header {
                             <input type="date" id="edit-project-end" class="form-control">
                         </div>
                     </div>
-                    <div class="form-row-2 mt-3">
-                        <div class="form-group">
+                    <div class="form-row-2 mt-3" id="edit-proj-progress-row">
+                        <div class="form-group" id="edit-proj-planned-group">
                             <label class="form-label" for="edit-project-planned">แผน % (Planned)</label>
                             <input type="number" id="edit-project-planned" class="form-control" min="0" max="100" step="any">
                         </div>
-                        <div class="form-group">
-                            <label class="form-label" for="edit-project-progress">จริง % (Actual)</label>
+                        <div class="form-group" id="edit-proj-progress-group">
+                            <label class="form-label" for="edit-project-progress">ความคืบหน้า (%)</label>
                             <input type="number" id="edit-project-progress" class="form-control" min="0" max="100" step="any">
                         </div>
                     </div>
@@ -5679,18 +5700,21 @@ function switchView(viewName) {
     if (sidebarSubnav) {
         if (viewName === "projects-list" || viewName === "quoting-projects-list") {
             sidebarSubnav.style.display = "block";
+            const sidebarCreateBtn = document.getElementById("sidebar-create-project-btn");
             if (viewName === "quoting-projects-list") {
                 if (navItemQuoting && sidebarSubnav.previousElementSibling !== navItemQuoting) {
                     navItemQuoting.insertAdjacentElement("afterend", sidebarSubnav);
                 }
                 if (subnavHeaderIcon) subnavHeaderIcon.className = "fa-solid fa-file-invoice sidebar-proj-icon";
                 if (subnavHeaderTitle) subnavHeaderTitle.textContent = "Quotation Detail";
+                if (sidebarCreateBtn) sidebarCreateBtn.innerHTML = `<i class="fa-solid fa-plus-circle"></i> สร้างรายการเสนอราคาใหม่`;
             } else {
                 if (navItemProjects && sidebarSubnav.previousElementSibling !== navItemProjects) {
                     navItemProjects.insertAdjacentElement("afterend", sidebarSubnav);
                 }
                 if (subnavHeaderIcon) subnavHeaderIcon.className = "fa-solid fa-folder-open sidebar-proj-icon";
                 if (subnavHeaderTitle) subnavHeaderTitle.textContent = "Project Detail";
+                if (sidebarCreateBtn) sidebarCreateBtn.innerHTML = `<i class="fa-solid fa-plus-circle"></i> สร้างโครงการใหม่`;
             }
         } else {
             sidebarSubnav.style.display = "none";
@@ -8882,13 +8906,45 @@ document.addEventListener("DOMContentLoaded", () => {
     const createProjectForm = document.getElementById("create-project-form");
 
     const openCreateProjectModal = () => {
-        // Only clear if no draft exists — draft system will restore if available
+        const isQuoting = (appState.currentView === "quoting-projects-list");
+        const modalTitle = createProjectModal.querySelector(".modal-title");
+        const submitBtn = document.getElementById("btn-submit-create-project");
+        
+        const codeYearRow = document.getElementById("create-proj-code-year-row");
+        const valCostRow = document.getElementById("create-proj-val-cost-row");
+        const csvSection = document.getElementById("create-proj-csv-section");
+        const codeInput = document.getElementById("new-project-code");
+        const valInput = document.getElementById("new-project-value");
+        const costInput = document.getElementById("new-project-cost");
+
+        if (isQuoting) {
+            if (modalTitle) modalTitle.innerHTML = `<i class="fa-solid fa-file-circle-plus"></i> เพิ่มรายการเสนอราคาใหม่`;
+            if (submitBtn) submitBtn.textContent = "สร้างรายการเสนอราคา";
+            if (codeYearRow) codeYearRow.style.display = "none";
+            if (valCostRow) valCostRow.style.display = "none";
+            if (csvSection) csvSection.style.display = "none";
+            if (codeInput) codeInput.removeAttribute("required");
+            if (valInput) valInput.removeAttribute("required");
+            if (costInput) costInput.removeAttribute("required");
+        } else {
+            if (modalTitle) modalTitle.innerHTML = `<i class="fa-solid fa-folder-plus"></i> สร้างโครงการใหม่`;
+            if (submitBtn) submitBtn.textContent = "สร้างโครงการ";
+            if (codeYearRow) codeYearRow.style.display = "flex";
+            if (valCostRow) valCostRow.style.display = "flex";
+            if (csvSection) csvSection.style.display = "block";
+            if (codeInput) codeInput.setAttribute("required", "true");
+            if (valInput) valInput.setAttribute("required", "true");
+            if (costInput) costInput.setAttribute("required", "true");
+        }
+
         const hasDraft = sessionStorage.getItem("draft_create_project");
         if (!hasDraft) {
             document.getElementById("new-project-code").value = "";
             document.getElementById("new-project-name").value = "";
             document.getElementById("new-project-value").value = "";
             document.getElementById("new-project-cost").value = "";
+            const progressEl = document.getElementById("new-project-progress");
+            if (progressEl) progressEl.value = "0";
         }
         createProjectModal.classList.add("active");
     };
@@ -8909,17 +8965,25 @@ document.addEventListener("DOMContentLoaded", () => {
         createProjectForm.addEventListener("submit", function(e) {
             e.preventDefault();
             
-            const code = document.getElementById("new-project-code").value.trim().toUpperCase();
-            const year = document.getElementById("new-project-year").value;
+            const isQuoting = (appState.currentView === "quoting-projects-list");
+            let code = document.getElementById("new-project-code").value.trim().toUpperCase();
+            if (isQuoting || !code) {
+                code = "QT-" + Math.floor(100000 + Math.random() * 900000);
+            }
+            const name = document.getElementById("new-project-name").value.trim();
+            const year = document.getElementById("new-project-year").value || "2026";
             const hospital = document.getElementById("new-project-hospital").value;
+            const progress = parseFloat(document.getElementById("new-project-progress").value) || 0;
             const value = parseFloat(document.getElementById("new-project-value").value) || 0;
             const cost = parseFloat(document.getElementById("new-project-cost").value) || 0;
             
             if (projectsData[code]) {
-                showToast(`รหัสโครงการ ${code} ซ้ำกับโครงการที่มีอยู่แล้ว!`, "error");
+                showToast(`รหัส ${code} ซ้ำกับรายการที่มีอยู่แล้ว!`, "error");
                 return;
             }
             
+            const initialStatus = isQuoting ? "งานที่กำลังเสนอราคา" : "งานที่กำลังดำเนินการ";
+
             // Build the mock database entry
             projectsData[code] = {
                 code: code,
@@ -8933,9 +8997,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 value: value,
                 cost: cost,
                 profit: value - cost,
-                progress: 0,
+                progress: progress,
                 plannedProgress: 10,
-                status: "กำลังดำเนินการ",
+                status: initialStatus,
                 jobs: { total: 10, inprogress: 10, completed: 0, delayed: 0 },
                 workBreakdown: {
                     inprogress: [2, 2, 2, 2, 2, 0],
@@ -9700,15 +9764,35 @@ document.addEventListener("DOMContentLoaded", () => {
     const openEditProjectModal = () => {
         const code = appState.selectedDetailProject;
         if (!code || code === "all") {
-            showToast("กรุณาเลือกโครงการเฉพาะเจาะจงก่อนแก้ไข", "warning");
+            showToast("กรุณาเลือกรายการเฉพาะเจาะจงก่อนแก้ไข", "warning");
             return;
         }
         const proj = projectsData[code];
         if (!proj) return;
 
+        const isQuoting = (appState.currentView === "quoting-projects-list") || (proj.status === "งานที่กำลังเสนอราคา");
+        const modalTitle = editProjectModal.querySelector(".modal-title");
+        const valCostRow = document.getElementById("edit-proj-val-cost-row");
+        const datesRow = document.getElementById("edit-proj-dates-row");
+        const plannedGroup = document.getElementById("edit-proj-planned-group");
+
+        if (isQuoting) {
+            if (modalTitle) modalTitle.innerHTML = `<i class="fa-solid fa-pen-to-square"></i> แก้ไขรายการเสนอราคา`;
+            if (valCostRow) valCostRow.style.display = "none";
+            if (datesRow) datesRow.style.display = "none";
+            if (plannedGroup) plannedGroup.style.display = "none";
+        } else {
+            if (modalTitle) modalTitle.innerHTML = `<i class="fa-solid fa-pen-to-square"></i> แก้ไขข้อมูลโครงการ`;
+            if (valCostRow) valCostRow.style.display = "flex";
+            if (datesRow) datesRow.style.display = "flex";
+            if (plannedGroup) plannedGroup.style.display = "block";
+        }
+
         document.getElementById("edit-project-code").value = code;
         document.getElementById("edit-project-code-display").value = code;
         document.getElementById("edit-project-name").value = proj.name || "";
+        const customerEl = document.getElementById("edit-project-customer");
+        if (customerEl) customerEl.value = proj.customer || "โรงพยาบาลพญาไท 1";
         document.getElementById("edit-project-value").value = proj.value || 0;
         document.getElementById("edit-project-cost").value = proj.cost || 0;
         // Convert DD/MM/YYYY → YYYY-MM-DD for date inputs
@@ -9722,7 +9806,7 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("edit-project-end").value = toISO(proj.end);
         document.getElementById("edit-project-planned").value = proj.plannedProgress || 0;
         document.getElementById("edit-project-progress").value = proj.progress || 0;
-        document.getElementById("edit-project-status").value = proj.status || "กำลังดำเนินการ";
+        document.getElementById("edit-project-status").value = proj.status || "งานที่กำลังดำเนินการ";
         document.getElementById("edit-project-desc").value = proj.description || "";
 
         if (editProjectModal) editProjectModal.classList.add("active");
@@ -9755,6 +9839,8 @@ document.addEventListener("DOMContentLoaded", () => {
             };
 
             proj.name = document.getElementById("edit-project-name").value.trim();
+            const customerEl = document.getElementById("edit-project-customer");
+            if (customerEl) proj.customer = customerEl.value;
             proj.value = parseFloat(document.getElementById("edit-project-value").value) || 0;
             proj.cost = parseFloat(document.getElementById("edit-project-cost").value) || 0;
             proj.profit = proj.value - proj.cost;
@@ -9768,10 +9854,10 @@ document.addEventListener("DOMContentLoaded", () => {
             // Save and sync immediately
             saveToLocalStorage();
 
-            showToast(`แก้ไขโครงการ ${code} เรียบร้อยแล้ว!`, "success");
+            showToast(`แก้ไขข้อมูล ${code} เรียบร้อยแล้ว!`, "success");
             closeEditProjectModal();
 
-            populateSubnavProjects(document.getElementById("subnav-year-filter").value);
+            populateSubnavProjects(document.getElementById("subnav-year-filter") ? document.getElementById("subnav-year-filter").value : "all");
             populateCostProjects();
             renderOverallDashboard();
             renderSubnavProjectWorkspace();
