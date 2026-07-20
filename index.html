@@ -3124,6 +3124,10 @@ body.public-view-mode #public-view-header {
                         <button class="btn btn-sm hide-accounting hide-customer" id="copy-share-link-btn" style="width: 100%; font-size: 11px; padding: 5px; height: auto; border-radius: var(--radius-sm); margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 5px; background: linear-gradient(135deg, #0d9488, #0891b2); color: #fff; border: none; cursor: pointer;">
                             <i class="fa-solid fa-share-nodes"></i> คัดลอกลิงก์แชร์โครงการ
                         </button>
+                        <!-- Export Project PDF Report Button -->
+                        <button class="btn btn-sm" id="export-project-pdf-btn" style="width: 100%; font-size: 11px; padding: 5px; height: auto; border-radius: var(--radius-sm); margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 5px; background: linear-gradient(135deg, #dc2626, #b91c1c); color: #fff; border: none; cursor: pointer;">
+                            <i class="fa-solid fa-file-pdf"></i> ส่งออก PDF รายงานโครงการ
+                        </button>
                     </div>
 
                     <!-- Subtab Items (Below dropdowns) -->
@@ -9951,6 +9955,451 @@ document.addEventListener("DOMContentLoaded", () => {
             showToast("ส่งออก PDF ล้มเหลว: " + err.message, "error");
         }
     };
+
+    // --- EXPORT PROJECT PDF REPORT SYSTEM ---
+    window.exportProjectPDF = function(projectCode) {
+        const code = projectCode || appState.selectedDetailProject;
+        if (!code) {
+            showToast("กรุณาเลือกโครงการที่ต้องการส่งออก PDF", "warning");
+            return;
+        }
+
+        const isCustomer = appState.currentRole === "customer";
+        const now = new Date();
+        const dateStr = now.toLocaleDateString("th-TH", { day: '2-digit', month: '2-digit', year: 'numeric' });
+        const timeStr = now.toLocaleTimeString("th-TH", { hour: '2-digit', minute: '2-digit' });
+
+        let projectsToExport = [];
+        const isAllView = (code === "all");
+
+        if (isAllView) {
+            const hospitalVal = document.getElementById("subnav-hospital-selector") ? document.getElementById("subnav-hospital-selector").value : "all";
+            const yearVal = document.getElementById("subnav-year-filter") ? document.getElementById("subnav-year-filter").value : "all";
+            projectsToExport = Object.values(projectsData).filter(p => {
+                const hMatch = hospitalVal === "all" || p.customer === hospitalVal;
+                const yMatch = yearVal === "all" || p.year === parseInt(yearVal);
+                return hMatch && yMatch;
+            });
+        } else {
+            const proj = projectsData[code];
+            if (proj) projectsToExport = [proj];
+        }
+
+        if (projectsToExport.length === 0) {
+            showToast("ไม่พบข้อมูลโครงการสำหรับสร้างเอกสาร PDF", "error");
+            return;
+        }
+
+        try {
+            const printWindow = window.open("", "_blank");
+            if (!printWindow) {
+                showToast("เบราว์เซอร์บล็อกป๊อปอัป กรุณาอนุญาตป๊อปอัปแล้วลองอีกครั้ง", "error");
+                return;
+            }
+
+            let projectsHTML = "";
+            projectsToExport.forEach((proj, idx) => {
+                // Financial details (hidden for customer role)
+                const finHTML = isCustomer ? "" : `
+                    <div class="financial-grid">
+                        <div class="fin-box">
+                            <span class="fin-label">มูลค่าสัญญา</span>
+                            <strong class="fin-val">${formatNumber(proj.value)} บาท</strong>
+                        </div>
+                        <div class="fin-box">
+                            <span class="fin-label">ต้นทุนประมาณการ</span>
+                            <strong class="fin-val">${formatNumber(proj.cost)} บาท</strong>
+                        </div>
+                        <div class="fin-box">
+                            <span class="fin-label">กำไรขั้นต้น</span>
+                            <strong class="fin-val text-green">${formatNumber(proj.profit)} บาท</strong>
+                        </div>
+                    </div>
+                `;
+
+                // Tasks List Table
+                let tasksHTML = "";
+                if (proj.tasks && proj.tasks.length > 0) {
+                    let rows = proj.tasks.map((t, i) => `
+                        <tr>
+                            <td style="text-align: center;">${i + 1}</td>
+                            <td><strong>${t.title}</strong></td>
+                            <td style="text-align: center;">${t.start || '-'}</td>
+                            <td style="text-align: center;">${t.end || '-'}</td>
+                            <td style="text-align: center; font-weight: 700; color: #059669;">${t.progress || 0}%</td>
+                            <td style="text-align: center;">${t.status || 'กำลังดำเนินการ'}</td>
+                        </tr>
+                    `).join("");
+
+                    tasksHTML = `
+                        <div class="section-title"><i class="fa-solid fa-list-check"></i> รายการแผนงานย่อย (Work Breakdown Tasks)</div>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40px; text-align: center;">#</th>
+                                    <th>ชื่อหมวดงาน / กิจกรรม</th>
+                                    <th style="width: 100px; text-align: center;">เริ่มต้น</th>
+                                    <th style="width: 100px; text-align: center;">สิ้นสุด</th>
+                                    <th style="width: 80px; text-align: center;">ความคืบหน้า</th>
+                                    <th style="width: 110px; text-align: center;">สถานะ</th>
+                                </tr>
+                            </thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                    `;
+                }
+
+                // Daily Reports Summary
+                let dailyReportsHTML = "";
+                if (proj.dailyReports && proj.dailyReports.length > 0) {
+                    let rows = proj.dailyReports.slice(-5).map((dr, i) => `
+                        <tr>
+                            <td style="text-align: center;">${i + 1}</td>
+                            <td style="text-align: center;">${dr.date}</td>
+                            <td>${dr.description}</td>
+                            <td style="text-align: center;">${dr.reporter || 'ทีมวิศวกร'}</td>
+                        </tr>
+                    `).join("");
+
+                    dailyReportsHTML = `
+                        <div class="section-title"><i class="fa-solid fa-file-signature"></i> สรุปรายงานการปฏิบัติงานประจำวัน (Daily Site Reports)</div>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 40px; text-align: center;">#</th>
+                                    <th style="width: 100px; text-align: center;">วันที่</th>
+                                    <th>รายละเอียดการทำงานหน้างาน</th>
+                                    <th style="width: 120px; text-align: center;">ผู้รายงาน</th>
+                                </tr>
+                            </thead>
+                            <tbody>${rows}</tbody>
+                        </table>
+                    `;
+                }
+
+                projectsHTML += `
+                    <div class="project-page ${idx > 0 ? 'page-break' : ''}">
+                        <!-- Company Header -->
+                        <div class="company-header">
+                            <div class="header-left">
+                                <h1 class="company-title">TECHNICAL WATER ENGINEERING & FACILITY</h1>
+                                <p class="company-sub">บริษัท เทคนิคอล วอเตอร์ เอ็นจิเนียริ่ง แอนด์ แฟซิลิตี้ จำกัด</p>
+                            </div>
+                            <div class="header-right">
+                                <div class="report-badge">PROJECT STATUS REPORT</div>
+                                <div class="report-date">วันที่พิมพ์: ${dateStr} ${timeStr} น.</div>
+                            </div>
+                        </div>
+
+                        <!-- Report Title Banner -->
+                        <div class="title-banner">
+                            <h2>รายงานสรุปข้อมูลโครงการ (${proj.code})</h2>
+                        </div>
+
+                        <!-- Project Info Box -->
+                        <div class="info-grid">
+                            <div class="info-cell">
+                                <span class="info-lbl">รหัสโครงการ:</span>
+                                <strong class="info-val">${proj.code}</strong>
+                            </div>
+                            <div class="info-cell">
+                                <span class="info-lbl">ปีงบประมาณ:</span>
+                                <strong class="info-val">ปี ${proj.year}</strong>
+                            </div>
+                            <div class="info-cell span-2">
+                                <span class="info-lbl">ชื่อโครงการ:</span>
+                                <strong class="info-val">${proj.name}</strong>
+                            </div>
+                            <div class="info-cell span-2">
+                                <span class="info-lbl">โรงพยาบาล / ลูกค้า:</span>
+                                <strong class="info-val">${proj.customer}</strong>
+                            </div>
+                            <div class="info-cell">
+                                <span class="info-lbl">ผู้ดูแลโครงการ (PM):</span>
+                                <strong class="info-val">${proj.manager || 'วิศวกรโครงการอาวุโส (PM Team)'}</strong>
+                            </div>
+                            <div class="info-cell">
+                                <span class="info-lbl">ระยะเวลาสัญญา:</span>
+                                <strong class="info-val">${proj.start || '-'} ถึง ${proj.end || '-'}</strong>
+                            </div>
+                            <div class="info-cell span-2">
+                                <span class="info-lbl">สถานะโครงการ:</span>
+                                <strong class="info-val status-badge">${proj.status || 'งานที่กำลังดำเนินการ'}</strong>
+                            </div>
+                        </div>
+
+                        <!-- Progress Section -->
+                        <div class="progress-box">
+                            <div class="progress-header">
+                                <span>ความก้าวหน้าโครงการจริง (Actual Progress):</span>
+                                <strong class="progress-num">${proj.progress || 0}%</strong>
+                            </div>
+                            <div class="progress-track">
+                                <div class="progress-fill" style="width: ${proj.progress || 0}%;"></div>
+                            </div>
+                        </div>
+
+                        ${finHTML}
+                        ${tasksHTML}
+                        ${dailyReportsHTML}
+
+                        <!-- Official Signatures Box -->
+                        <div class="signatures-box">
+                            <div class="sig-column">
+                                <div class="sig-line"></div>
+                                <p class="sig-name">( ${proj.manager || 'วิศวกรผู้ควบคุมงาน'} )</p>
+                                <p class="sig-title">ผู้รายงาน / วิศวกรโครงการ</p>
+                            </div>
+                            <div class="sig-column">
+                                <div class="sig-line"></div>
+                                <p class="sig-name">( คุณ Admin Project )</p>
+                                <p class="sig-title">ผู้จัดการโครงการ (Project Manager)</p>
+                            </div>
+                            <div class="sig-column">
+                                <div class="sig-line"></div>
+                                <p class="sig-name">( ตัวแทนโรงพยาบาล )</p>
+                                <p class="sig-title">ผู้รับมอบงาน / คณะกรรมการตรวจรับ</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html lang="th">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Project Report - ${code}</title>
+                    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+                    <style>
+                        @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
+                        body {
+                            font-family: 'Sarabun', sans-serif;
+                            color: #1e293b;
+                            margin: 0;
+                            padding: 24px;
+                            background: #fff;
+                            font-size: 13px;
+                            line-height: 1.5;
+                        }
+                        .project-page {
+                            max-width: 800px;
+                            margin: 0 auto 30px auto;
+                        }
+                        .page-break {
+                            page-break-before: always;
+                        }
+                        .company-header {
+                            display: flex;
+                            justify-content: space-between;
+                            align-items: center;
+                            border-bottom: 2px solid #0284c7;
+                            padding-bottom: 12px;
+                            margin-bottom: 16px;
+                        }
+                        .company-title {
+                            font-size: 16px;
+                            font-weight: 700;
+                            color: #0f172a;
+                            margin: 0;
+                        }
+                        .company-sub {
+                            font-size: 11px;
+                            color: #64748b;
+                            margin: 2px 0 0 0;
+                        }
+                        .report-badge {
+                            background: #0284c7;
+                            color: #fff;
+                            font-size: 10px;
+                            font-weight: 700;
+                            padding: 3px 10px;
+                            border-radius: 4px;
+                            text-align: right;
+                            display: inline-block;
+                        }
+                        .report-date {
+                            font-size: 10px;
+                            color: #64748b;
+                            margin-top: 4px;
+                        }
+                        .title-banner {
+                            background: #f1f5f9;
+                            border-left: 4px solid #0284c7;
+                            padding: 10px 14px;
+                            margin-bottom: 16px;
+                        }
+                        .title-banner h2 {
+                            font-size: 16px;
+                            font-weight: 700;
+                            margin: 0;
+                            color: #0f172a;
+                        }
+                        .info-grid {
+                            display: grid;
+                            grid-template-columns: 1fr 1fr;
+                            gap: 8px 16px;
+                            background: #fafafa;
+                            border: 1px solid #e2e8f0;
+                            border-radius: 6px;
+                            padding: 14px;
+                            margin-bottom: 16px;
+                        }
+                        .info-cell {
+                            font-size: 12px;
+                        }
+                        .info-cell.span-2 {
+                            grid-column: span 2;
+                        }
+                        .info-lbl {
+                            color: #64748b;
+                            margin-right: 6px;
+                        }
+                        .info-val {
+                            color: #0f172a;
+                        }
+                        .status-badge {
+                            background: #dcfce7;
+                            color: #15803d;
+                            padding: 2px 8px;
+                            border-radius: 12px;
+                            font-size: 11px;
+                        }
+                        .progress-box {
+                            background: #f8fafc;
+                            border: 1px solid #e2e8f0;
+                            border-radius: 6px;
+                            padding: 12px 14px;
+                            margin-bottom: 16px;
+                        }
+                        .progress-header {
+                            display: flex;
+                            justify-content: space-between;
+                            font-size: 12px;
+                            margin-bottom: 6px;
+                        }
+                        .progress-num {
+                            color: #059669;
+                            font-size: 14px;
+                        }
+                        .progress-track {
+                            height: 10px;
+                            background: #e2e8f0;
+                            border-radius: 5px;
+                            overflow: hidden;
+                        }
+                        .progress-fill {
+                            height: 100%;
+                            background: linear-gradient(90deg, #10b981, #059669);
+                            border-radius: 5px;
+                        }
+                        .financial-grid {
+                            display: grid;
+                            grid-template-columns: 1fr 1fr 1fr;
+                            gap: 10px;
+                            margin-bottom: 16px;
+                        }
+                        .fin-box {
+                            background: #f1f5f9;
+                            border: 1px solid #cbd5e1;
+                            padding: 10px;
+                            border-radius: 6px;
+                            text-align: center;
+                        }
+                        .fin-label {
+                            display: block;
+                            font-size: 10.5px;
+                            color: #64748b;
+                        }
+                        .fin-val {
+                            font-size: 14px;
+                            color: #0f172a;
+                        }
+                        .text-green { color: #059669 !important; }
+                        .section-title {
+                            font-size: 13px;
+                            font-weight: 700;
+                            color: #0f172a;
+                            margin: 16px 0 8px 0;
+                            border-bottom: 1px solid #e2e8f0;
+                            padding-bottom: 4px;
+                        }
+                        .data-table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin-bottom: 16px;
+                            font-size: 11.5px;
+                        }
+                        .data-table th, .data-table td {
+                            border: 1px solid #cbd5e1;
+                            padding: 6px 8px;
+                        }
+                        .data-table th {
+                            background: #f1f5f9;
+                            font-weight: 600;
+                            color: #334155;
+                        }
+                        .signatures-box {
+                            display: grid;
+                            grid-template-columns: 1fr 1fr 1fr;
+                            gap: 20px;
+                            margin-top: 36px;
+                            padding-top: 20px;
+                            border-top: 1px dashed #cbd5e1;
+                            page-break-inside: avoid;
+                        }
+                        .sig-column {
+                            text-align: center;
+                        }
+                        .sig-line {
+                            border-bottom: 1px solid #94a3b8;
+                            height: 40px;
+                            margin-bottom: 8px;
+                        }
+                        .sig-name {
+                            font-size: 11px;
+                            font-weight: 600;
+                            margin: 0;
+                        }
+                        .sig-title {
+                            font-size: 10px;
+                            color: #64748b;
+                            margin: 2px 0 0 0;
+                        }
+                        @media print {
+                            body { padding: 0; }
+                            .project-page { max-width: 100%; }
+                        }
+                    </style>
+                </head>
+                <body>
+                    ${projectsHTML}
+                    <script>
+                        window.onload = function() {
+                            setTimeout(function() {
+                                window.print();
+                                window.close();
+                            }, 500);
+                        };
+                    <\/script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            showToast("เปิดหน้าต่างพิมพ์รายงาน PDF โครงการสำเร็จ", "success");
+        } catch (e) {
+            console.error("Export Project PDF failed:", e);
+            showToast("ส่งออก PDF ล้มเหลว: " + e.message, "error");
+        }
+    };
+
+    const exportProjPdfBtn = document.getElementById("export-project-pdf-btn");
+    if (exportProjPdfBtn) {
+        exportProjPdfBtn.addEventListener("click", () => {
+            window.exportProjectPDF(appState.selectedDetailProject);
+        });
+    }
 
     const closePdfViewerFn = () => {
         if (pdfViewerModal) pdfViewerModal.classList.remove("active");
