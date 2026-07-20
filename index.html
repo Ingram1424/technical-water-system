@@ -9992,10 +9992,76 @@ function renderPermissionsManagement() {
         "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4"
     ];
 
+    let currentAllowedProjects = new Set();
+
+    function renderProjectsList() {
+        const pList = document.getElementById("perm-projects-checkbox-list");
+        if (!pList) return;
+        pList.innerHTML = "";
+
+        const checkedHospitals = [...document.querySelectorAll("#perm-hospitals-checkbox-list input[type='checkbox']:checked")]
+            .map(cb => cb.getAttribute("data-hospital"));
+
+        if (checkedHospitals.length === 0) {
+            pList.innerHTML = `<div style="text-align:center; color: var(--text-muted); font-size: 12px; padding: 32px 16px; font-style: italic;">
+                <i class="fa-solid fa-hospital text-blue" style="font-size: 24px; display: block; margin-bottom: 8px; opacity: 0.5;"></i>
+                กรุณาเลือกติ๊กโรงพยาบาลด้านซ้าย เพื่อดูและกำหนดสิทธิ์โครงการย่อย
+            </div>`;
+            return;
+        }
+
+        const allProjects = Object.values(projectsData).filter(p => checkedHospitals.includes(p.customer));
+        if (allProjects.length === 0) {
+            pList.innerHTML = `<div style="text-align:center; color: var(--text-muted); font-size: 12px; padding: 24px;">ไม่พบรายการโครงการสำหรับโรงพยาบาลที่เลือก</div>`;
+            return;
+        }
+
+        // Group by hospital
+        const grouped = {};
+        allProjects.forEach(p => {
+            if (!grouped[p.customer]) grouped[p.customer] = [];
+            grouped[p.customer].push(p);
+        });
+
+        Object.keys(grouped).forEach(hosp => {
+            const groupHeader = document.createElement("div");
+            groupHeader.style.cssText = "font-size: 10px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: var(--primary-blue); margin-top: 8px; margin-bottom: 4px; padding-bottom: 2px; border-bottom: 1px dashed var(--border-color);";
+            groupHeader.textContent = hosp.replace("โรงพยาบาล", "รพ.");
+            pList.appendChild(groupHeader);
+
+            grouped[hosp].forEach(p => {
+                const isChecked = currentAllowedProjects.has(p.code);
+                const id = `perm-p-${p.code.replace(/\s+/g, "-")}`;
+                const wrapper = document.createElement("label");
+                wrapper.style.cssText = "display: flex; align-items: flex-start; gap: 10px; cursor: pointer; padding: 8px 10px; border-radius: 6px; border: 1px solid " + (isChecked ? "#bfdbfe" : "var(--border-color)") + "; background: " + (isChecked ? "#eff6ff" : "transparent") + "; transition: all 0.15s; margin-bottom: 4px;";
+                wrapper.htmlFor = id;
+                wrapper.innerHTML = `
+                    <input type="checkbox" id="${id}" data-project="${p.code}" ${isChecked ? "checked" : ""} style="width: 15px; height: 15px; accent-color: var(--primary-blue); cursor: pointer; flex-shrink: 0; margin-top: 1px;">
+                    <div>
+                        <div style="font-size: 12px; font-weight: 700; color: var(--navy-dark);">${p.code}</div>
+                        <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 1px;">${p.name.replace(/ \(\d{4}\)$/, '')}</div>
+                    </div>`;
+                const cb = wrapper.querySelector("input");
+                cb.addEventListener("change", () => {
+                    if (cb.checked) {
+                        currentAllowedProjects.add(p.code);
+                    } else {
+                        currentAllowedProjects.delete(p.code);
+                    }
+                    wrapper.style.borderColor = cb.checked ? "#bfdbfe" : "var(--border-color)";
+                    wrapper.style.background = cb.checked ? "#eff6ff" : "transparent";
+                });
+                pList.appendChild(wrapper);
+            });
+        });
+    }
+
     function loadCheckboxes(cUserKey) {
         const perms = appState.userPermissions[cUserKey] || { hospitals: [], projects: [] };
         const allowedH = perms.hospitals || [];
         const allowedP = perms.projects || [];
+
+        currentAllowedProjects = new Set(allowedP);
 
         // Render hospitals
         const hList = document.getElementById("perm-hospitals-checkbox-list");
@@ -10012,58 +10078,17 @@ function renderPermissionsManagement() {
                     <div>
                         <div style="font-size: 12.5px; font-weight: 600; color: var(--navy-dark);">${h}</div>
                     </div>`;
-                // Style update on check/uncheck
                 const cb = wrapper.querySelector("input");
                 cb.addEventListener("change", () => {
                     wrapper.style.borderColor = cb.checked ? "#bfdbfe" : "var(--border-color)";
                     wrapper.style.background = cb.checked ? "#eff6ff" : "transparent";
+                    renderProjectsList();
                 });
                 hList.appendChild(wrapper);
             });
         }
 
-        // Render projects
-        const pList = document.getElementById("perm-projects-checkbox-list");
-        if (pList) {
-            pList.innerHTML = "";
-            const allProjects = Object.values(projectsData);
-            if (allProjects.length === 0) {
-                pList.innerHTML = `<div style="text-align:center; color: var(--text-muted); font-size: 12px; padding: 16px;">ยังไม่มีโครงการในระบบ</div>`;
-                return;
-            }
-            // Group by hospital
-            const grouped = {};
-            allProjects.forEach(p => {
-                if (!grouped[p.customer]) grouped[p.customer] = [];
-                grouped[p.customer].push(p);
-            });
-            Object.keys(grouped).forEach(hosp => {
-                const groupHeader = document.createElement("div");
-                groupHeader.style.cssText = "font-size: 10px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-muted); margin-top: 6px; margin-bottom: 2px;";
-                groupHeader.textContent = hosp.replace("โรงพยาบาล", "รพ.");
-                pList.appendChild(groupHeader);
-
-                grouped[hosp].forEach(p => {
-                    const isChecked = allowedP.includes(p.code);
-                    const id = `perm-p-${p.code.replace(/\s+/g, "-")}`;
-                    const wrapper = document.createElement("label");
-                    wrapper.style.cssText = "display: flex; align-items: flex-start; gap: 10px; cursor: pointer; padding: 8px 10px; border-radius: 6px; border: 1px solid " + (isChecked ? "#bfdbfe" : "var(--border-color)") + "; background: " + (isChecked ? "#eff6ff" : "transparent") + "; transition: all 0.15s;";
-                    wrapper.htmlFor = id;
-                    wrapper.innerHTML = `
-                        <input type="checkbox" id="${id}" data-project="${p.code}" ${isChecked ? "checked" : ""} style="width: 15px; height: 15px; accent-color: var(--primary-blue); cursor: pointer; flex-shrink: 0; margin-top: 1px;">
-                        <div>
-                            <div style="font-size: 12px; font-weight: 700; color: var(--navy-dark);">${p.code}</div>
-                            <div style="font-size: 10.5px; color: var(--text-muted); margin-top: 1px;">${p.name.replace(/ \(\d{4}\)$/, '')}</div>
-                        </div>`;
-                    const cb = wrapper.querySelector("input");
-                    cb.addEventListener("change", () => {
-                        wrapper.style.borderColor = cb.checked ? "#bfdbfe" : "var(--border-color)";
-                        wrapper.style.background = cb.checked ? "#eff6ff" : "transparent";
-                    });
-                    pList.appendChild(wrapper);
-                });
-            });
-        }
+        renderProjectsList();
     }
 
     // Initial load
@@ -10082,9 +10107,11 @@ function renderPermissionsManagement() {
             const allChecked = [...checkboxes].every(cb => cb.checked);
             checkboxes.forEach(cb => {
                 cb.checked = !allChecked;
-                cb.dispatchEvent(new Event("change"));
+                cb.parentElement.style.borderColor = cb.checked ? "#bfdbfe" : "var(--border-color)";
+                cb.parentElement.style.background = cb.checked ? "#eff6ff" : "transparent";
             });
             toggleAllHospitalsBtn.textContent = allChecked ? "เลือกทั้งหมด" : "ยกเลิกทั้งหมด";
+            renderProjectsList();
         };
     }
 
@@ -10093,10 +10120,18 @@ function renderPermissionsManagement() {
     if (toggleAllProjectsBtn) {
         toggleAllProjectsBtn.onclick = function() {
             const checkboxes = document.querySelectorAll("#perm-projects-checkbox-list input[type='checkbox']");
+            if (checkboxes.length === 0) return;
             const allChecked = [...checkboxes].every(cb => cb.checked);
             checkboxes.forEach(cb => {
                 cb.checked = !allChecked;
-                cb.dispatchEvent(new Event("change"));
+                const projCode = cb.getAttribute("data-project");
+                if (cb.checked) {
+                    currentAllowedProjects.add(projCode);
+                } else {
+                    currentAllowedProjects.delete(projCode);
+                }
+                cb.parentElement.style.borderColor = cb.checked ? "#bfdbfe" : "var(--border-color)";
+                cb.parentElement.style.background = cb.checked ? "#eff6ff" : "transparent";
             });
             toggleAllProjectsBtn.textContent = allChecked ? "เลือกทั้งหมด" : "ยกเลิกทั้งหมด";
         };
@@ -10107,8 +10142,9 @@ function renderPermissionsManagement() {
     if (saveBtn) {
         saveBtn.onclick = function() {
             const cUserKey = document.getElementById("perm-user-selector").value || "user1";
-            const hospitals = [...document.querySelectorAll("#perm-hospitals-checkbox-list input[type='checkbox']:checked")].map(cb => cb.getAttribute("data-hospital")).filter(Boolean);
-            const projects = [...document.querySelectorAll("#perm-projects-checkbox-list input[type='checkbox']:checked")].map(cb => cb.getAttribute("data-project")).filter(Boolean);
+            const hospitals = [...document.querySelectorAll("#perm-hospitals-checkbox-list input[type='checkbox']:checked")]
+                .map(cb => cb.getAttribute("data-hospital")).filter(Boolean);
+            const projects = Array.from(currentAllowedProjects).filter(Boolean);
             if (!appState.userPermissions) appState.userPermissions = {};
             appState.userPermissions[cUserKey] = { hospitals, projects };
             localStorage.setItem("technical_water_user_permissions", JSON.stringify(appState.userPermissions));
