@@ -3048,6 +3048,13 @@ body.public-view-mode #public-view-header {
                         <span class="sub-label">ภาพรวมโครงการ</span>
                     </div>
                 </a>
+                <a href="#" class="nav-item" data-view="quoting-projects-list">
+                    <i class="fa-solid fa-file-invoice"></i>
+                    <div class="nav-label">
+                        <span class="main-label">งานที่กำลังเสนอราคา</span>
+                        <span class="sub-label">รายการเสนอราคา</span>
+                    </div>
+                </a>
                 <a href="#" class="nav-item" data-view="projects-list">
                     <i class="fa-solid fa-folder-open"></i>
                     <div class="nav-label">
@@ -3059,9 +3066,9 @@ body.public-view-mode #public-view-header {
                 <!-- Project Detail Subnav nested under Project main link -->
                 <div class="sidebar-project-subnav" id="sidebar-project-subnav" style="display: none;">
                     <div class="sidebar-project-header">
-                        <i class="fa-solid fa-folder-open sidebar-proj-icon"></i>
+                        <i class="fa-solid fa-folder-open sidebar-proj-icon" id="subnav-header-icon"></i>
                         <div class="sidebar-proj-title-group">
-                            <span class="sidebar-proj-title">Project Detail</span>
+                            <span class="sidebar-proj-title" id="subnav-header-title">Project Detail</span>
                             <strong class="sidebar-proj-code-display" id="subnav-proj-code">PRJ-2401</strong>
                         </div>
                     </div>
@@ -5018,7 +5025,10 @@ function populateSubnavProjects(yearFilter) {
     let projects = Object.values(projectsData).filter(p => {
         const hospitalMatch = selectedHospital === "all" || p.customer === selectedHospital;
         const yearMatch = yearFilter === "all" || p.year === parseInt(yearFilter);
-        return hospitalMatch && yearMatch;
+        const isQuotingTab = appState.currentView === "quoting-projects-list";
+        const isQuotingStatus = (p.status === "งานที่กำลังเสนอราคา" || p.status === "กำลังเสนอราคา");
+        const quotingMatch = isQuotingTab ? isQuotingStatus : true;
+        return hospitalMatch && yearMatch && quotingMatch;
     });
 
     // For customer role: further filter by permissions
@@ -5033,7 +5043,7 @@ function populateSubnavProjects(yearFilter) {
     if (projects.length === 0) {
         const opt = document.createElement("option");
         opt.value = "";
-        opt.textContent = "-- ไม่มีโครงการ --";
+        opt.textContent = appState.currentView === "quoting-projects-list" ? "-- ไม่มีรายการเสนอราคา --" : "-- ไม่มีโครงการ --";
         projectSelector.appendChild(opt);
         return;
     }
@@ -5041,7 +5051,7 @@ function populateSubnavProjects(yearFilter) {
     // Add "All Projects" option
     const allOpt = document.createElement("option");
     allOpt.value = "all";
-    allOpt.textContent = "ทั้งหมดทุกโครงการ";
+    allOpt.textContent = appState.currentView === "quoting-projects-list" ? "ทั้งหมดทุกรายการเสนอราคา" : "ทั้งหมดทุกโครงการ";
     projectSelector.appendChild(allOpt);
 
     projects.forEach(p => {
@@ -5660,9 +5670,19 @@ function switchView(viewName) {
     
     // Toggle sidebar project subnav visibility
     const sidebarSubnav = document.getElementById("sidebar-project-subnav");
+    const subnavHeaderIcon = document.getElementById("subnav-header-icon");
+    const subnavHeaderTitle = document.getElementById("subnav-header-title");
+    
     if (sidebarSubnav) {
-        if (viewName === "projects-list") {
+        if (viewName === "projects-list" || viewName === "quoting-projects-list") {
             sidebarSubnav.style.display = "block";
+            if (viewName === "quoting-projects-list") {
+                if (subnavHeaderIcon) subnavHeaderIcon.className = "fa-solid fa-file-invoice sidebar-proj-icon";
+                if (subnavHeaderTitle) subnavHeaderTitle.textContent = "Quotation Detail";
+            } else {
+                if (subnavHeaderIcon) subnavHeaderIcon.className = "fa-solid fa-folder-open sidebar-proj-icon";
+                if (subnavHeaderTitle) subnavHeaderTitle.textContent = "Project Detail";
+            }
         } else {
             sidebarSubnav.style.display = "none";
         }
@@ -5670,8 +5690,7 @@ function switchView(viewName) {
     
     // Toggle active classes on nav
     document.querySelectorAll(".nav-item").forEach(item => {
-        if (item.getAttribute("data-view") === viewName || 
-            (viewName === "projects-list" && item.getAttribute("data-view") === "projects-list")) {
+        if (item.getAttribute("data-view") === viewName) {
             item.classList.add("active");
         } else {
             item.classList.remove("active");
@@ -5684,7 +5703,7 @@ function switchView(viewName) {
     });
 
     let targetPanelId = `${viewName}-view`;
-    if (viewName === "projects-list") targetPanelId = "projects-list-view";
+    if (viewName === "projects-list" || viewName === "quoting-projects-list") targetPanelId = "projects-list-view";
     
     const targetPanel = document.getElementById(targetPanelId);
     if (targetPanel) {
@@ -5696,7 +5715,8 @@ function switchView(viewName) {
         renderOverallDashboard();
     } else if (viewName === "cost") {
         renderCostManagement();
-    } else if (viewName === "projects-list") {
+    } else if (viewName === "projects-list" || viewName === "quoting-projects-list") {
+        populateSubnavProjects(document.getElementById("subnav-year-filter") ? document.getElementById("subnav-year-filter").value : "all");
         renderSubnavProjectWorkspace();
     } else if (viewName === "permissions-mgmt") {
         renderPermissionsManagement();
@@ -5834,7 +5854,7 @@ function switchRole(roleName) {
         renderOverallDashboard();
     } else if (appState.currentView === "cost") {
         renderCostManagement();
-    } else if (appState.currentView === "projects-list") {
+    } else if (appState.currentView === "projects-list" || appState.currentView === "quoting-projects-list") {
         renderSubnavProjectWorkspace();
     }
 
@@ -7880,8 +7900,8 @@ document.addEventListener("DOMContentLoaded", () => {
             e.preventDefault();
             const viewName = this.getAttribute("data-view");
             switchView(viewName);
-            // On mobile, keep sidebar open for 'projects-list' so user can select project details
-            if (viewName !== "projects-list") {
+            // On mobile, keep sidebar open for 'projects-list' or 'quoting-projects-list' so user can select project details
+            if (viewName !== "projects-list" && viewName !== "quoting-projects-list") {
                 closeMobileSidebar();
             }
         });
