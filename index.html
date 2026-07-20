@@ -5283,19 +5283,19 @@ function renderOverallBarChart(labels, inprogress, completed, pendingApproval) {
             {
                 label: 'กำลังเสนอราคา',
                 data: inprogress,
-                backgroundColor: '#1d4ed8', // Dark Blue / Navy
+                backgroundColor: '#059669', // Green (matches KPI card)
                 borderRadius: 4
             },
             {
                 label: 'เสร็จแล้วรอส่งงาน',
                 data: completed,
-                backgroundColor: '#10b981', // Green
+                backgroundColor: '#0284c7', // Teal (matches KPI card)
                 borderRadius: 4
             },
             {
                 label: 'รออนุมัติ',
                 data: pendingApproval,
-                backgroundColor: '#f59e0b', // Amber/Orange
+                backgroundColor: '#f59e0b', // Amber/Orange (matches KPI card)
                 borderRadius: 4
             }
         ];
@@ -5863,7 +5863,7 @@ function renderOverallDonutChart(inprogress, completed, pendingApproval) {
                 ],
                 datasets: [{
                     data: [inprogress, completed, pendingApproval],
-                    backgroundColor: ['#134074', '#10b981', '#f59e0b'],
+                    backgroundColor: ['#059669', '#0284c7', '#f59e0b'],
                     borderWidth: 2,
                     hoverOffset: 4
                 }]
@@ -6431,19 +6431,19 @@ function renderSubnavProjectBarChart(wb) {
                     {
                         label: 'กำลังเสนอราคา',
                         data: inprogress,
-                        backgroundColor: '#1d4ed8', // Dark Blue
+                        backgroundColor: '#059669', // Green (matches KPI card)
                         borderRadius: 2
                     },
                     {
                         label: 'เสร็จแล้วรอส่งงาน',
                         data: completed,
-                        backgroundColor: '#10b981', // Green
+                        backgroundColor: '#0284c7', // Teal (matches KPI card)
                         borderRadius: 2
                     },
                     {
                         label: 'งานอนุมัติ',
                         data: delayed,
-                        backgroundColor: '#f59e0b', // Amber/Orange
+                        backgroundColor: '#f59e0b', // Amber/Orange (matches KPI card)
                         borderRadius: 2
                     }
                 ]
@@ -6504,7 +6504,7 @@ function renderSubnavProjectDonutChart(inprogress, completed, delayed) {
                 ],
                 datasets: [{
                     data: [inprogress, completed, delayed],
-                    backgroundColor: ['#134074', '#10b981', '#f59e0b'],
+                    backgroundColor: ['#059669', '#0284c7', '#f59e0b'],
                     borderWidth: 2,
                     hoverOffset: 4
                 }]
