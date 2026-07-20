@@ -3885,89 +3885,170 @@ body.public-view-mode #public-view-header {
                         
                         <!-- Subtab 1: ข้อมูลโครงการ (General Info Dashboard) -->
                         <div id="subtab-general-info-view" class="subtab-panel active">
-                            <!-- Project-level KPI Summary -->
-                            <div class="mini-kpi-grid" style="grid-template-columns: repeat(3, 1fr);">
-                                <div class="mini-kpi-card blue">
-                                    <div class="mini-icon"><i class="fa-solid fa-circle-play"></i></div>
-                                    <div class="mini-lbl-val">
-                                        <span class="lbl">งานที่กำลังดำเนินการ</span>
-                                        <h3 class="val" id="detail-inprogress-jobs">0</h3>
+                            <!-- Standard Project View Container -->
+                            <div id="standard-project-info-container">
+                                <!-- Project-level KPI Summary -->
+                                <div class="mini-kpi-grid" style="grid-template-columns: repeat(3, 1fr);">
+                                    <div class="mini-kpi-card blue">
+                                        <div class="mini-icon"><i class="fa-solid fa-circle-play"></i></div>
+                                        <div class="mini-lbl-val">
+                                            <span class="lbl">งานที่กำลังดำเนินการ</span>
+                                            <h3 class="val" id="detail-inprogress-jobs">0</h3>
+                                        </div>
+                                        <span class="unit">รายการ</span>
                                     </div>
-                                    <span class="unit">รายการ</span>
-                                </div>
-                                <div class="mini-kpi-card teal">
-                                    <div class="mini-icon"><i class="fa-solid fa-circle-check"></i></div>
-                                    <div class="mini-lbl-val">
-                                        <span class="lbl">งานเสร็จแล้วรอส่งงาน</span>
-                                        <h3 class="val" id="detail-completed-jobs">0</h3>
+                                    <div class="mini-kpi-card teal">
+                                        <div class="mini-icon"><i class="fa-solid fa-circle-check"></i></div>
+                                        <div class="mini-lbl-val">
+                                            <span class="lbl">งานเสร็จแล้วรอส่งงาน</span>
+                                            <h3 class="val" id="detail-completed-jobs">0</h3>
+                                        </div>
+                                        <span class="unit">รายการ</span>
                                     </div>
-                                    <span class="unit">รายการ</span>
-                                </div>
-                                <div class="mini-kpi-card orange">
-                                    <div class="mini-icon"><i class="fa-solid fa-circle-check"></i></div>
-                                    <div class="mini-lbl-val">
-                                        <span class="lbl">งานอนุมัติ</span>
-                                        <h3 class="val" id="detail-delayed-jobs">0</h3>
+                                    <div class="mini-kpi-card orange">
+                                        <div class="mini-icon"><i class="fa-solid fa-circle-check"></i></div>
+                                        <div class="mini-lbl-val">
+                                            <span class="lbl">งานอนุมัติ</span>
+                                            <h3 class="val" id="detail-delayed-jobs">0</h3>
+                                        </div>
+                                        <span class="unit">รายการ</span>
                                     </div>
-                                    <span class="unit">รายการ</span>
                                 </div>
-                            </div>
-                            
-                            <!-- Project charts -->
-                            <div class="project-charts-row">
-                                <div class="chart-container-card">
-                                    <h4 class="chart-title">ความก้าวหน้าโครงการ</h4>
-                                    <div class="progress-section">
-                                        <div class="progress-item-group">
-                                            <div class="progress-text-label">
-                                                <span>แผนงาน (Planned)</span>
-                                                <span class="progress-val-text" id="detail-prog-planned-text">0%</span>
+                                
+                                <!-- Project charts -->
+                                <div class="project-charts-row">
+                                    <div class="chart-container-card">
+                                        <h4 class="chart-title">ความก้าวหน้าโครงการ</h4>
+                                        <div class="progress-section">
+                                            <div class="progress-item-group">
+                                                <div class="progress-text-label">
+                                                    <span>แผนงาน (Planned)</span>
+                                                    <span class="progress-val-text" id="detail-prog-planned-text">0%</span>
+                                                </div>
+                                                <div class="progress-bar-bg">
+                                                    <div class="progress-bar-fill blue-fill" id="detail-prog-planned-bar" style="width: 0%"></div>
+                                                </div>
                                             </div>
-                                            <div class="progress-bar-bg">
-                                                <div class="progress-bar-fill blue-fill" id="detail-prog-planned-bar" style="width: 0%"></div>
+                                            <div class="progress-item-group">
+                                                <div class="progress-text-label">
+                                                    <span>ผลงานจริง (Actual)</span>
+                                                    <span class="progress-val-text" id="detail-prog-actual-text">0%</span>
+                                                </div>
+                                                <div class="progress-bar-bg">
+                                                    <div class="progress-bar-fill green-fill" id="detail-prog-actual-bar" style="width: 0%"></div>
+                                                </div>
                                             </div>
                                         </div>
-                                        <div class="progress-item-group">
-                                            <div class="progress-text-label">
-                                                <span>ผลงานจริง (Actual)</span>
-                                                <span class="progress-val-text" id="detail-prog-actual-text">0%</span>
+                                        
+                                        <h4 class="chart-title mt-4">สรุปค่าใช้จ่ายโครงการ</h4>
+                                        <div class="financial-summary-widget hide-customer">
+                                            <div class="fin-row">
+                                                <div class="fin-box">
+                                                    <span class="fin-lbl">ต้นทุนรวม</span>
+                                                    <span class="fin-val text-navy" id="detail-fin-cost">0</span>
+                                                    <span class="fin-unit">บาท</span>
+                                                </div>
+                                                <div class="fin-box">
+                                                    <span class="fin-lbl">กำไร</span>
+                                                    <span class="fin-val text-green" id="detail-fin-profit">0</span>
+                                                    <span class="fin-unit">บาท</span>
+                                                </div>
                                             </div>
-                                            <div class="progress-bar-bg">
-                                                <div class="progress-bar-fill green-fill" id="detail-prog-actual-bar" style="width: 0%"></div>
+                                            <div class="fin-row mt-2">
+                                                <div class="fin-box">
+                                                    <span class="fin-lbl">ขาดทุน</span>
+                                                    <span class="fin-val text-muted" id="detail-fin-loss">-</span>
+                                                    <span class="fin-unit">บาท</span>
+                                                </div>
+                                                <div class="fin-box highlighted-profit">
+                                                    <span class="fin-lbl">กำไรสุทธิ</span>
+                                                    <span class="fin-val text-orange" id="detail-fin-netprofit">0</span>
+                                                    <span class="fin-unit">บาท</span>
+                                                </div>
                                             </div>
+                                        </div>
+                                        <div class="only-customer text-center py-4 text-muted font-sm">
+                                            <i class="fa-solid fa-eye-slash mb-2 fs-4"></i>
+                                            <p>ไม่ได้รับสิทธิ์ให้เห็นข้อมูลต้นทุนและค่าใช้จ่าย</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Quoting Storage Container (Only for งานที่กำลังเสนอราคา) -->
+                            <div id="quoting-project-info-container" style="display: none;">
+                                <!-- Quoting Summary Card -->
+                                <div style="background: var(--bg-white); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px 24px; margin-bottom: 20px; box-shadow: var(--shadow-sm);">
+                                    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border-color);">
+                                        <div>
+                                            <span style="font-size: 11px; font-weight: 700; color: var(--primary-blue); text-transform: uppercase; letter-spacing: 0.5px;">
+                                                <i class="fa-solid fa-file-invoice mr-1"></i> ข้อมูลรายการเสนอราคาที่เลือก
+                                            </span>
+                                            <h3 id="quoting-detail-name" style="font-size: 18px; font-weight: 700; color: var(--navy-dark); margin-top: 4px;">-</h3>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 12px;">
+                                            <span id="quoting-detail-hospital-badge" style="padding: 4px 12px; background: #eff6ff; color: var(--primary-blue); border: 1px solid #bfdbfe; border-radius: 20px; font-size: 12px; font-weight: 600;">-</span>
+                                            <span id="quoting-detail-status-badge" style="padding: 4px 12px; background: #dcfce7; color: #15803d; border-radius: 20px; font-size: 12px; font-weight: 700;">🟢 งานที่กำลังเสนอราคา</span>
                                         </div>
                                     </div>
                                     
-                                    <h4 class="chart-title mt-4">สรุปค่าใช้จ่ายโครงการ</h4>
-                                    <div class="financial-summary-widget hide-customer">
-                                        <div class="fin-row">
-                                            <div class="fin-box">
-                                                <span class="fin-lbl">ต้นทุนรวม</span>
-                                                <span class="fin-val text-navy" id="detail-fin-cost">0</span>
-                                                <span class="fin-unit">บาท</span>
-                                            </div>
-                                            <div class="fin-box">
-                                                <span class="fin-lbl">กำไร</span>
-                                                <span class="fin-val text-green" id="detail-fin-profit">0</span>
-                                                <span class="fin-unit">บาท</span>
-                                            </div>
+                                    <!-- 3 Core Fields Summary Grid -->
+                                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+                                        <!-- Field 1: ชื่องาน -->
+                                        <div style="background: var(--bg-light); padding: 14px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                                            <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; margin-bottom: 4px;"><i class="fa-solid fa-heading text-blue mr-1"></i> ชื่องาน</div>
+                                            <div id="quoting-summary-name" style="font-size: 13.5px; font-weight: 700; color: var(--navy-dark); line-height: 1.4;">-</div>
                                         </div>
-                                        <div class="fin-row mt-2">
-                                            <div class="fin-box">
-                                                <span class="fin-lbl">ขาดทุน</span>
-                                                <span class="fin-val text-muted" id="detail-fin-loss">-</span>
-                                                <span class="fin-unit">บาท</span>
+                                        
+                                        <!-- Field 2: ระบุโรงพยาบาล -->
+                                        <div style="background: var(--bg-light); padding: 14px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                                            <div style="font-size: 11px; color: var(--text-muted); font-weight: 600; margin-bottom: 4px;"><i class="fa-solid fa-hospital text-teal mr-1"></i> ระบุโรงพยาบาล</div>
+                                            <div id="quoting-summary-hospital" style="font-size: 13.5px; font-weight: 700; color: var(--navy-dark);">-</div>
+                                        </div>
+                                        
+                                        <!-- Field 3: ความคืบหน้า (%) -->
+                                        <div style="background: var(--bg-light); padding: 14px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                                                <span style="font-size: 11px; color: var(--text-muted); font-weight: 600;"><i class="fa-solid fa-chart-line text-green mr-1"></i> ความคืบหน้า (%)</span>
+                                                <strong id="quoting-summary-progress-text" style="font-size: 14px; font-weight: 800; color: #059669;">0%</strong>
                                             </div>
-                                            <div class="fin-box highlighted-profit">
-                                                <span class="fin-lbl">กำไรสุทธิ</span>
-                                                <span class="fin-val text-orange" id="detail-fin-netprofit">0</span>
-                                                <span class="fin-unit">บาท</span>
+                                            <div style="height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
+                                                <div id="quoting-summary-progress-bar" style="height: 100%; width: 0%; background: linear-gradient(90deg, #10b981, #059669); border-radius: 4px; transition: width 0.4s ease;"></div>
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="only-customer text-center py-4 text-muted font-sm">
-                                        <i class="fa-solid fa-eye-slash mb-2 fs-4"></i>
-                                        <p>ไม่ได้รับสิทธิ์ให้เห็นข้อมูลต้นทุนและค่าใช้จ่าย</p>
+                                </div>
+
+                                <!-- Data Table of All Quoting Records -->
+                                <div style="background: var(--bg-white); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow-sm);">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+                                        <div>
+                                            <h4 style="font-size: 14px; font-weight: 700; color: var(--navy-dark); margin: 0;">
+                                                <i class="fa-solid fa-database text-green mr-1"></i> คลังบันทึกข้อมูลงานที่กำลังเสนอราคา (Quotation Data Storage)
+                                            </h4>
+                                            <span style="font-size: 11px; color: var(--text-muted);">บันทึกข้อมูลชื่องาน โรงพยาบาล และความคืบหน้า</span>
+                                        </div>
+                                        <button class="btn btn-sm btn-primary" onclick="document.getElementById('sidebar-create-project-btn').click()" style="font-size: 11.5px; padding: 6px 12px;">
+                                            <i class="fa-solid fa-plus-circle"></i> เพิ่มรายการเสนอราคา
+                                        </button>
+                                    </div>
+
+                                    <div style="overflow-x: auto;">
+                                        <table class="table" style="width: 100%; font-size: 12px;">
+                                            <thead>
+                                                <tr style="background: var(--bg-light); border-bottom: 1px solid var(--border-color);">
+                                                    <th style="padding: 10px 12px; width: 60px; text-align: center;">#</th>
+                                                    <th style="padding: 10px 12px;">ชื่องาน</th>
+                                                    <th style="padding: 10px 12px;">ระบุโรงพยาบาล</th>
+                                                    <th style="padding: 10px 12px; width: 180px;">ความคืบหน้า (%)</th>
+                                                    <th style="padding: 10px 12px; width: 120px; text-align: center;">สถานะ</th>
+                                                    <th style="padding: 10px 12px; width: 110px; text-align: center;">จัดการ</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="quoting-storage-table-body">
+                                                <!-- Populated dynamically -->
+                                            </tbody>
+                                        </table>
                                     </div>
                                 </div>
                             </div>
@@ -6471,7 +6552,119 @@ function renderSubnavProjectWorkspace() {
     }
 }
 
+function renderQuotingStorageView(project) {
+    const isQuotingTab = (appState.currentView === "quoting-projects-list");
+    const stdContainer = document.getElementById("standard-project-info-container");
+    const quoteContainer = document.getElementById("quoting-project-info-container");
+    const subnavTabsEl = document.querySelector(".subnav-tabs");
+
+    if (subnavTabsEl) {
+        subnavTabsEl.style.display = isQuotingTab ? "none" : "";
+    }
+
+    if (!isQuotingTab) {
+        if (stdContainer) stdContainer.style.display = "block";
+        if (quoteContainer) quoteContainer.style.display = "none";
+        return;
+    }
+
+    if (stdContainer) stdContainer.style.display = "none";
+    if (quoteContainer) quoteContainer.style.display = "block";
+
+    // Summary Card Details
+    const nameEl = document.getElementById("quoting-detail-name");
+    const hospBadge = document.getElementById("quoting-detail-hospital-badge");
+    const statusBadge = document.getElementById("quoting-detail-status-badge");
+    const sumName = document.getElementById("quoting-summary-name");
+    const sumHosp = document.getElementById("quoting-summary-hospital");
+    const sumProgText = document.getElementById("quoting-summary-progress-text");
+    const sumProgBar = document.getElementById("quoting-summary-progress-bar");
+
+    if (project && project.code !== "all") {
+        if (nameEl) nameEl.textContent = project.name;
+        if (hospBadge) hospBadge.textContent = project.customer;
+        if (statusBadge) statusBadge.textContent = "🟢 " + (project.status || "งานที่กำลังเสนอราคา");
+        if (sumName) sumName.textContent = project.name;
+        if (sumHosp) sumHosp.textContent = project.customer;
+        if (sumProgText) sumProgText.textContent = `${project.progress || 0}%`;
+        if (sumProgBar) sumProgBar.style.width = `${project.progress || 0}%`;
+    } else {
+        if (nameEl) nameEl.textContent = "ภาพรวมรายการเสนอราคาทั้งหมด";
+        if (hospBadge) hospBadge.textContent = "ทุกโรงพยาบาล";
+        if (statusBadge) statusBadge.textContent = "🟢 งานที่กำลังเสนอราคา";
+        if (sumName) sumName.textContent = "เลือกรายการทางด้านซ้ายเพื่อดูรายละเอียด";
+        if (sumHosp) sumHosp.textContent = "-";
+        if (sumProgText) sumProgText.textContent = "0%";
+        if (sumProgBar) sumProgBar.style.width = "0%";
+    }
+
+    // Populate Data Storage Table
+    const tbody = document.getElementById("quoting-storage-table-body");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+
+    const hospitalVal = document.getElementById("subnav-hospital-selector") ? document.getElementById("subnav-hospital-selector").value : "all";
+    const yearVal = document.getElementById("subnav-year-filter") ? document.getElementById("subnav-year-filter").value : "all";
+
+    const quotingProjects = Object.values(projectsData).filter(p => {
+        const hMatch = hospitalVal === "all" || p.customer === hospitalVal;
+        const yMatch = yearVal === "all" || p.year === parseInt(yearVal);
+        const qMatch = p.status === "งานที่กำลังเสนอราคา" || p.status === "กำลังเสนอราคา";
+        return hMatch && yMatch && qMatch;
+    });
+
+    if (quotingProjects.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color: var(--text-muted); padding: 24px;">ไม่พบรายการเสนอราคาในระบบ</td></tr>`;
+        return;
+    }
+
+    quotingProjects.forEach((p, index) => {
+        const isSelected = p.code === appState.selectedDetailProject;
+        const tr = document.createElement("tr");
+        tr.style.background = isSelected ? "#f0f9ff" : "transparent";
+        tr.style.cursor = "pointer";
+        tr.onclick = function() {
+            appState.selectedDetailProject = p.code;
+            const pSelect = document.getElementById("subnav-project-selector");
+            if (pSelect) pSelect.value = p.code;
+            renderSubnavProjectWorkspace();
+        };
+
+        tr.innerHTML = `
+            <td style="padding: 10px 12px; text-align: center; font-weight: 700; color: var(--text-muted);">${index + 1}</td>
+            <td style="padding: 10px 12px;">
+                <strong style="color: var(--navy-dark); font-size: 12.5px;">${p.name.replace(/ \(\d{4}\)$/, '')}</strong>
+                <div style="font-size: 10.5px; color: var(--text-muted);">${p.code}</div>
+            </td>
+            <td style="padding: 10px 12px; font-weight: 600; color: var(--navy-dark);">${p.customer.replace("โรงพยาบาล", "รพ.")}</td>
+            <td style="padding: 10px 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-size: 11px;">
+                    <span style="font-weight: 700; color: #059669;">${p.progress || 0}%</span>
+                </div>
+                <div style="height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden;">
+                    <div style="height: 100%; width: ${p.progress || 0}%; background: #059669; border-radius: 3px;"></div>
+                </div>
+            </td>
+            <td style="padding: 10px 12px; text-align: center;">
+                <span style="font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 12px; background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0;">🟢 เสนอราคา</span>
+            </td>
+            <td style="padding: 10px 12px; text-align: center;" onclick="event.stopPropagation();">
+                <button class="btn btn-sm btn-outline" style="font-size: 10.5px; padding: 2px 8px;" onclick="appState.selectedDetailProject='${p.code}'; document.getElementById('open-edit-project-btn').click();">
+                    <i class="fa-solid fa-pen-to-square"></i> แก้ไข
+                </button>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
 function renderSubnavGeneralInfo(project) {
+    if (appState.currentView === "quoting-projects-list") {
+        renderQuotingStorageView(project);
+        return;
+    }
+    renderQuotingStorageView(project);
+
     // Mini KPIs
     document.getElementById("detail-inprogress-jobs").textContent = project.jobs.inprogress;
     document.getElementById("detail-completed-jobs").textContent = project.jobs.completed;
