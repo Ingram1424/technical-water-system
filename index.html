@@ -5196,6 +5196,27 @@ function saveToLocalStorage() {
 // Load from Supabase on startup
 loadFromSupabase();
 
+window.isProjectAllowedForCustomer = function(p, perms) {
+    if (!p || !perms) return false;
+    const allowedH = perms.hospitals || [];
+    const allowedP = perms.projects || [];
+    
+    // Direct match in allowedP
+    if (allowedP.includes(p.code)) return true;
+
+    // Check if hospital is allowed
+    if (allowedH.includes(p.customer)) {
+        // If Admin explicitly selected specific projects for this hospital, ONLY allow those in allowedP!
+        const hospitalProjectsInP = allowedP.filter(code => projectsData[code] && projectsData[code].customer === p.customer);
+        if (hospitalProjectsInP.length > 0) {
+            return allowedP.includes(p.code);
+        }
+        return true;
+    }
+    
+    return false;
+};
+
 function populateSubnavHospitals() {
     const selector = document.getElementById("subnav-hospital-selector");
     if (!selector) return;
@@ -5221,13 +5242,10 @@ function populateSubnavHospitals() {
     if (appState.currentRole === "customer") {
         const cUserKey = appState.currentCustomerUser || "user1";
         const perms = appState.userPermissions[cUserKey] || { hospitals: [], projects: [] };
-        const allowedH = perms.hospitals || [];
-        const allowedP = perms.projects || [];
-        // Include hospitals where they have direct project access too
-        const extraHospitals = Object.values(projectsData)
-            .filter(p => allowedP.includes(p.code))
+        const effectiveHospitals = Object.values(projectsData)
+            .filter(p => isProjectAllowedForCustomer(p, perms))
             .map(p => p.customer);
-        const effectiveH = [...new Set([...allowedH, ...extraHospitals])];
+        const effectiveH = [...new Set(effectiveHospitals)];
         hospitals = allHospitals.filter(h => effectiveH.includes(h));
         const allOpt = document.createElement("option");
         allOpt.value = "all";
@@ -5273,13 +5291,11 @@ function populateSubnavProjects(yearFilter) {
         return hospitalMatch && yearMatch && quotingMatch;
     });
 
-    // For customer role: further filter by permissions
+    // For customer role: further filter strictly by permissions
     if (appState.currentRole === "customer") {
         const cUserKey = appState.currentCustomerUser || "user1";
         const perms = appState.userPermissions[cUserKey] || { hospitals: [], projects: [] };
-        const allowedH = perms.hospitals || [];
-        const allowedP = perms.projects || [];
-        projects = projects.filter(p => allowedH.includes(p.customer) || allowedP.includes(p.code));
+        projects = projects.filter(p => isProjectAllowedForCustomer(p, perms));
     }
     
     if (projects.length === 0) {
@@ -6057,10 +6073,8 @@ function switchRole(roleName) {
         const allowedHospitals = perms.hospitals || [];
         const allowedProjects = perms.projects || [];
 
-        // Find first accessible project for this customer user
-        const accessibleProjects = Object.values(projectsData).filter(p => {
-            return allowedHospitals.includes(p.customer) || allowedProjects.includes(p.code);
-        });
+        // Find accessible projects for this customer user
+        const accessibleProjects = Object.values(projectsData).filter(p => isProjectAllowedForCustomer(p, perms));
         
         const firstProj = accessibleProjects[0] || null;
         const firstCode = firstProj ? firstProj.code : "";
