@@ -3876,23 +3876,29 @@ body.public-view-mode #public-view-header {
                             <h2 class="section-title"><i class="fa-solid fa-user-shield text-blue mr-2"></i> ระบบจัดการสิทธิ์ผู้ใช้งาน และ เจนบัญชีลูกค้า (User Accounts & Permissions)</h2>
                             <span style="font-size: 12px; color: var(--text-muted); font-weight: 500;">สร้าง Username + Password และกำหนดสิทธิ์ให้ลูกค้าเข้ามาดูโครงการย่อยเฉพาะที่ได้รับสิทธิ์</span>
                         </div>
-                        <button type="button" class="btn btn-primary" id="btn-open-create-customer-modal" style="font-family: 'Prompt'; font-size: 12px; padding: 8px 16px; background: linear-gradient(135deg, #2563eb, #1d4ed8); border: none; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                        <button type="button" class="btn btn-primary" id="btn-open-create-customer-modal" onclick="window.openCreateCustomerModal()" style="font-family: 'Prompt'; font-size: 12px; padding: 8px 16px; background: linear-gradient(135deg, #2563eb, #1d4ed8); border: none; cursor: pointer; display: flex; align-items: center; gap: 6px;">
                             <i class="fa-solid fa-user-plus"></i> เจนบัญชีลูกค้าใหม่ (User & Pass)
                         </button>
                     </div>
 
-                    <!-- Customer Accounts Table Container -->
+                    <!-- Customer Accounts Table Container (Scrollable showing ~3 rows with search) -->
                     <div style="margin-top: 16px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: #ffffff; overflow: hidden; box-shadow: var(--shadow-sm);">
-                        <div style="background: var(--bg-light); padding: 12px 16px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                        <div style="background: var(--bg-light); padding: 10px 16px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                             <h4 style="font-size: 13px; font-weight: 700; color: var(--navy-dark); margin: 0;">
                                 <i class="fa-solid fa-users-gear text-blue mr-1"></i> ตารางรายการบัญชีลูกค้า (Customer Accounts & Passwords)
                             </h4>
-                            <span style="font-size: 11px; color: var(--text-muted);">กดปุ่ม "คัดลอก" เพื่อส่ง Username / Password ให้ลูกค้า</span>
+                            <div style="display: flex; align-items: center; gap: 10px;">
+                                <div style="position: relative;">
+                                    <i class="fa-solid fa-magnifying-glass" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); font-size: 11px; color: var(--text-muted);"></i>
+                                    <input type="text" id="search-customer-accounts" class="form-control" placeholder="พิมพ์ค้นหาชื่อ / Username..." style="padding-left: 28px; font-size: 11.5px; height: 30px; width: 220px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); font-family: 'Prompt';" oninput="window.renderCustomerAccountsTable()">
+                                </div>
+                                <span style="font-size: 11px; color: var(--text-muted);">กด "คัดลอก" เพื่อส่งให้ลูกค้า</span>
+                            </div>
                         </div>
-                        <div style="overflow-x: auto;">
+                        <div style="overflow-x: auto; overflow-y: auto; max-height: 185px; scrollbar-width: thin;">
                             <table class="transaction-table" id="customer-accounts-table" style="width: 100%; min-width: 750px;">
-                                <thead>
-                                    <tr style="background: #f8fafc;">
+                                <thead style="position: sticky; top: 0; z-index: 2; background: #f8fafc; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                                    <tr>
                                         <th style="width: 50px; text-align: center;">ลำดับ</th>
                                         <th>ชื่อบัญชีลูกค้า / บริษัท</th>
                                         <th>Username</th>
@@ -9299,50 +9305,61 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // 14. MODAL: Create New Project
+    // 14. MODAL: Create Customer User & Password
     const createCustomerModal = document.getElementById("create-customer-modal");
     const closeCreateCustomerBtn = document.getElementById("close-create-customer-modal");
     const cancelCreateCustomerBtn = document.getElementById("cancel-create-customer-btn");
     const createCustomerForm = document.getElementById("create-customer-form");
-    const openCreateCustomerBtn = document.getElementById("btn-open-create-customer-modal");
     const btnGenUsername = document.getElementById("btn-auto-gen-username");
     const btnGenPassword = document.getElementById("btn-auto-gen-password");
 
-    function generateRandomUsername() {
+    window.generateRandomUsername = function() {
         const rand = Math.floor(1000 + Math.random() * 9000);
         return `cust_user_${rand}`;
-    }
+    };
 
-    function generateRandomPassword() {
+    window.generateRandomPassword = function() {
         const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789#@!";
         let pass = "";
         for (let i = 0; i < 10; i++) {
             pass += chars.charAt(Math.floor(Math.random() * chars.length));
         }
         return pass;
-    }
+    };
 
+    window.openCreateCustomerModal = function() {
+        const modal = document.getElementById("create-customer-modal");
+        const nameEl = document.getElementById("new-cust-name");
+        const uEl = document.getElementById("new-cust-username");
+        const pEl = document.getElementById("new-cust-password");
+        if (nameEl) nameEl.value = "";
+        if (uEl) uEl.value = window.generateRandomUsername();
+        if (pEl) pEl.value = window.generateRandomPassword();
+        if (modal) modal.classList.add("active");
+    };
+
+    window.closeCreateCustomerModal = function() {
+        const modal = document.getElementById("create-customer-modal");
+        if (modal) modal.classList.remove("active");
+    };
+
+    const openCreateCustomerBtn = document.getElementById("btn-open-create-customer-modal");
     if (openCreateCustomerBtn) {
-        openCreateCustomerBtn.addEventListener("click", function() {
-            document.getElementById("new-cust-name").value = "";
-            document.getElementById("new-cust-username").value = generateRandomUsername();
-            document.getElementById("new-cust-password").value = generateRandomPassword();
-            if (createCustomerModal) createCustomerModal.classList.add("active");
-        });
+        openCreateCustomerBtn.addEventListener("click", window.openCreateCustomerModal);
     }
 
-    if (closeCreateCustomerBtn) closeCreateCustomerBtn.onclick = () => createCustomerModal.classList.remove("active");
-    if (cancelCreateCustomerBtn) cancelCreateCustomerBtn.onclick = () => createCustomerModal.classList.remove("active");
+    if (closeCreateCustomerBtn) closeCreateCustomerBtn.onclick = window.closeCreateCustomerModal;
+    if (cancelCreateCustomerBtn) cancelCreateCustomerBtn.onclick = window.closeCreateCustomerModal;
 
     if (btnGenUsername) {
         btnGenUsername.onclick = () => {
-            document.getElementById("new-cust-username").value = generateRandomUsername();
+            document.getElementById("new-cust-username").value = window.generateRandomUsername();
         };
     }
 
     if (btnGenPassword) {
         btnGenPassword.onclick = () => {
-            document.getElementById("new-cust-password").value = generateRandomPassword();
+            document.getElementById("new-cust-password").value = window.generateRandomPassword();
         };
     }
 
@@ -9375,7 +9392,7 @@ document.addEventListener("DOMContentLoaded", () => {
             localStorage.setItem("technical_water_user_permissions", JSON.stringify(appState.userPermissions));
 
             showToast(`🎉 สร้างบัญชีลูกค้า "${name}" เรียบร้อยแล้ว!`, "success");
-            createCustomerModal.classList.remove("active");
+            window.closeCreateCustomerModal();
 
             // Copy login info automatically
             window.copyCustomerLogin(newKey);
@@ -11331,19 +11348,28 @@ function renderPermissionsManagement() {
         }
     }
 
-    function renderCustomerAccountsTable() {
+    window.renderCustomerAccountsTable = function() {
         const tbody = document.getElementById("customer-accounts-tbody");
         if (!tbody) return;
         tbody.innerHTML = "";
 
-        const accounts = Object.entries(appState.customerAccounts || {});
+        const searchInput = document.getElementById("search-customer-accounts");
+        const query = searchInput ? searchInput.value.trim().toLowerCase() : "";
+
+        let accounts = Object.entries(appState.customerAccounts || {});
+        if (query) {
+            accounts = accounts.filter(([key, acc]) => {
+                return (acc.name || "").toLowerCase().includes(query) || (acc.username || "").toLowerCase().includes(query);
+            });
+        }
+
         if (accounts.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 24px; color: var(--text-muted);">ไม่พบข้อมูลบัญชีลูกค้า — กดปุ่ม "เจนบัญชีลูกค้าใหม่" เพื่อสร้างบัญชี</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 24px; color: var(--text-muted); font-size: 12px;">${query ? 'ไม่พบบัญชีที่ค้นหา' : 'ไม่พบข้อมูลบัญชีลูกค้า — กดปุ่ม "เจนบัญชีลูกค้าใหม่" เพื่อสร้างบัญชี'}</td></tr>`;
             return;
         }
 
         accounts.forEach(([key, acc], index) => {
-            const perms = appState.userPermissions[key] || { hospitals: [], projects: [] };
+            const perms = (appState.userPermissions || {})[key] || { hospitals: [], projects: [] };
             const hCount = (perms.hospitals || []).length;
             const pCount = (perms.projects || []).length;
 
@@ -11381,10 +11407,10 @@ function renderPermissionsManagement() {
         });
 
         updateRoleSwitcherDropdown();
-    }
+    };
 
     populatePermUserSelector();
-    renderCustomerAccountsTable();
+    window.renderCustomerAccountsTable();
 
     const allHospitals = [
         "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
