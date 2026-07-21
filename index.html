@@ -5149,8 +5149,12 @@ function populateSubnavHospitals() {
             .map(p => p.customer);
         const effectiveH = [...new Set([...allowedH, ...extraHospitals])];
         hospitals = allHospitals.filter(h => effectiveH.includes(h));
+        const allOpt = document.createElement("option");
+        allOpt.value = "all";
+        allOpt.textContent = "ทั้งหมดทุกโรงพยาบาลที่ได้รับสิทธิ์";
+        selector.appendChild(allOpt);
     } else {
-        // Add "All Hospitals" option only for non-customer roles
+        // Add "All Hospitals" option for non-customer roles
         const allOpt = document.createElement("option");
         allOpt.value = "all";
         allOpt.textContent = "ทั้งหมดทุกโรงพยาบาล";
@@ -5167,7 +5171,7 @@ function populateSubnavHospitals() {
     if (currentHospital && (currentHospital === "all" || hospitals.includes(currentHospital))) {
         selector.value = currentHospital;
     } else {
-        selector.selectedIndex = 0;
+        selector.value = "all";
     }
 }
 
@@ -5952,50 +5956,28 @@ function switchRole(roleName) {
         const firstProj = accessibleProjects[0] || null;
         const firstCode = firstProj ? firstProj.code : "";
         
-        appState.selectedDetailProject = firstCode;
-        sessionStorage.setItem("technical_water_last_detail_project", firstCode);
-        if (firstCode) updateSelectedCostProject(firstCode);
+        appState.selectedDetailProject = "all";
+        sessionStorage.setItem("technical_water_last_detail_project", "all");
         
         const subnavYearFilter = document.getElementById("subnav-year-filter");
         if (subnavYearFilter) {
-            subnavYearFilter.value = firstProj ? firstProj.year.toString() : "all";
-            subnavYearFilter.disabled = true;
+            subnavYearFilter.value = "all";
+            subnavYearFilter.disabled = false;
         }
         
         populateSubnavHospitals();
         const hospitalSelector = document.getElementById("subnav-hospital-selector");
         if (hospitalSelector) {
-            hospitalSelector.value = firstProj ? firstProj.customer : "";
-            hospitalSelector.disabled = true;
+            hospitalSelector.value = "all";
+            hospitalSelector.disabled = false;
         }
 
         populateSubnavProjects("all");
         
         const projectSelector = document.getElementById("subnav-project-selector");
         if (projectSelector) {
-            projectSelector.value = firstCode;
-            projectSelector.disabled = true;
-        }
-
-        const costDetailYearFilter = document.getElementById("cost-detail-year-filter");
-        if (costDetailYearFilter) {
-            costDetailYearFilter.value = firstProj ? firstProj.year.toString() : "all";
-            costDetailYearFilter.disabled = true;
-        }
-
-        populateCostHospitals();
-        const costDetailHospitalSelector = document.getElementById("cost-detail-hospital-selector");
-        if (costDetailHospitalSelector) {
-            costDetailHospitalSelector.value = firstProj ? firstProj.customer : "";
-            costDetailHospitalSelector.disabled = true;
-        }
-
-        populateCostProjects();
-
-        const costSelector = document.getElementById("cost-project-selector");
-        if (costSelector) {
-            costSelector.value = firstCode;
-            costSelector.disabled = true;
+            projectSelector.value = "all";
+            projectSelector.disabled = false;
         }
 
         // Boot customer to project workspace
