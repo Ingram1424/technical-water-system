@@ -3871,22 +3871,57 @@ body.public-view-mode #public-view-header {
 
             <div id="permissions-mgmt-view" class="view-panel">
                 <section class="section-card">
-                    <div class="section-header">
-                        <h2 class="section-title"><i class="fa-solid fa-user-shield text-blue mr-2"></i> ระบบจัดการสิทธิ์ผู้ใช้งาน (User Access Permissions Management)</h2>
-                        <span style="font-size: 12px; color: var(--text-muted); font-weight: 500;">กำหนดสิทธิ์ให้บัญชีลูกค้า (Customer) ในการเข้าถึงโรงพยาบาลและโครงการย่อย</span>
+                    <div class="section-header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 12px;">
+                        <div>
+                            <h2 class="section-title"><i class="fa-solid fa-user-shield text-blue mr-2"></i> ระบบจัดการสิทธิ์ผู้ใช้งาน และ เจนบัญชีลูกค้า (User Accounts & Permissions)</h2>
+                            <span style="font-size: 12px; color: var(--text-muted); font-weight: 500;">สร้าง Username + Password และกำหนดสิทธิ์ให้ลูกค้าเข้ามาดูโครงการย่อยเฉพาะที่ได้รับสิทธิ์</span>
+                        </div>
+                        <button type="button" class="btn btn-primary" id="btn-open-create-customer-modal" style="font-family: 'Prompt'; font-size: 12px; padding: 8px 16px; background: linear-gradient(135deg, #2563eb, #1d4ed8); border: none; cursor: pointer; display: flex; align-items: center; gap: 6px;">
+                            <i class="fa-solid fa-user-plus"></i> เจนบัญชีลูกค้าใหม่ (User & Pass)
+                        </button>
                     </div>
 
-                    <div style="display: flex; flex-direction: column; gap: 24px; margin-top: 16px;">
-                        <!-- Select User to Manage -->
-                        <div style="background: var(--bg-light); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; display: flex; align-items: center; gap: 16px;">
-                            <label style="font-weight: 700; color: var(--navy-dark); font-size: 13.5px; white-space: nowrap; margin: 0;">
-                                <i class="fa-solid fa-user text-blue mr-1"></i> เลือกบัญชีลูกค้าผู้ใช้งาน (Customer User):
-                            </label>
-                            <select id="perm-user-selector" class="form-control" style="max-width: 320px; font-family: 'Prompt'; font-weight: 600;">
-                                <option value="user1">Customer 1 : BKK Hospital Representative</option>
-                                <option value="user2">Customer 2 : Paolo Representative</option>
-                                <option value="user3">Customer 3 : Phyathai Representative</option>
-                            </select>
+                    <!-- Customer Accounts Table Container -->
+                    <div style="margin-top: 16px; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: #ffffff; overflow: hidden; box-shadow: var(--shadow-sm);">
+                        <div style="background: var(--bg-light); padding: 12px 16px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;">
+                            <h4 style="font-size: 13px; font-weight: 700; color: var(--navy-dark); margin: 0;">
+                                <i class="fa-solid fa-users-gear text-blue mr-1"></i> ตารางรายการบัญชีลูกค้า (Customer Accounts & Passwords)
+                            </h4>
+                            <span style="font-size: 11px; color: var(--text-muted);">กดปุ่ม "คัดลอก" เพื่อส่ง Username / Password ให้ลูกค้า</span>
+                        </div>
+                        <div style="overflow-x: auto;">
+                            <table class="transaction-table" id="customer-accounts-table" style="width: 100%; min-width: 750px;">
+                                <thead>
+                                    <tr style="background: #f8fafc;">
+                                        <th style="width: 50px; text-align: center;">ลำดับ</th>
+                                        <th>ชื่อบัญชีลูกค้า / บริษัท</th>
+                                        <th>Username</th>
+                                        <th>Password</th>
+                                        <th style="text-align: center;">สิทธิ์ที่ได้รับ</th>
+                                        <th style="text-align: center; width: 240px;">จัดการ & คัดลอก</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="customer-accounts-tbody">
+                                    <!-- Filled dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; flex-direction: column; gap: 24px; margin-top: 24px;">
+                        <!-- Select User to Manage Permissions -->
+                        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: var(--radius-md); padding: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+                            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                                <label style="font-weight: 700; color: var(--navy-dark); font-size: 13.5px; white-space: nowrap; margin: 0;">
+                                    <i class="fa-solid fa-sliders text-blue mr-1"></i> เลือกบัญชีลูกค้าเพื่อปรับเปลี่ยนสิทธิ์:
+                                </label>
+                                <select id="perm-user-selector" class="form-control" style="max-width: 340px; font-family: 'Prompt'; font-weight: 600; background: #ffffff;">
+                                    <!-- Filled dynamically -->
+                                </select>
+                            </div>
+                            <span id="perm-current-user-info" style="font-size: 11.5px; font-weight: 600; color: var(--primary-blue); background: #ffffff; padding: 4px 12px; border-radius: 20px; border: 1px solid #93c5fd;">
+                                <!-- Current user info summary -->
+                            </span>
                         </div>
 
                         <!-- 2 Columns Checklist Layout -->
@@ -4896,6 +4931,43 @@ body.public-view-mode #public-view-header {
                 </div>
             </form>
         </div>
+    <!-- Create Customer User Modal -->
+    <div class="modal-overlay" id="create-customer-modal">
+        <div class="modal-card" style="max-width: 480px;">
+            <div class="modal-header">
+                <h3 class="modal-title"><i class="fa-solid fa-user-plus text-blue"></i> เจนสร้างบัญชีผู้ใช้งานลูกค้าใหม่</h3>
+                <button class="modal-close-btn" id="close-create-customer-modal">&times;</button>
+            </div>
+            <form id="create-customer-form">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label" for="new-cust-name">ชื่อบัญชีลูกค้า / โรงพยาบาล <span class="required">*</span></label>
+                        <input type="text" id="new-cust-name" class="form-control" placeholder="เช่น ตัวแทน รพ.เปาโล โชคชัย 4" required>
+                    </div>
+                    <div class="form-group mt-3">
+                        <label class="form-label" for="new-cust-username">ชื่อผู้ใช้งาน (Username) <span class="required">*</span></label>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="new-cust-username" class="form-control" placeholder="เช่น cust_paolo" required style="font-family: monospace; font-weight: 600;">
+                            <button type="button" class="btn btn-outline" id="btn-auto-gen-username" style="font-size: 11px; white-space: nowrap;"><i class="fa-solid fa-wand-magic-sparkles"></i> สุ่มชื่อ</button>
+                        </div>
+                    </div>
+                    <div class="form-group mt-3">
+                        <label class="form-label" for="new-cust-password">รหัสผ่าน (Password) <span class="required">*</span></label>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="new-cust-password" class="form-control" placeholder="ระบุรหัสผ่าน" required style="font-family: monospace; font-weight: 600;">
+                            <button type="button" class="btn btn-outline" id="btn-auto-gen-password" style="font-size: 11px; white-space: nowrap;"><i class="fa-solid fa-dice"></i> สุ่มรหัสผ่าน</button>
+                        </div>
+                    </div>
+                    <div class="form-group mt-3" style="background: var(--bg-light); border: 1px solid var(--border-color); padding: 12px; border-radius: var(--radius-sm);">
+                        <span style="font-size: 11px; color: var(--text-muted); display: block;"><i class="fa-solid fa-circle-info text-blue mr-1"></i> เมื่อสร้างบัญชีเสร็จแล้ว สามารถเลือกกำหนดสิทธิ์การเข้าถึงโรงพยาบาลและโครงการย่อยต่อได้ทันที</span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" id="cancel-create-customer-btn">ยกเลิก</button>
+                    <button type="submit" class="btn btn-primary" id="btn-submit-create-customer"><i class="fa-solid fa-check-circle"></i> สร้างบัญชีผู้ใช้</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script>
@@ -5622,7 +5694,36 @@ const appState = {
     selectedYearFilterB: "2026",
     selectedCostYearFilter: "all",
     currentCustomerUser: localStorage.getItem("technical_water_current_customer_user") || "user1",
-    userPermissions: null // Loaded below
+    userPermissions: null, // Loaded below
+    customerAccounts: null // Loaded below
+};
+
+// Define default customer user accounts with Username & Password
+const defaultCustomerAccounts = {
+    user1: { name: "Customer 1 : BKK Hospital Representative", username: "cust_bkk", password: "BkkPass2026", userKey: "user1" },
+    user2: { name: "Customer 2 : Paolo Representative", username: "cust_paolo", password: "PaoloPass2026", userKey: "user2" },
+    user3: { name: "Customer 3 : Phyathai Representative", username: "cust_phyathai", password: "PhyathaiPass2026", userKey: "user3" }
+};
+
+try {
+    const rawAcc = localStorage.getItem("technical_water_customer_accounts");
+    appState.customerAccounts = rawAcc ? JSON.parse(rawAcc) : defaultCustomerAccounts;
+} catch (e) {
+    appState.customerAccounts = defaultCustomerAccounts;
+}
+
+window.saveCustomerAccounts = async function() {
+    localStorage.setItem("technical_water_customer_accounts", JSON.stringify(appState.customerAccounts));
+    if (typeof supabaseClient !== "undefined") {
+        try {
+            await supabaseClient.from('projects').upsert({
+                code: 'FILE:CUSTOMER_ACCOUNTS_DATA',
+                data: { accounts: appState.customerAccounts }
+            });
+        } catch (err) {
+            console.error("Failed to sync customer accounts to Supabase:", err);
+        }
+    }
 };
 
 // Define default permissions mapping
@@ -9199,6 +9300,91 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // 14. MODAL: Create New Project
+    const createCustomerModal = document.getElementById("create-customer-modal");
+    const closeCreateCustomerBtn = document.getElementById("close-create-customer-modal");
+    const cancelCreateCustomerBtn = document.getElementById("cancel-create-customer-btn");
+    const createCustomerForm = document.getElementById("create-customer-form");
+    const openCreateCustomerBtn = document.getElementById("btn-open-create-customer-modal");
+    const btnGenUsername = document.getElementById("btn-auto-gen-username");
+    const btnGenPassword = document.getElementById("btn-auto-gen-password");
+
+    function generateRandomUsername() {
+        const rand = Math.floor(1000 + Math.random() * 9000);
+        return `cust_user_${rand}`;
+    }
+
+    function generateRandomPassword() {
+        const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789#@!";
+        let pass = "";
+        for (let i = 0; i < 10; i++) {
+            pass += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return pass;
+    }
+
+    if (openCreateCustomerBtn) {
+        openCreateCustomerBtn.addEventListener("click", function() {
+            document.getElementById("new-cust-name").value = "";
+            document.getElementById("new-cust-username").value = generateRandomUsername();
+            document.getElementById("new-cust-password").value = generateRandomPassword();
+            if (createCustomerModal) createCustomerModal.classList.add("active");
+        });
+    }
+
+    if (closeCreateCustomerBtn) closeCreateCustomerBtn.onclick = () => createCustomerModal.classList.remove("active");
+    if (cancelCreateCustomerBtn) cancelCreateCustomerBtn.onclick = () => createCustomerModal.classList.remove("active");
+
+    if (btnGenUsername) {
+        btnGenUsername.onclick = () => {
+            document.getElementById("new-cust-username").value = generateRandomUsername();
+        };
+    }
+
+    if (btnGenPassword) {
+        btnGenPassword.onclick = () => {
+            document.getElementById("new-cust-password").value = generateRandomPassword();
+        };
+    }
+
+    if (createCustomerForm) {
+        createCustomerForm.addEventListener("submit", function(e) {
+            e.preventDefault();
+            const name = document.getElementById("new-cust-name").value.trim();
+            const username = document.getElementById("new-cust-username").value.trim();
+            const password = document.getElementById("new-cust-password").value.trim();
+
+            if (!name || !username || !password) {
+                showToast("กรุณากรอกข้อมูลให้ครบทุกช่อง", "warning");
+                return;
+            }
+
+            // Generate new userKey
+            const newKey = "user_" + Date.now();
+            if (!appState.customerAccounts) appState.customerAccounts = {};
+            appState.customerAccounts[newKey] = {
+                name: name,
+                username: username,
+                password: password,
+                userKey: newKey
+            };
+
+            if (!appState.userPermissions) appState.userPermissions = {};
+            appState.userPermissions[newKey] = { hospitals: [], projects: [] };
+
+            saveCustomerAccounts();
+            localStorage.setItem("technical_water_user_permissions", JSON.stringify(appState.userPermissions));
+
+            showToast(`🎉 สร้างบัญชีลูกค้า "${name}" เรียบร้อยแล้ว!`, "success");
+            createCustomerModal.classList.remove("active");
+
+            // Copy login info automatically
+            window.copyCustomerLogin(newKey);
+
+            // Re-render
+            renderPermissionsManagement();
+        });
+    }
+
     const createProjectModal = document.getElementById("create-project-modal");
     const closeCreateProjectBtn = document.getElementById("close-create-project-modal");
     const cancelCreateProjectBtn = document.getElementById("btn-cancel-create-project");
@@ -11014,12 +11200,191 @@ function initPublicView(projectCode) {
 })();
 
 // ============================================================
-// USER PERMISSIONS MANAGEMENT
+// USER PERMISSIONS & CUSTOMER USER ACCOUNTS MANAGEMENT
 // ============================================================
+
+window.toggleShowPassword = function(key) {
+    const input = document.getElementById(`pass-field-${key}`);
+    const icon = document.getElementById(`eye-icon-${key}`);
+    if (!input) return;
+    if (input.type === "password") {
+        input.type = "text";
+        if (icon) icon.className = "fa-solid fa-eye-slash";
+    } else {
+        input.type = "password";
+        if (icon) icon.className = "fa-solid fa-eye";
+    }
+};
+
+window.copyCustomerLogin = function(key) {
+    const acc = appState.customerAccounts[key];
+    if (!acc) return;
+    const text = `🏢 ระบบจัดการโครงการ (Project Management System)\n🌐 ลิงก์เข้าใช้งานระบบ: ${window.location.origin || 'https://technical-water-system.vercel.app'}\n👤 Username: ${acc.username}\n🔑 Password: ${acc.password}`;
+    
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+            showToast(`📋 คัดลอกข้อมูล Username & Password ของ "${acc.name}" เรียบร้อยแล้ว!`, "success");
+        });
+    } else {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        showToast(`📋 คัดลอกข้อมูล Username & Password ของ "${acc.name}" เรียบร้อยแล้ว!`, "success");
+    }
+};
+
+window.selectUserForPermission = function(key) {
+    const selector = document.getElementById("perm-user-selector");
+    if (selector) {
+        selector.value = key;
+        selector.dispatchEvent(new Event("change"));
+        selector.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+};
+
+window.deleteCustomerAccount = function(key) {
+    const acc = appState.customerAccounts[key];
+    if (!acc) return;
+    if (Object.keys(appState.customerAccounts).length <= 1) {
+        showToast("ไม่สามารถลบบัญชีลูกค้าทั้งหมดได้ ต้องมีอย่างน้อย 1 บัญชีในระบบ", "warning");
+        return;
+    }
+    if (!confirm(`ยืนยันการลบบัญชีลูกค้า "${acc.name}" (${acc.username}) ออกจากระบบ?`)) return;
+    
+    delete appState.customerAccounts[key];
+    if (appState.userPermissions && appState.userPermissions[key]) {
+        delete appState.userPermissions[key];
+    }
+    saveCustomerAccounts();
+    localStorage.setItem("technical_water_user_permissions", JSON.stringify(appState.userPermissions));
+    showToast(`ลบบัญชี "${acc.name}" เรียบร้อยแล้ว`, "info");
+    renderPermissionsManagement();
+};
+
+function updateRoleSwitcherDropdown() {
+    const dropdown = document.querySelector("#profile-dropdown .dropdown-body");
+    if (!dropdown) return;
+
+    let custContainer = document.getElementById("customer-roles-container");
+    if (!custContainer) {
+        custContainer = document.createElement("div");
+        custContainer.id = "customer-roles-container";
+        const label = document.createElement("div");
+        label.style.cssText = "font-size: 10px; font-weight: 700; color: var(--text-muted); padding: 6px 6px 4px 6px; letter-spacing: 0.6px; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 6px;";
+        label.textContent = "บัญชีลูกค้า (CUSTOMER USERS)";
+        
+        const logoutDiv = dropdown.querySelector("div[style*='border-top']");
+        if (logoutDiv) {
+            dropdown.insertBefore(label, logoutDiv);
+            dropdown.insertBefore(custContainer, logoutDiv);
+        } else {
+            dropdown.appendChild(label);
+            dropdown.appendChild(custContainer);
+        }
+    }
+
+    custContainer.innerHTML = "";
+    Object.entries(appState.customerAccounts || {}).forEach(([key, acc]) => {
+        const a = document.createElement("a");
+        a.href = "#";
+        a.className = "role-option";
+        a.setAttribute("data-role", "customer");
+        a.setAttribute("data-customer-user", key);
+        a.innerHTML = `
+            <i class="fa-solid fa-user-tie"></i>
+            <div>
+                <div class="role-name">${acc.name}</div>
+                <div class="role-desc">User: <strong>${acc.username}</strong> · ไม่เห็นต้นทุน</div>
+            </div>
+        `;
+        a.onclick = function(e) {
+            e.preventDefault();
+            appState.currentCustomerUser = key;
+            localStorage.setItem("technical_water_current_customer_user", key);
+            switchRole("customer");
+            document.getElementById("profile-dropdown").classList.remove("active");
+        };
+        custContainer.appendChild(a);
+    });
+}
 
 function renderPermissionsManagement() {
     const userSelector = document.getElementById("perm-user-selector");
     if (!userSelector) return;
+
+    function populatePermUserSelector() {
+        const curVal = userSelector.value;
+        userSelector.innerHTML = "";
+        Object.entries(appState.customerAccounts || {}).forEach(([key, acc]) => {
+            const opt = document.createElement("option");
+            opt.value = key;
+            opt.textContent = `${acc.name} (${acc.username})`;
+            userSelector.appendChild(opt);
+        });
+        if (curVal && appState.customerAccounts[curVal]) {
+            userSelector.value = curVal;
+        } else if (userSelector.options.length > 0) {
+            userSelector.selectedIndex = 0;
+        }
+    }
+
+    function renderCustomerAccountsTable() {
+        const tbody = document.getElementById("customer-accounts-tbody");
+        if (!tbody) return;
+        tbody.innerHTML = "";
+
+        const accounts = Object.entries(appState.customerAccounts || {});
+        if (accounts.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 24px; color: var(--text-muted);">ไม่พบข้อมูลบัญชีลูกค้า — กดปุ่ม "เจนบัญชีลูกค้าใหม่" เพื่อสร้างบัญชี</td></tr>`;
+            return;
+        }
+
+        accounts.forEach(([key, acc], index) => {
+            const perms = appState.userPermissions[key] || { hospitals: [], projects: [] };
+            const hCount = (perms.hospitals || []).length;
+            const pCount = (perms.projects || []).length;
+
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+                <td style="text-align: center; font-weight: 700; color: var(--text-muted);">${index + 1}</td>
+                <td style="font-weight: 700; color: var(--navy-dark);">${acc.name}</td>
+                <td><span style="font-family: monospace; font-weight: 700; color: #1e40af; background: #dbeafe; padding: 3px 8px; border-radius: 4px; border: 1px solid #93c5fd;">${acc.username}</span></td>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <input type="password" value="${acc.password}" id="pass-field-${key}" readonly style="width: 100px; font-family: monospace; font-size: 12px; font-weight: 700; border: none; background: transparent; color: var(--navy-dark);" autocomplete="off">
+                        <button type="button" class="btn btn-xs btn-outline" onclick="window.toggleShowPassword('${key}')" title="แสดง/ซ่อนรหัสผ่าน" style="padding: 2px 6px;"><i class="fa-solid fa-eye" id="eye-icon-${key}"></i></button>
+                    </div>
+                </td>
+                <td style="text-align: center;">
+                    <span style="font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 12px; background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1;">
+                        ${hCount} โรงพยาบาล / ${pCount} โครงการ
+                    </span>
+                </td>
+                <td style="text-align: center;">
+                    <div style="display: flex; gap: 4px; justify-content: center;">
+                        <button type="button" class="btn btn-xs btn-outline-blue" onclick="window.copyCustomerLogin('${key}')" title="คัดลอกข้อมูลล็อกอินส่งให้ลูกค้า" style="font-size: 10.5px; padding: 4px 8px;">
+                            <i class="fa-solid fa-copy"></i> คัดลอก
+                        </button>
+                        <button type="button" class="btn btn-xs btn-outline" onclick="window.selectUserForPermission('${key}')" title="เลือกบัญชีนี้เพื่อปรับสิทธิ์" style="font-size: 10.5px; padding: 4px 8px;">
+                            <i class="fa-solid fa-sliders"></i> สิทธิ์
+                        </button>
+                        <button type="button" class="btn btn-xs btn-outline-red" onclick="window.deleteCustomerAccount('${key}')" title="ลบบัญชีนี้" style="font-size: 10.5px; padding: 4px 6px;">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        updateRoleSwitcherDropdown();
+    }
+
+    populatePermUserSelector();
+    renderCustomerAccountsTable();
 
     const allHospitals = [
         "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
@@ -11092,6 +11457,12 @@ function renderPermissionsManagement() {
     }
 
     function loadCheckboxes(cUserKey) {
+        const acc = (appState.customerAccounts || {})[cUserKey];
+        const userInfoEl = document.getElementById("perm-current-user-info");
+        if (userInfoEl && acc) {
+            userInfoEl.innerHTML = `<i class="fa-solid fa-user-check mr-1"></i> กำลังปรับสิทธิ์ของ: <strong>${acc.name}</strong> (${acc.username})`;
+        }
+
         const perms = appState.userPermissions[cUserKey] || { hospitals: [], projects: [] };
         const allowedH = perms.hospitals || [];
         const allowedP = perms.projects || [];
@@ -11183,8 +11554,11 @@ function renderPermissionsManagement() {
             if (!appState.userPermissions) appState.userPermissions = {};
             appState.userPermissions[cUserKey] = { hospitals, projects };
             localStorage.setItem("technical_water_user_permissions", JSON.stringify(appState.userPermissions));
-            const userNameMap = { user1: "BKK Hospital Rep (Customer 1)", user2: "Paolo Rep (Customer 2)", user3: "Phyathai Rep (Customer 3)" };
-            showToast(`✅ บันทึกสิทธิ์ของ ${userNameMap[cUserKey] || cUserKey} เรียบร้อยแล้ว (โรงพยาบาล: ${hospitals.length} แห่ง, โครงการ: ${projects.length} รายการ)`, "success");
+            
+            const acc = (appState.customerAccounts || {})[cUserKey];
+            const userName = acc ? acc.name : cUserKey;
+            showToast(`✅ บันทึกสิทธิ์ของ "${userName}" เรียบร้อยแล้ว (โรงพยาบาล: ${hospitals.length} แห่ง, โครงการ: ${projects.length} รายการ)`, "success");
+            renderCustomerAccountsTable();
         };
     }
 
@@ -11197,6 +11571,7 @@ function renderPermissionsManagement() {
             localStorage.setItem("technical_water_user_permissions", JSON.stringify(defaultPermissions));
             loadCheckboxes(document.getElementById("perm-user-selector").value || "user1");
             showToast("🔄 รีเซ็ตสิทธิ์ทั้งหมดกลับสู่ค่าเริ่มต้นเรียบร้อยแล้ว", "info");
+            renderCustomerAccountsTable();
         };
     }
 }
