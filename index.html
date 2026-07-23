@@ -5058,6 +5058,24 @@ async function loadFromSupabase() {
             renderOverallDashboard();
             renderSubnavProjectWorkspace();
         }
+
+        // Sync signature roles and name history from Supabase
+        try {
+            const { data: rolesRes } = await supabaseClient.from('projects').select('data').eq('code', 'FILE:SIGNER_ROLES_HISTORY').single();
+            if (rolesRes && rolesRes.data && rolesRes.data.roles) {
+                appState.signerRolesHistory = rolesRes.data.roles;
+                localStorage.setItem("technical_water_signer_roles_history", JSON.stringify(appState.signerRolesHistory));
+            }
+        } catch (e) {}
+
+        try {
+            const { data: namesRes } = await supabaseClient.from('projects').select('data').eq('code', 'FILE:SIGNER_NAMES_HISTORY').single();
+            if (namesRes && namesRes.data && namesRes.data.history) {
+                appState.signerNamesHistory = namesRes.data.history;
+                localStorage.setItem("technical_water_signer_names_history", JSON.stringify(appState.signerNamesHistory));
+                if (typeof window.updateSignerNamesDatalist === "function") window.updateSignerNamesDatalist();
+            }
+        } catch (e) {}
     } catch (e) {
         console.error("Failed to load from Supabase:", e);
     }
@@ -5735,7 +5753,94 @@ const appState = {
     selectedCostYearFilter: "all",
     currentCustomerUser: localStorage.getItem("technical_water_current_customer_user") || "user1",
     userPermissions: null, // Loaded below
-    customerAccounts: null // Loaded below
+    customerAccounts: null, // Loaded below
+    signerRolesHistory: ["Chief Engineer", "Supervisor", "Admin"],
+    signerNamesHistory: []
+};
+
+try {
+    const rawRoles = localStorage.getItem("technical_water_signer_roles_history");
+    if (rawRoles) appState.signerRolesHistory = JSON.parse(rawRoles);
+} catch (e) {}
+
+try {
+    const rawNames = localStorage.getItem("technical_water_signer_names_history");
+    if (rawNames) appState.signerNamesHistory = JSON.parse(rawNames);
+} catch (e) {}
+
+window.updateSignerNamesDatalist = function() {
+    let dl = document.getElementById("signer-names-datalist");
+    if (!dl) {
+        dl = document.createElement("datalist");
+        dl.id = "signer-names-datalist";
+        document.body.appendChild(dl);
+    }
+    dl.innerHTML = "";
+    (appState.signerNamesHistory || []).forEach(name => {
+        const opt = document.createElement("option");
+        opt.value = name;
+        dl.appendChild(opt);
+    });
+};
+
+// Initialize name datalist immediately on script load
+window.updateSignerNamesDatalist();
+
+window.initSignerRoleDropdown = function(selectEl, selectedValue) {
+    if (!selectEl) return;
+    
+    const populate = (val) => {
+        selectEl.innerHTML = "";
+        
+        const placeholderOpt = document.createElement("option");
+        placeholderOpt.value = "";
+        placeholderOpt.textContent = "-- เลือกตำแหน่ง --";
+        placeholderOpt.disabled = true;
+        placeholderOpt.selected = !val;
+        selectEl.appendChild(placeholderOpt);
+
+        const roles = appState.signerRolesHistory || ["Chief Engineer", "Supervisor", "Admin"];
+        roles.forEach(role => {
+            const opt = document.createElement("option");
+            opt.value = role;
+            opt.textContent = role;
+            if (role === val) opt.selected = true;
+            selectEl.appendChild(opt);
+        });
+
+        const addOpt = document.createElement("option");
+        addOpt.value = "__ADD_NEW_ROLE__";
+        addOpt.textContent = "➕ เพิ่มตำแหน่งใหม่...";
+        selectEl.appendChild(addOpt);
+    };
+
+    populate(selectedValue);
+
+    selectEl.addEventListener("change", function() {
+        if (this.value === "__ADD_NEW_ROLE__") {
+            const newRole = prompt("กรอกตำแหน่ง/บทบาทใหม่ที่ต้องการเพิ่ม:");
+            if (newRole && newRole.trim()) {
+                const roleTrimmed = newRole.trim();
+                if (!appState.signerRolesHistory.includes(roleTrimmed)) {
+                    appState.signerRolesHistory.push(roleTrimmed);
+                    localStorage.setItem("technical_water_signer_roles_history", JSON.stringify(appState.signerRolesHistory));
+                    if (typeof supabaseClient !== "undefined") {
+                        supabaseClient.from('projects').upsert({
+                            code: 'FILE:SIGNER_ROLES_HISTORY',
+                            data: { roles: appState.signerRolesHistory }
+                        }).catch(err => console.error(err));
+                    }
+                }
+                // Refresh all role dropdowns on screen
+                document.querySelectorAll(".signer-role-select").forEach(sel => {
+                    const currentVal = (sel === selectEl) ? roleTrimmed : sel.value;
+                    window.initSignerRoleDropdown(sel, currentVal);
+                });
+            } else {
+                this.value = "";
+            }
+        }
+    });
 };
 
 // Define default customer user accounts with Username & Password
@@ -8962,11 +9067,13 @@ document.addEventListener("DOMContentLoaded", () => {
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
                 <div>
                     <label class="form-label" style="font-size: 10px; font-weight: 600;">ชื่อ-นามสกุล <span class="required">*</span></label>
-                    <input type="text" class="form-control signer-name" placeholder="เช่น นายสมชาย ใจดี" required style="font-size: 11px; padding: 4px 8px; height: auto;">
+                    <input type="text" class="form-control signer-name" list="signer-names-datalist" placeholder="เช่น นายสมชาย ใจดี" required style="font-size: 11px; padding: 4px 8px; height: auto;" autocomplete="off">
                 </div>
                 <div>
                     <label class="form-label" style="font-size: 10px; font-weight: 600;">ตำแหน่ง/บทบาท <span class="required">*</span></label>
-                    <input type="text" class="form-control signer-role" placeholder="เช่น วิศวกร, PM, ลูกค้า" required style="font-size: 11px; padding: 4px 8px; height: auto;">
+                    <select class="form-control signer-role signer-role-select" required style="font-size: 11px; padding: 4px 8px; height: 28px; line-height: 1.2; font-family: 'Prompt';">
+                        <!-- Populated dynamically -->
+                    </select>
                 </div>
             </div>
             
@@ -8988,6 +9095,14 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
         
         container.appendChild(box);
+
+        // Initialize autocomplete role dropdown
+        const roleSelect = box.querySelector(".signer-role-select");
+        const initialRole = existingSig ? (existingSig.role || "") : "";
+        if (initialRole && !appState.signerRolesHistory.includes(initialRole)) {
+            appState.signerRolesHistory.push(initialRole);
+        }
+        window.initSignerRoleDropdown(roleSelect, initialRole);
         
         const canvas = box.querySelector(".signature-canvas");
         const drawArea = box.querySelector(".sig-draw-area");
@@ -9009,7 +9124,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (existingSig) {
             box.querySelector(".signer-name").value = existingSig.name || "";
-            box.querySelector(".signer-role").value = existingSig.role || "";
             
             drawArea.style.display = "none";
             previewArea.style.display = "flex";
@@ -9331,6 +9445,31 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
                 
                 saveToLocalStorage();
+
+                // Collect signer names to history
+                let historyUpdated = false;
+                signaturesRefs.forEach(sig => {
+                    if (sig.name && sig.name.trim()) {
+                        const nameTrimmed = sig.name.trim();
+                        if (!appState.signerNamesHistory.includes(nameTrimmed)) {
+                            appState.signerNamesHistory.push(nameTrimmed);
+                            historyUpdated = true;
+                        }
+                    }
+                });
+                
+                if (historyUpdated) {
+                    localStorage.setItem("technical_water_signer_names_history", JSON.stringify(appState.signerNamesHistory));
+                    if (typeof window.updateSignerNamesDatalist === "function") window.updateSignerNamesDatalist();
+                    
+                    if (typeof supabaseClient !== "undefined") {
+                        supabaseClient.from('projects').upsert({
+                            code: 'FILE:SIGNER_NAMES_HISTORY',
+                            data: { history: appState.signerNamesHistory }
+                        }).catch(err => console.error("Failed to sync signer names history to Supabase:", err));
+                    }
+                }
+
                 closeDailyReportModal();
                 renderSubnavProjectWorkspace();
             }
