@@ -3021,7 +3021,7 @@ body.public-view-mode #public-view-header {
             <form id="login-form" style="width: 100%; display: flex; flex-direction: column; gap: 16px;">
                 <div style="display: flex; flex-direction: column; gap: 6px;">
                     <label style="font-size: 12px; font-weight: 600; color: #475569;">ชื่อผู้ใช้งาน (Username)</label>
-                    <input type="text" id="login-username" required style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; font-family: inherit; background: rgba(255, 255, 255, 0.85); outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='#1d4ed8'" onblur="this.style.borderColor='#cbd5e1'" placeholder="เช่น pm, accounting, customer">
+                    <input type="text" id="login-username" required style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; font-family: inherit; background: rgba(255, 255, 255, 0.85); outline: none; transition: border-color 0.2s;" onfocus="this.style.borderColor='#1d4ed8'" onblur="this.style.borderColor='#cbd5e1'" placeholder="ระบุชื่อผู้ใช้งาน">
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px;">
                     <label style="font-size: 12px; font-weight: 600; color: #475569;">รหัสผ่าน (Password)</label>
@@ -3029,24 +3029,6 @@ body.public-view-mode #public-view-header {
                 </div>
                 <button type="submit" style="width: 100%; padding: 12px; background: linear-gradient(135deg, #1d4ed8 0%, #1e3a8a 100%); color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer; box-shadow: 0 4px 12px rgba(29, 78, 216, 0.2); transition: transform 0.1s, opacity 0.2s;" onmousedown="this.style.transform='scale(0.98)'" onmouseup="this.style.transform='scale(1)'" onmouseover="this.style.opacity='0.95'" onmouseout="this.style.opacity='1'">เข้าสู่ระบบ</button>
             </form>
-            
-            <div style="border-top: 1px solid rgba(0,0,0,0.06); width: 100%; margin-top: 24px; padding-top: 16px;">
-                <span style="font-size: 11px; font-weight: 600; color: #64748b; display: block; margin-bottom: 8px; text-align: center;">ข้อมูลล็อกอินสาธิต (Demo Accounts)</span>
-                <div style="display: flex; flex-direction: column; gap: 6px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.4); padding: 4px 8px; border-radius: 6px; font-size: 11.5px; border: 1px dashed rgba(0,0,0,0.05);">
-                        <span style="font-weight: 600; color: #1e3a8a;"><i class="fa-solid fa-user-gear"></i> PM (ผู้จัดการ)</span>
-                        <code style="background: rgba(0,0,0,0.05); padding: 2px 4px; border-radius: 4px; font-size: 10px; font-weight: 600;">pm / 1234</code>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.4); padding: 4px 8px; border-radius: 6px; font-size: 11.5px; border: 1px dashed rgba(0,0,0,0.05);">
-                        <span style="font-weight: 600; color: #0d9488;"><i class="fa-solid fa-file-invoice-dollar"></i> บัญชี (Accounting)</span>
-                        <code style="background: rgba(0,0,0,0.05); padding: 2px 4px; border-radius: 4px; font-size: 10px; font-weight: 600;">accounting / 1234</code>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; background: rgba(255, 255, 255, 0.4); padding: 4px 8px; border-radius: 6px; font-size: 11.5px; border: 1px dashed rgba(0,0,0,0.05);">
-                        <span style="font-weight: 600; color: #0284c7;"><i class="fa-solid fa-user-tie"></i> ลูกค้า (Customer)</span>
-                        <code style="background: rgba(0,0,0,0.05); padding: 2px 4px; border-radius: 4px; font-size: 10px; font-weight: 600;">customer / 1234</code>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -3289,48 +3271,17 @@ body.public-view-mode #public-view-header {
                             <i class="fa-solid fa-chevron-down caret"></i>
                         </div>
                         
-                        <!-- Role Selector Dropdown -->
-                        <div class="profile-dropdown" id="profile-dropdown">
-                            <div class="dropdown-title">สลับบทบาทผู้ใช้งาน (Demo Role Switcher)</div>
-                            <a href="#" class="role-option active" data-role="pm">
-                                <i class="fa-solid fa-user-gear"></i>
-                                <div>
-                                    <div class="role-name">Project Manager (ทีมโครงการ)</div>
-                                    <div class="role-desc">เข้าถึงข้อมูลได้ครบถ้วน จัดการ และลบข้อมูลได้</div>
+                        <!-- User Profile Dropdown (No Switcher) -->
+                        <div class="profile-dropdown" id="profile-dropdown" style="padding: 16px; min-width: 220px;">
+                            <div style="padding-bottom: 12px; border-bottom: 1px solid var(--border-color); margin-bottom: 12px; display: flex; align-items: center; gap: 10px;">
+                                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=100" alt="Avatar" style="width: 38px; height: 38px; border-radius: 50%; object-fit: cover;">
+                                <div style="display: flex; flex-direction: column;">
+                                    <span style="font-size: 13.5px; font-weight: 700; color: var(--navy-dark);" id="dropdown-user-name">Admin Project</span>
+                                    <span style="font-size: 11px; color: var(--text-muted); font-weight: 500;" id="dropdown-user-role">Project Manager</span>
                                 </div>
-                            </a>
-                            <a href="#" class="role-option" data-role="accounting">
-                                <i class="fa-solid fa-file-invoice-dollar"></i>
-                                <div>
-                                    <div class="role-name">Accounting (บัญชี)</div>
-                                    <div class="role-desc">เข้าถึงข้อมูลได้ทุกอย่างยกเว้นลบข้อมูล</div>
-                                </div>
-                            </a>
-                            <div style="border-top: 1px solid var(--border-color); margin: 4px 0;"></div>
-                            <div style="font-size: 10px; font-weight: 700; color: var(--text-muted); padding: 4px 6px; letter-spacing: 0.6px; text-transform: uppercase;">บัญชีลูกค้า (Customer Users)</div>
-                            <a href="#" class="role-option" data-role="customer" data-customer-user="user1">
-                                <i class="fa-solid fa-user-tie"></i>
-                                <div>
-                                    <div class="role-name">Customer 1 : BKK Hospital Rep</div>
-                                    <div class="role-desc">สิทธิ์ตาม PM กำหนด · ไม่เห็นต้นทุน</div>
-                                </div>
-                            </a>
-                            <a href="#" class="role-option" data-role="customer" data-customer-user="user2">
-                                <i class="fa-solid fa-user-tie"></i>
-                                <div>
-                                    <div class="role-name">Customer 2 : Paolo Rep</div>
-                                    <div class="role-desc">สิทธิ์ตาม PM กำหนด · ไม่เห็นต้นทุน</div>
-                                </div>
-                            </a>
-                            <a href="#" class="role-option" data-role="customer" data-customer-user="user3">
-                                <i class="fa-solid fa-user-tie"></i>
-                                <div>
-                                    <div class="role-name">Customer 3 : Phyathai Rep</div>
-                                    <div class="role-desc">สิทธิ์ตาม PM กำหนด · ไม่เห็นต้นทุน</div>
-                                </div>
-                            </a>
-                            <div style="border-top: 1px solid var(--border-color); margin-top: 8px; padding-top: 8px; display: flex; flex-direction: column; gap: 6px;">
-                                <button type="button" id="logout-btn" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px; font-family: 'Prompt'; font-size: 11px; background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; padding: 6px; border-radius: 4px; cursor: pointer;">
+                            </div>
+                            <div style="display: flex; flex-direction: column;">
+                                <button type="button" id="logout-btn" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: 'Prompt'; font-size: 12.5px; background: #fee2e2; color: #ef4444; border: 1px solid #fca5a5; padding: 10px 8px; border-radius: var(--radius-sm); cursor: pointer; font-weight: 700; transition: background 0.15s;" onmouseover="this.style.background='#fecaca'" onmouseout="this.style.background='#fee2e2'">
                                     <i class="fa-solid fa-right-from-bracket"></i> ออกจากระบบ (Logout)
                                 </button>
                             </div>
@@ -6179,15 +6130,14 @@ function switchRole(roleName) {
         // Determine which customer user and their permissions
         const cUserKey = appState.currentCustomerUser || "user1";
         localStorage.setItem("technical_water_current_customer_user", cUserKey);
-        const cUserNames = {
-            user1: "BKK Hospital Rep (Customer 1)",
-            user2: "Paolo Rep (Customer 2)",
-            user3: "Phyathai Rep (Customer 3)"
-        };
-        roleBadge.innerHTML = `<i class="fa-solid fa-user-tie"></i> CS (${cUserNames[cUserKey] || 'Customer'})`;
+        
+        const acc = appState.customerAccounts[cUserKey];
+        const dispName = acc ? acc.name : "Customer View";
+        
+        roleBadge.innerHTML = `<i class="fa-solid fa-user-tie"></i> CS (${dispName})`;
         roleDisplay.textContent = "Customer View";
-        usernameDisplay.textContent = cUserNames[cUserKey] || "Customer";
-        showToast(`สลับบทบาทเป็น: ${cUserNames[cUserKey] || 'Customer'} — สิทธิ์จำกัดตาม PM กำหนด`, "info");
+        usernameDisplay.textContent = dispName;
+        showToast(`สลับบทบาทเป็น: ${dispName} — สิทธิ์จำกัดตาม PM กำหนด`, "info");
 
         // Get allowed hospitals and projects for this user
         const perms = appState.userPermissions[cUserKey] || { hospitals: [], projects: [] };
@@ -11235,8 +11185,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 const USERS = {
     "pm":         { password: "1234", role: "pm",         displayName: "Admin Project",    roleLabel: "Project Manager" },
-    "accounting": { password: "1234", role: "accounting", displayName: "Account System",   roleLabel: "Accountant" },
-    "customer":   { password: "1234", role: "customer",   displayName: "BKK Hospital Rep", roleLabel: "Customer View" }
+    "accounting": { password: "1234", role: "accounting", displayName: "Account System",   roleLabel: "Accountant" }
 };
 
 const SESSION_KEY = "tw_session";
@@ -11253,13 +11202,80 @@ function clearSession() {
     localStorage.removeItem(SESSION_KEY);
 }
 
-function applyLoginSuccess(username, role) {
+window.getUserDetails = function(username) {
+    if (!username) return null;
+    const lowerUser = username.trim().toLowerCase();
+    
+    // Check static USERS
+    if (USERS[lowerUser]) {
+        return {
+            username: lowerUser,
+            password: USERS[lowerUser].password,
+            role: USERS[lowerUser].role,
+            displayName: USERS[lowerUser].displayName,
+            roleLabel: USERS[lowerUser].roleLabel,
+            userKey: null,
+            isStatic: true
+        };
+    }
+    
+    // Check dynamic customerAccounts
+    if (appState && appState.customerAccounts) {
+        const found = Object.values(appState.customerAccounts).find(acc => (acc.username || "").toLowerCase() === lowerUser);
+        if (found) {
+            return {
+                username: lowerUser,
+                password: found.password,
+                role: "customer",
+                displayName: found.name,
+                roleLabel: "Customer View",
+                userKey: found.userKey,
+                isStatic: false
+            };
+        }
+    }
+    
+    return null;
+};
+
+function applyLoginSuccess(username, role, userKey = null) {
     const overlay = document.getElementById("login-overlay");
     if (overlay) overlay.style.display = "none";
-    switchRole(role);
-    // Update display name
-    const usernameDisplay = document.getElementById("username-display");
-    if (usernameDisplay) usernameDisplay.textContent = USERS[username].displayName;
+
+    const user = window.getUserDetails(username);
+    if (user) {
+        if (role === "customer" && user.userKey) {
+            appState.currentCustomerUser = user.userKey;
+            localStorage.setItem("technical_water_current_customer_user", user.userKey);
+        }
+        
+        switchRole(role);
+        
+        // Update display names
+        const usernameDisplay = document.getElementById("username-display");
+        if (usernameDisplay) usernameDisplay.textContent = user.displayName;
+        
+        const roleDisplay = document.getElementById("user-role-display");
+        if (roleDisplay) roleDisplay.textContent = user.roleLabel;
+        
+        const activeRoleBadge = document.getElementById("active-role-badge");
+        if (activeRoleBadge) {
+            if (role === "pm") {
+                activeRoleBadge.innerHTML = `<i class="fa-solid fa-user-lock"></i> PM (Project Manager)`;
+            } else if (role === "accounting") {
+                activeRoleBadge.innerHTML = `<i class="fa-solid fa-file-invoice-dollar"></i> AC (Accounting)`;
+            } else {
+                activeRoleBadge.innerHTML = `<i class="fa-solid fa-user-tie"></i> CS (Customer View)`;
+            }
+        }
+
+        // Update profile dropdown labels
+        const ddName = document.getElementById("dropdown-user-name");
+        if (ddName) ddName.textContent = user.displayName;
+        
+        const ddRole = document.getElementById("dropdown-user-role");
+        if (ddRole) ddRole.textContent = user.roleLabel;
+    }
     saveSession(username, role);
 }
 
@@ -11318,8 +11334,14 @@ function initPublicView(projectCode) {
 
     // Normal login flow
     const session = getSession();
-    if (session && USERS[session.username]) {
-        applyLoginSuccess(session.username, session.role);
+    if (session) {
+        const user = window.getUserDetails(session.username);
+        if (user) {
+            applyLoginSuccess(session.username, session.role, user.userKey);
+        } else {
+            const overlay = document.getElementById("login-overlay");
+            if (overlay) overlay.style.display = "flex";
+        }
     } else {
         // Show login overlay
         const overlay = document.getElementById("login-overlay");
@@ -11331,11 +11353,13 @@ function initPublicView(projectCode) {
     if (loginForm) {
         loginForm.addEventListener("submit", function(e) {
             e.preventDefault();
-            const username = document.getElementById("login-username").value.trim().toLowerCase();
+            const username = document.getElementById("login-username").value.trim();
             const password = document.getElementById("login-password").value;
-            const user = USERS[username];
+            
+            const user = window.getUserDetails(username);
             if (user && user.password === password) {
-                applyLoginSuccess(username, user.role);
+                applyLoginSuccess(username, user.role, user.userKey);
+                showToast(`ยินดีต้อนรับคุณ ${user.displayName}!`, "success");
             } else {
                 showLoginError("⚠️ ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง");
             }
@@ -11452,52 +11476,6 @@ window.deleteCustomerAccount = function(key) {
     renderPermissionsManagement();
 };
 
-function updateRoleSwitcherDropdown() {
-    const dropdown = document.querySelector("#profile-dropdown .dropdown-body");
-    if (!dropdown) return;
-
-    let custContainer = document.getElementById("customer-roles-container");
-    if (!custContainer) {
-        custContainer = document.createElement("div");
-        custContainer.id = "customer-roles-container";
-        const label = document.createElement("div");
-        label.style.cssText = "font-size: 10px; font-weight: 700; color: var(--text-muted); padding: 6px 6px 4px 6px; letter-spacing: 0.6px; text-transform: uppercase; border-top: 1px solid var(--border-color); margin-top: 6px;";
-        label.textContent = "บัญชีลูกค้า (CUSTOMER USERS)";
-        
-        const logoutDiv = dropdown.querySelector("div[style*='border-top']");
-        if (logoutDiv) {
-            dropdown.insertBefore(label, logoutDiv);
-            dropdown.insertBefore(custContainer, logoutDiv);
-        } else {
-            dropdown.appendChild(label);
-            dropdown.appendChild(custContainer);
-        }
-    }
-
-    custContainer.innerHTML = "";
-    Object.entries(appState.customerAccounts || {}).forEach(([key, acc]) => {
-        const a = document.createElement("a");
-        a.href = "#";
-        a.className = "role-option";
-        a.setAttribute("data-role", "customer");
-        a.setAttribute("data-customer-user", key);
-        a.innerHTML = `
-            <i class="fa-solid fa-user-tie"></i>
-            <div>
-                <div class="role-name">${acc.name}</div>
-                <div class="role-desc">User: <strong>${acc.username}</strong> · ไม่เห็นต้นทุน</div>
-            </div>
-        `;
-        a.onclick = function(e) {
-            e.preventDefault();
-            appState.currentCustomerUser = key;
-            localStorage.setItem("technical_water_current_customer_user", key);
-            switchRole("customer");
-            document.getElementById("profile-dropdown").classList.remove("active");
-        };
-        custContainer.appendChild(a);
-    });
-}
 
 function renderPermissionsManagement() {
     const userSelector = document.getElementById("perm-user-selector");
@@ -11576,8 +11554,6 @@ function renderPermissionsManagement() {
             `;
             tbody.appendChild(tr);
         });
-
-        updateRoleSwitcherDropdown();
     };
 
     populatePermUserSelector();
