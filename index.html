@@ -7184,9 +7184,16 @@ function renderSubnavActualProgress(project) {
             while(item.plan.length < project.scurveMonths.length * 4) item.plan.push(0);
             while(item.actual.length < project.scurveMonths.length * 4) item.actual.push(0);
 
+            // Calculate current total
+            let currentTotal = 0;
+            const currentArr = currentScurveMode === 'plan' ? item.plan : item.actual;
+            currentArr.forEach(v => currentTotal += (parseFloat(v) || 0));
+            item.totalPercent = currentTotal;
+
             const isSub = item.isSubtask;
             const row = document.createElement("tr");
             row.style = "border-bottom: 1px solid var(--border-color);";
+            row.setAttribute("data-row-idx", idx);
             
             const readonlyAttr = canEdit ? '' : 'readonly';
             const inputStyle = `style="width: 100%; font-size: 10.5px; text-align: center; padding: 3px 2px; border: 1px solid transparent; background: transparent;"`;
@@ -7209,7 +7216,7 @@ function renderSubnavActualProgress(project) {
                     ${isSub ? '' : `<input type="number" class="scurve-weight" data-idx="${idx}" value="${item.weight || 0}" min="0" max="100" step="0.01" ${readonlyAttr} ${canEdit?editInputStyle:inputStyle}>`}
                 </td>
                 <td style="padding: 4px;">
-                    ${isSub ? '' : `<input type="number" class="scurve-total-pct" data-idx="${idx}" value="${item.totalPercent || 100}" min="0" max="100" step="1" ${readonlyAttr} ${canEdit?editInputStyle:inputStyle}>`}
+                    ${isSub ? '' : `<input type="number" class="scurve-total-pct" data-idx="${idx}" value="${item.totalPercent}" readonly style="width: 100%; font-size: 10.5px; text-align: center; padding: 3px 2px; border: 1px solid transparent; background: #f8fafc; font-weight: bold; color: ${item.totalPercent === 100 ? '#10b981' : '#e63946'};">`}
                 </td>
             `;
 
@@ -7233,6 +7240,29 @@ function renderSubnavActualProgress(project) {
             row.innerHTML = rowHtml;
             body.appendChild(row);
         });
+
+        // Add real-time event listener to update % (รวม) when weekly cell changes
+        if (canEdit) {
+            body.removeEventListener("input", window._scurveInputHandler); // clean up previous
+            window._scurveInputHandler = function(e) {
+                if (e.target.classList.contains("scurve-cell-val")) {
+                    const rowIdx = e.target.getAttribute("data-idx");
+                    const rowTr = document.querySelector(`tr[data-row-idx="${rowIdx}"]`);
+                    if (rowTr) {
+                        let sum = 0;
+                        rowTr.querySelectorAll(".scurve-cell-val").forEach(inp => {
+                            sum += parseFloat(inp.value) || 0;
+                        });
+                        const totalEl = rowTr.querySelector(".scurve-total-pct");
+                        if (totalEl) {
+                            totalEl.value = sum;
+                            totalEl.style.color = sum === 100 ? '#10b981' : '#e63946';
+                        }
+                    }
+                }
+            };
+            body.addEventListener("input", window._scurveInputHandler);
+        }
     }
 
     updateScurveTotals(project);
