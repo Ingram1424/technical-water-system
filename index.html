@@ -3205,6 +3205,10 @@ body.public-view-mode #public-view-header {
                 </div>
 
                 <div class="header-actions">
+                    <!-- Header Create Project Button (PM only) -->
+                    <button class="btn btn-sm btn-primary hide-accounting hide-customer" id="header-create-project-btn" style="font-size: 11.5px; padding: 6px 14px; height: auto; border-radius: var(--radius-sm); display: none; align-items: center; gap: 5px; white-space: nowrap;">
+                        <i class="fa-solid fa-plus-circle"></i> สร้างโครงการใหม่
+                    </button>
                     <!-- Notification Button -->
                     <div class="notification-bell" id="notification-btn">
                         <i class="fa-solid fa-bell"></i>
@@ -3925,6 +3929,10 @@ body.public-view-mode #public-view-header {
                 <div class="project-workspace-layout">
                     <!-- Right: Sub-Tab Content Workspace -->
                     <main class="project-detail-content-area">
+                        <!-- Container for Shared Public Project View -->
+                        <div id="public-project-view-container" style="display: none; flex-direction: column; gap: 24px; padding: 10px;">
+                            <!-- Populated dynamically via JS -->
+                        </div>
                         
                         <!-- Subtab 1: ข้อมูลโครงการ (General Info Dashboard) -->
                         <div id="subtab-general-info-view" class="subtab-panel active">
@@ -4100,40 +4108,64 @@ body.public-view-mode #public-view-header {
                         <!-- Subtab 2: Plan Work -->
                         <div id="subtab-plan-work-view" class="subtab-panel">
                             <section class="section-card">
-                                <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-                                    <h2 class="section-title">แผนการดำเนินงาน (Project Plan Work)</h2>
-                                    <button class="btn btn-sm btn-primary hide-accounting hide-customer" id="open-plan-modal-btn" style="font-size: 11px; padding: 6px 12px; height: auto;">
-                                        <i class="fa-solid fa-plus"></i> เพิ่มแผนงาน
-                                    </button>
-                                </div>
-                                <div class="timeline-visual-mock">
-                                    <!-- A premium timeline component -->
-                                    <div class="timeline-gantt-header">
-                                        <div class="gantt-col text-bold">หมวดงาน</div>
-                                        <div class="gantt-col">Q1</div>
-                                        <div class="gantt-col">Q2</div>
-                                        <div class="gantt-col">Q3</div>
-                                        <div class="gantt-col">Q4</div>
+                                <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 16px;">
+                                    <div>
+                                        <h2 class="section-title">แผนการดำเนินงานและกราฟ S-Curve (Project Plan & S-Curve)</h2>
+                                        <p class="section-subtitle">กรอกน้ำหนักงานตาม BOQ และเปอร์เซ็นต์ความคืบหน้าสะสมในแต่ละช่วงเวลา เพื่อพล็อตกราฟ S-Curve</p>
                                     </div>
-                                    <div id="timeline-gantt-rows-container">
-                                        <div class="timeline-gantt-row">
-                                            <div class="gantt-col label">งานระบบไฟฟ้า</div>
-                                            <div class="gantt-col bar-col"><div class="gantt-bar blue" style="width: 70%; left: 0%;"></div></div>
-                                        </div>
-                                        <div class="timeline-gantt-row">
-                                            <div class="gantt-col label">งานระบบปรับอากาศ</div>
-                                            <div class="gantt-col bar-col"><div class="gantt-bar green" style="width: 50%; left: 20%;"></div></div>
-                                        </div>
-                                        <div class="timeline-gantt-row">
-                                            <div class="gantt-col label">งานโครงสร้าง</div>
-                                            <div class="gantt-col bar-col"><div class="gantt-bar orange" style="width: 40%; left: 10%;"></div></div>
-                                        </div>
-                                        <div class="timeline-gantt-row">
-                                            <div class="gantt-col label">งานสถาปัตย์</div>
-                                            <div class="gantt-col bar-col"><div class="gantt-bar purple" style="width: 30%; left: 50%;"></div></div>
-                                        </div>
+                                    <div style="display: flex; gap: 8px;">
+                                        <button class="btn btn-sm btn-outline hide-accounting hide-customer" id="btn-add-scurve-row" style="font-size: 11px; padding: 6px 12px; height: auto;">
+                                            <i class="fa-solid fa-plus"></i> เพิ่มรายการงาน
+                                        </button>
+                                        <button class="btn btn-sm btn-primary hide-accounting hide-customer" id="btn-save-scurve-data" style="font-size: 11px; padding: 6px 12px; height: auto;">
+                                            <i class="fa-solid fa-floppy-disk"></i> บันทึกแผนงาน
+                                        </button>
                                     </div>
                                 </div>
+
+                                <!-- S-Curve Chart Container -->
+                                <div style="margin-bottom: 24px; padding: 16px; background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md); box-shadow: var(--shadow-sm);">
+                                    <h4 style="font-size: 13px; font-weight: 700; color: var(--navy-dark); margin-bottom: 12px; text-align: center;">กราฟแสดงความคืบหน้าสะสม (Project S-Curve Chart)</h4>
+                                    <div style="position: relative; height: 260px; width: 100%;">
+                                        <canvas id="scurve-chart-canvas"></canvas>
+                                    </div>
+                                </div>
+
+                                <!-- Work Plan Grid Table -->
+                                <div style="overflow-x: auto; background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; box-shadow: var(--shadow-sm);">
+                                    <table class="table grid-table" style="width: 100%; min-width: 900px; font-size: 11.5px; border-collapse: collapse;">
+                                        <thead>
+                                            <tr style="background: var(--bg-light); border-bottom: 2px solid var(--border-color); text-align: center;">
+                                                <th style="padding: 10px; text-align: left; width: 220px;">รายการงานย่อย / BOQ Item</th>
+                                                <th style="padding: 10px; width: 80px;">น้ำหนัก (%)</th>
+                                                <th style="padding: 10px; width: 100px;">ช่วงที่ 1<br><span style="font-size: 9px; font-weight: normal; color: var(--text-muted);">แผน% / จริง%</span></th>
+                                                <th style="padding: 10px; width: 100px;">ช่วงที่ 2<br><span style="font-size: 9px; font-weight: normal; color: var(--text-muted);">แผน% / จริง%</span></th>
+                                                <th style="padding: 10px; width: 100px;">ช่วงที่ 3<br><span style="font-size: 9px; font-weight: normal; color: var(--text-muted);">แผน% / จริง%</span></th>
+                                                <th style="padding: 10px; width: 100px;">ช่วงที่ 4<br><span style="font-size: 9px; font-weight: normal; color: var(--text-muted);">แผน% / จริง%</span></th>
+                                                <th style="padding: 10px; width: 100px;">ช่วงที่ 5<br><span style="font-size: 9px; font-weight: normal; color: var(--text-muted);">แผน% / จริง%</span></th>
+                                                <th style="padding: 10px; width: 100px;">ช่วงที่ 6<br><span style="font-size: 9px; font-weight: normal; color: var(--text-muted);">แผน% / จริง%</span></th>
+                                                <th class="hide-accounting hide-customer" style="padding: 10px; width: 50px;">ลบ</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="scurve-table-body">
+                                            <!-- Dynamically populated -->
+                                        </tbody>
+                                        <tfoot>
+                                            <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid var(--border-color);">
+                                                <td style="padding: 12px 10px;">ความคืบหน้ารวมสะสม (Cumulative Total)</td>
+                                                <td id="scurve-total-weight" style="padding: 12px 10px; text-align: center;">0%</td>
+                                                <td id="scurve-total-p1" style="padding: 12px 10px; text-align: center; color: #1e3a8a;">0% / 0%</td>
+                                                <td id="scurve-total-p2" style="padding: 12px 10px; text-align: center; color: #1e3a8a;">0% / 0%</td>
+                                                <td id="scurve-total-p3" style="padding: 12px 10px; text-align: center; color: #1e3a8a;">0% / 0%</td>
+                                                <td id="scurve-total-p4" style="padding: 12px 10px; text-align: center; color: #1e3a8a;">0% / 0%</td>
+                                                <td id="scurve-total-p5" style="padding: 12px 10px; text-align: center; color: #1e3a8a;">0% / 0%</td>
+                                                <td id="scurve-total-p6" style="padding: 12px 10px; text-align: center; color: #1e3a8a;">0% / 0%</td>
+                                                <td class="hide-accounting hide-customer" style="padding: 12px 10px;"></td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            </section>
                             <!-- Section: Master Plan Documents -->
                             <section class="section-card" style="margin-top: 20px;">
                                 <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
@@ -5855,6 +5887,7 @@ let costStructureDonut = null;
 let projectYearlyComparisonChart = null;
 let costOverallBarChart = null;
 let costOverallDonutChart = null;
+let scurveChartInstance = null;
 
 // --- FORMATTERS ---
 function formatNumber(num) {
@@ -6049,6 +6082,7 @@ function switchView(viewName) {
         if (viewName === "projects-list" || viewName === "quoting-projects-list") {
             sidebarSubnav.style.display = "block";
             const sidebarCreateBtn = document.getElementById("sidebar-create-project-btn");
+            const headerCreateBtn = document.getElementById("header-create-project-btn");
             if (viewName === "quoting-projects-list") {
                 if (navItemQuoting && sidebarSubnav.previousElementSibling !== navItemQuoting) {
                     navItemQuoting.insertAdjacentElement("afterend", sidebarSubnav);
@@ -6056,6 +6090,10 @@ function switchView(viewName) {
                 if (subnavHeaderIcon) subnavHeaderIcon.className = "fa-solid fa-file-invoice sidebar-proj-icon";
                 if (subnavHeaderTitle) subnavHeaderTitle.textContent = "Quotation Detail";
                 if (sidebarCreateBtn) sidebarCreateBtn.innerHTML = `<i class="fa-solid fa-plus-circle"></i> สร้างรายการเสนอราคาใหม่`;
+                if (headerCreateBtn) {
+                    headerCreateBtn.innerHTML = `<i class="fa-solid fa-plus-circle"></i> เพิ่มรายการเสนอราคา`;
+                    headerCreateBtn.style.display = "inline-flex";
+                }
             } else {
                 if (navItemProjects && sidebarSubnav.previousElementSibling !== navItemProjects) {
                     navItemProjects.insertAdjacentElement("afterend", sidebarSubnav);
@@ -6063,9 +6101,15 @@ function switchView(viewName) {
                 if (subnavHeaderIcon) subnavHeaderIcon.className = "fa-solid fa-folder-open sidebar-proj-icon";
                 if (subnavHeaderTitle) subnavHeaderTitle.textContent = "Project Detail";
                 if (sidebarCreateBtn) sidebarCreateBtn.innerHTML = `<i class="fa-solid fa-plus-circle"></i> สร้างโครงการใหม่`;
+                if (headerCreateBtn) {
+                    headerCreateBtn.innerHTML = `<i class="fa-solid fa-plus-circle"></i> สร้างโครงการใหม่`;
+                    headerCreateBtn.style.display = "inline-flex";
+                }
             }
         } else {
             sidebarSubnav.style.display = "none";
+            const headerCreateBtn = document.getElementById("header-create-project-btn");
+            if (headerCreateBtn) headerCreateBtn.style.display = "none";
         }
     }
     
@@ -7366,59 +7410,58 @@ function renderSubnavPhotosFiles(project) {
 }
 
 function renderSubnavPlanWork(project) {
-    const rowsContainer = document.getElementById("timeline-gantt-rows-container");
-    if (!rowsContainer) return;
+    const tableBody = document.getElementById("scurve-table-body");
+    if (!tableBody) return;
 
-    // Fallback default plans if not defined
-    if (!project.plans) {
-        project.plans = [];
+    // Initialize scurveData if not present
+    if (!project.scurveData) {
+        project.scurveData = [];
     }
 
-    rowsContainer.innerHTML = "";
+    const canEdit = appState.currentRole === "pm" && appState.selectedDetailProject !== "all";
+    tableBody.innerHTML = "";
 
-    if (project.plans.length === 0) {
-        rowsContainer.innerHTML = `<div style="grid-column: span 2; text-align: center; color: var(--text-muted); font-style: italic; padding: 20px; font-size: 13px;">ยังไม่มีขั้นตอนแผนงานหลักสำหรับโครงการนี้</div>`;
+    if (project.scurveData.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: var(--text-muted); font-style: italic; padding: 24px; font-size: 12px;">ยังไม่มีรายการงาน — คลิก "เพิ่มรายการงาน" เพื่อเริ่มต้น</td></tr>`;
     } else {
-        const canDelete = appState.currentRole === "pm";
-        project.plans.forEach((plan, idx) => {
-            const row = document.createElement("div");
-            row.className = "timeline-gantt-row";
-            const deleteButtonHTML = canDelete 
-                ? `<button type="button" class="btn-delete-gantt" onclick="deleteGanttRow(${idx})" title="ลบขั้นตอน" style="background:none; border:none; color:#e63946; cursor:pointer; padding: 2px 6px; font-size:12px;"><i class="fa-solid fa-trash-can"></i></button>`
-                : ``;
+        project.scurveData.forEach((item, idx) => {
+            const row = document.createElement("tr");
+            row.style = "border-bottom: 1px solid var(--border-color);";
+            const inputStyle = `style="width: 42px; font-size: 10.5px; text-align: center; padding: 3px 2px; border: 1px solid var(--border-color); border-radius: 4px; background: ${canEdit ? '#fff' : 'var(--bg-light)'};"`;
+            const readonlyAttr = canEdit ? '' : 'readonly';
+            
             row.innerHTML = `
-                <div class="gantt-col label" style="display:flex; align-items:center; justify-content:space-between; width:100%;">
-                    <span>${plan.title}</span>
-                    ${deleteButtonHTML}
-                </div>
-                <div class="gantt-col bar-col">
-                    <div class="gantt-bar ${plan.color}" style="width: ${plan.width}%; left: ${plan.left}%;"></div>
-                </div>
+                <td style="padding: 8px 10px;">
+                    <input type="text" class="scurve-item-name" data-idx="${idx}" value="${item.name || ''}" placeholder="ชื่อรายการ" ${readonlyAttr} style="width: 100%; font-size: 11px; padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 4px; background: ${canEdit ? '#fff' : 'var(--bg-light)'};">
+                </td>
+                <td style="padding: 8px 4px; text-align: center;">
+                    <input type="number" class="scurve-weight" data-idx="${idx}" value="${item.weight || 0}" min="0" max="100" step="0.1" ${readonlyAttr} ${inputStyle}>
+                </td>
+                ${[1,2,3,4,5,6].map(p => `
+                <td style="padding: 8px 4px; text-align: center;">
+                    <input type="number" class="scurve-plan-p${p}" data-idx="${idx}" value="${(item['plan'+p] || 0)}" min="0" max="100" step="0.1" ${readonlyAttr} ${inputStyle}>
+                    <span style="color: var(--text-muted); font-size: 9px;">/</span>
+                    <input type="number" class="scurve-actual-p${p}" data-idx="${idx}" value="${(item['actual'+p] || 0)}" min="0" max="100" step="0.1" ${readonlyAttr} ${inputStyle}>
+                </td>`).join('')}
+                <td class="hide-accounting hide-customer" style="padding: 8px 4px; text-align: center;">
+                    ${canEdit ? `<button type="button" onclick="deleteScurveRow(${idx})" title="ลบรายการ" style="background:none; border:none; color:#e63946; cursor:pointer; font-size:13px;"><i class="fa-solid fa-trash-can"></i></button>` : ''}
+                </td>
             `;
-            rowsContainer.appendChild(row);
+            tableBody.appendChild(row);
         });
     }
-}
 
-function deleteGanttRow(idx) {
-    const project = projectsData[appState.selectedDetailProject];
-    if (!project) return;
+    // Compute and display cumulative weighted totals
+    updateScurveTotals(project);
     
-    if (confirm("คุณแน่ใจหรือไม่ว่าต้องการลบขั้นตอนแผนงานนี้?")) {
-        const deleted = project.plans.splice(idx, 1);
-        showToast(`ลบขั้นตอนแผนงาน: ${deleted[0].title} สำเร็จ!`, "success");
-        saveToLocalStorage();
-        renderSubnavPlanWork(project);
-    }
+    // Render the S-Curve chart
+    renderSCurveChart(project);
 
-    // Render plan documents dynamically!
+    // ---- Plan Documents Section (kept from original) ----
     const docsContainer = document.getElementById("plan-docs-container");
     if (docsContainer) {
         docsContainer.innerHTML = "";
-        
-        if (!project.planDocs) {
-            project.planDocs = [];
-        }
+        if (!project.planDocs) project.planDocs = [];
         
         if (project.planDocs.length === 0) {
             docsContainer.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); font-style: italic; padding: 20px; font-size: 13px;">ยังไม่มีเอกสารแผนงานหลักสำหรับโครงการนี้</div>`;
@@ -7428,68 +7471,196 @@ function deleteGanttRow(idx) {
                 let iconClass = "fa-solid fa-file-lines";
                 let iconColor = "var(--text-muted)";
                 let fileTypeLabel = "เอกสาร";
+                if (ext === "pdf") { iconClass = "fa-solid fa-file-pdf"; iconColor = "#e63946"; fileTypeLabel = "PDF Plan"; }
+                else if (ext === "xlsx" || ext === "xls") { iconClass = "fa-solid fa-file-excel"; iconColor = "#2a9d8f"; fileTypeLabel = "Excel Plan"; }
+                else if (["png","jpg","jpeg"].includes(ext)) { iconClass = "fa-solid fa-file-image"; iconColor = "#457b9d"; fileTypeLabel = "รูปภาพแผน"; }
                 
-                if (ext === "pdf") {
-                    iconClass = "fa-solid fa-file-pdf";
-                    iconColor = "#e63946";
-                    fileTypeLabel = "PDF Plan";
-                } else if (ext === "xlsx" || ext === "xls") {
-                    iconClass = "fa-solid fa-file-excel";
-                    iconColor = "#2a9d8f";
-                    fileTypeLabel = "Excel Plan";
-                } else if (["png", "jpg", "jpeg"].includes(ext)) {
-                    iconClass = "fa-solid fa-file-image";
-                    iconColor = "#457b9d";
-                    fileTypeLabel = "รูปภาพแผน";
-                }
+                const canDel = appState.currentRole === "pm" && appState.selectedDetailProject !== "all";
+                const deleteBtn = canDel ? `<button class="btn-delete-plan-doc" data-idx="${idx}" title="ลบไฟล์" style="background:none;border:none;color:#e63946;cursor:pointer;padding:4px;font-size:14px;"><i class="fa-solid fa-trash-can"></i></button>` : '';
                 
                 const card = document.createElement("div");
                 card.className = "plan-doc-card";
                 card.style = "border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; background: var(--card-bg); display: flex; align-items: center; gap: 12px; transition: transform 0.2s ease, box-shadow 0.2s ease; box-shadow: var(--shadow-sm);";
-                
-                const canDelete = appState.currentRole === "pm" && appState.selectedDetailProject !== "all";
-                const deleteButtonHTML = canDelete 
-                    ? `<button class="btn-delete-plan-doc" data-idx="${idx}" title="ลบไฟล์" style="background: none; border: none; color: #e63946; cursor: pointer; padding: 4px; font-size: 14px;"><i class="fa-solid fa-trash-can"></i></button>`
-                    : ``;
-                
                 card.innerHTML = `
-                    <div class="plan-doc-icon" style="font-size: 24px; width: 40px; height: 40px; border-radius: 6px; display: flex; align-items: center; justify-content: center; background: var(--bg-light); color: ${iconColor}; flex-shrink: 0;">
-                        <i class="${iconClass}"></i>
-                    </div>
-                    <div class="plan-doc-details" style="flex-grow: 1; min-width: 0;">
-                        <div class="plan-doc-name" style="font-weight: 600; font-size: 13px; color: var(--navy-dark); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${doc.title}">${doc.title}</div>
-                        <div style="font-size: 10px; color: var(--text-muted); display: flex; justify-content: space-between; margin-top: 4px; align-items: center;">
+                    <div style="font-size:24px;width:40px;height:40px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:var(--bg-light);color:${iconColor};flex-shrink:0;"><i class="${iconClass}"></i></div>
+                    <div style="flex-grow:1;min-width:0;">
+                        <div style="font-weight:600;font-size:13px;color:var(--navy-dark);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${doc.title}">${doc.title}</div>
+                        <div style="font-size:10px;color:var(--text-muted);display:flex;justify-content:space-between;margin-top:4px;align-items:center;">
                             <span>อัปเมื่อ ${doc.date}</span>
-                            <span class="badge" style="background: var(--bg-light); padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 600;">${fileTypeLabel}</span>
+                            <span class="badge" style="background:var(--bg-light);padding:2px 6px;border-radius:4px;font-size:9px;font-weight:600;">${fileTypeLabel}</span>
                         </div>
                     </div>
-                    <div class="plan-doc-actions" style="display: flex; gap: 6px; align-items: center; flex-shrink: 0;">
-                        ${ext === "pdf" ? `<button class="btn-view-plan-doc" data-file="${doc.file}" data-url="${doc.fileUrl || ''}" data-title="${doc.title}" title="ดู PDF" style="background: none; border: none; color: var(--primary-blue); cursor: pointer; padding: 4px; font-size: 15px;"><i class="fa-solid fa-eye"></i></button>` : ''}
-                        <a href="${doc.fileUrl || '#'}" download="${doc.file}" class="btn-download" title="ดาวน์โหลด" style="color: var(--primary-blue); font-size: 15px; padding: 4px;"><i class="fa-solid fa-circle-down"></i></a>
-                        ${deleteButtonHTML}
+                    <div style="display:flex;gap:6px;align-items:center;flex-shrink:0;">
+                        ${ext === "pdf" ? `<button class="btn-view-plan-doc" data-file="${doc.file}" data-url="${doc.fileUrl || ''}" data-title="${doc.title}" title="ดู PDF" style="background:none;border:none;color:var(--primary-blue);cursor:pointer;padding:4px;font-size:15px;"><i class="fa-solid fa-eye"></i></button>` : ''}
+                        <a href="${doc.fileUrl || '#'}" download="${doc.file}" class="btn-download" title="ดาวน์โหลด" style="color:var(--primary-blue);font-size:15px;padding:4px;"><i class="fa-solid fa-circle-down"></i></a>
+                        ${deleteBtn}
                     </div>
                 `;
                 docsContainer.appendChild(card);
             });
             
-            // Attach delete listener to plan doc delete buttons
             docsContainer.querySelectorAll(".btn-delete-plan-doc").forEach(btn => {
-                btn.addEventListener("click", function() {
-                    const docIdx = parseInt(this.getAttribute("data-idx"));
-                    deletePlanDoc(docIdx);
-                });
+                btn.addEventListener("click", function() { deletePlanDoc(parseInt(this.getAttribute("data-idx"))); });
             });
-
-            // Attach view PDF listener to plan doc view buttons
             docsContainer.querySelectorAll(".btn-view-plan-doc").forEach(btn => {
                 btn.addEventListener("click", function() {
-                    const fileUrl = this.getAttribute("data-url");
-                    const fileName = this.getAttribute("data-file");
-                    const title = this.getAttribute("data-title");
-                    if (window.openPdfViewer) window.openPdfViewer(fileUrl, fileName, title);
+                    if (window.openPdfViewer) window.openPdfViewer(this.getAttribute("data-url"), this.getAttribute("data-file"), this.getAttribute("data-title"));
                 });
             });
         }
+    }
+}
+
+function updateScurveTotals(project) {
+    if (!project.scurveData) return;
+    
+    let totalWeight = 0;
+    const planTotals = [0,0,0,0,0,0];
+    const actualTotals = [0,0,0,0,0,0];
+    
+    project.scurveData.forEach(item => {
+        const w = parseFloat(item.weight) || 0;
+        totalWeight += w;
+        for (let p = 0; p < 6; p++) {
+            planTotals[p] += (parseFloat(item['plan'+(p+1)]) || 0) * w / 100;
+            actualTotals[p] += (parseFloat(item['actual'+(p+1)]) || 0) * w / 100;
+        }
+    });
+    
+    const twEl = document.getElementById("scurve-total-weight");
+    if (twEl) twEl.textContent = totalWeight.toFixed(1) + "%";
+    
+    // Cumulative totals
+    let cumPlan = 0, cumActual = 0;
+    for (let p = 0; p < 6; p++) {
+        cumPlan += planTotals[p];
+        cumActual += actualTotals[p];
+        const el = document.getElementById(`scurve-total-p${p+1}`);
+        if (el) el.textContent = `${cumPlan.toFixed(1)}% / ${cumActual.toFixed(1)}%`;
+    }
+}
+
+function renderSCurveChart(project) {
+    if (typeof Chart === "undefined") return;
+    
+    const canvas = document.getElementById("scurve-chart-canvas");
+    if (!canvas) return;
+    
+    try {
+        const ctx = canvas.getContext("2d");
+        if (scurveChartInstance) scurveChartInstance.destroy();
+        
+        if (!project.scurveData || project.scurveData.length === 0) {
+            scurveChartInstance = null;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = "#94a3b8";
+            ctx.font = "13px 'Prompt', sans-serif";
+            ctx.textAlign = "center";
+            ctx.fillText("ยังไม่มีข้อมูลแผนงาน — เพิ่มรายการงานแล้วกดบันทึกเพื่อดูกราฟ S-Curve", canvas.width / 2, canvas.height / 2);
+            return;
+        }
+        
+        // Compute cumulative plan & actual
+        let totalWeight = 0;
+        const planPeriod = [0,0,0,0,0,0];
+        const actualPeriod = [0,0,0,0,0,0];
+        
+        project.scurveData.forEach(item => {
+            const w = parseFloat(item.weight) || 0;
+            totalWeight += w;
+            for (let p = 0; p < 6; p++) {
+                planPeriod[p] += (parseFloat(item['plan'+(p+1)]) || 0) * w / 100;
+                actualPeriod[p] += (parseFloat(item['actual'+(p+1)]) || 0) * w / 100;
+            }
+        });
+        
+        const cumPlan = [0];
+        const cumActual = [0];
+        let cp = 0, ca = 0;
+        for (let p = 0; p < 6; p++) {
+            cp += planPeriod[p];
+            ca += actualPeriod[p];
+            cumPlan.push(parseFloat(cp.toFixed(2)));
+            cumActual.push(parseFloat(ca.toFixed(2)));
+        }
+        
+        const labels = ["เริ่มต้น", "ช่วง 1", "ช่วง 2", "ช่วง 3", "ช่วง 4", "ช่วง 5", "ช่วง 6"];
+        
+        scurveChartInstance = new Chart(ctx, {
+            type: "line",
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: "แผนงานสะสม (Plan %)",
+                        data: cumPlan,
+                        borderColor: "#1d3557",
+                        backgroundColor: "rgba(29,53,87,0.08)",
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 2.5,
+                        pointRadius: 4,
+                        pointBackgroundColor: "#1d3557"
+                    },
+                    {
+                        label: "งานจริงสะสม (Actual %)",
+                        data: cumActual,
+                        borderColor: "#10b981",
+                        backgroundColor: "rgba(16,185,129,0.08)",
+                        fill: true,
+                        tension: 0.4,
+                        borderWidth: 2.5,
+                        pointRadius: 4,
+                        pointBackgroundColor: "#10b981"
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: "top",
+                        labels: { font: { family: "Prompt", size: 11 }, usePointStyle: true, pointStyle: "circle" }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label.split(" (")[0] + ": " + context.raw.toFixed(1) + "%";
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { family: "Prompt", size: 10 } }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            font: { family: "Prompt", size: 9 },
+                            callback: function(value) { return value + "%"; }
+                        }
+                    }
+                }
+            }
+        });
+    } catch (err) {
+        console.error("Error drawing S-Curve chart:", err);
+    }
+}
+
+function deleteScurveRow(idx) {
+    const project = projectsData[appState.selectedDetailProject];
+    if (!project || !project.scurveData) return;
+    
+    if (confirm("คุณแน่ใจหรือไม่ว่าต้องการลบรายการงานนี้?")) {
+        const deleted = project.scurveData.splice(idx, 1);
+        showToast(`ลบรายการงาน: ${deleted[0].name || 'ไม่มีชื่อ'} สำเร็จ!`, "success");
+        saveToLocalStorage();
+        renderSubnavPlanWork(project);
     }
 }
 
@@ -9580,6 +9751,60 @@ document.addEventListener("DOMContentLoaded", () => {
     if (sidebarCreateProjectBtn) {
         sidebarCreateProjectBtn.addEventListener("click", openCreateProjectModal);
     }
+    const headerCreateProjectBtn = document.getElementById("header-create-project-btn");
+    if (headerCreateProjectBtn) {
+        headerCreateProjectBtn.addEventListener("click", openCreateProjectModal);
+    }
+    
+    // S-Curve Grid Buttons
+    const btnAddScurveRow = document.getElementById("btn-add-scurve-row");
+    if (btnAddScurveRow) {
+        btnAddScurveRow.addEventListener("click", function() {
+            const code = appState.selectedDetailProject;
+            if (!code || code === "all") {
+                showToast("กรุณาเลือกโครงการเฉพาะก่อนเพิ่มรายการงาน", "warning");
+                return;
+            }
+            const proj = projectsData[code];
+            if (!proj) return;
+            if (!proj.scurveData) proj.scurveData = [];
+            proj.scurveData.push({ name: "", weight: 0, plan1: 0, actual1: 0, plan2: 0, actual2: 0, plan3: 0, actual3: 0, plan4: 0, actual4: 0, plan5: 0, actual5: 0, plan6: 0, actual6: 0 });
+            renderSubnavPlanWork(proj);
+            showToast("เพิ่มรายการงานใหม่เรียบร้อย — กรุณากรอกข้อมูลแล้วกดบันทึก", "info");
+        });
+    }
+    
+    const btnSaveScurveData = document.getElementById("btn-save-scurve-data");
+    if (btnSaveScurveData) {
+        btnSaveScurveData.addEventListener("click", function() {
+            const code = appState.selectedDetailProject;
+            if (!code || code === "all") {
+                showToast("กรุณาเลือกโครงการเฉพาะก่อนบันทึก", "warning");
+                return;
+            }
+            const proj = projectsData[code];
+            if (!proj || !proj.scurveData) return;
+            
+            // Read values from DOM inputs
+            proj.scurveData.forEach((item, idx) => {
+                const nameEl = document.querySelector(`.scurve-item-name[data-idx="${idx}"]`);
+                const weightEl = document.querySelector(`.scurve-weight[data-idx="${idx}"]`);
+                if (nameEl) item.name = nameEl.value.trim();
+                if (weightEl) item.weight = parseFloat(weightEl.value) || 0;
+                for (let p = 1; p <= 6; p++) {
+                    const planEl = document.querySelector(`.scurve-plan-p${p}[data-idx="${idx}"]`);
+                    const actualEl = document.querySelector(`.scurve-actual-p${p}[data-idx="${idx}"]`);
+                    if (planEl) item['plan'+p] = parseFloat(planEl.value) || 0;
+                    if (actualEl) item['actual'+p] = parseFloat(actualEl.value) || 0;
+                }
+            });
+            
+            saveToLocalStorage();
+            updateScurveTotals(proj);
+            renderSCurveChart(proj);
+            showToast("บันทึกข้อมูลแผนงาน S-Curve เรียบร้อยแล้ว!", "success");
+        });
+    }
 
     if (closeCreateProjectBtn) closeCreateProjectBtn.addEventListener("click", closeCreateProjectModal);
     if (cancelCreateProjectBtn) cancelCreateProjectBtn.addEventListener("click", closeCreateProjectModal);
@@ -9599,6 +9824,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const progress = parseFloat(document.getElementById("new-project-progress").value) || 0;
             const value = parseFloat(document.getElementById("new-project-value").value) || 0;
             const cost = parseFloat(document.getElementById("new-project-cost").value) || 0;
+            const owner = document.getElementById("new-project-owner") ? document.getElementById("new-project-owner").value.trim() : "";
+            const boq = document.getElementById("new-project-boq") ? document.getElementById("new-project-boq").value.trim() : "";
             
             if (projectsData[code]) {
                 showToast(`รหัส ${code} ซ้ำกับรายการที่มีอยู่แล้ว!`, "error");
@@ -9615,6 +9842,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 name: name,
                 description: `${name} ของสาขา ${hospital} ประจำปีงบประมาณ ${year}`,
                 manager: "วิศวกรโครงการอาวุโส (PM Team)",
+                owner: owner || "วิศวกรโครงการอาวุโส (PM Team)",
+                boq: boq,
                 start: `01/01/${year}`,
                 end: `31/12/${year}`,
                 value: value,
@@ -11048,6 +11277,12 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("edit-project-progress").value = proj.progress || 0;
         document.getElementById("edit-project-status").value = proj.status || "งานที่กำลังดำเนินการ";
         document.getElementById("edit-project-desc").value = proj.description || "";
+        if (document.getElementById("edit-project-owner")) {
+            document.getElementById("edit-project-owner").value = proj.owner || "";
+        }
+        if (document.getElementById("edit-project-boq")) {
+            document.getElementById("edit-project-boq").value = proj.boq || "";
+        }
 
         if (editProjectModal) editProjectModal.classList.add("active");
     };
@@ -11094,6 +11329,12 @@ document.addEventListener("DOMContentLoaded", () => {
             proj.progress = parseFloat(document.getElementById("edit-project-progress").value) || 0;
             proj.status = document.getElementById("edit-project-status").value;
             proj.description = document.getElementById("edit-project-desc").value.trim();
+            if (document.getElementById("edit-project-owner")) {
+                proj.owner = document.getElementById("edit-project-owner").value.trim();
+            }
+            if (document.getElementById("edit-project-boq")) {
+                proj.boq = document.getElementById("edit-project-boq").value.trim();
+            }
 
             // Save and sync immediately
             saveToLocalStorage();
