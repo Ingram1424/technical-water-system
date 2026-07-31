@@ -6967,12 +6967,12 @@ function updateScurveTotals(project) {
         <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid var(--border-color);">
             <td colspan="2" style="padding: 8px 10px; text-align: right;">รวม</td>
             <td style="padding: 8px 4px; text-align: center;">${totalBudget.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-            <td style="padding: 8px 4px; text-align: center;">${totalWeight.toFixed(2)}%</td>
+            <td style="padding: 8px 4px; text-align: center; color: ${totalWeight === 100 ? '#10b981' : '#e63946'};">${totalWeight.toFixed(2)}%</td>
             <td style="padding: 8px 4px; text-align: center;"></td>
     `;
     
     displayWeeklySums.forEach((val, i) => {
-        footerHtml += `<td style="padding: 8px 4px; text-align: center; font-size: 10px; border-left: ${i%4===0 ? '1px' : '0'} solid var(--border-color);">${val === 0 ? '0.00%' : val.toFixed(2)+'%'}</td>`;
+        footerHtml += `<td style="padding: 8px 4px; border-left: ${i%4===0 ? '1px' : '0'} solid var(--border-color);"></td>`;
     });
     footerHtml += `<td class="hide-accounting hide-customer"></td></tr>`;
 
