@@ -3682,6 +3682,32 @@ body.public-view-mode #public-view-header {
                         </div>
                     </div>
 
+                    <!-- Project Cost Summary Table -->
+                    <div class="project-cost-table-container hide-customer" style="margin-top: 24px; margin-bottom: 24px;">
+                        <h4 class="chart-title" style="margin-bottom: 12px; font-size: 13.5px; color: var(--navy-dark); font-weight: 700; border-left: 3px solid var(--primary-blue); padding-left: 6px;"><i class="fa-solid fa-list-check text-blue mr-1"></i> รายการโครงการและต้นทุน (สัญญา vs ค่าใช้จ่ายจริง)</h4>
+                        <div class="table-container" style="overflow-x: auto; background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 4px; box-shadow: var(--card-shadow);">
+                            <table class="transaction-table" style="width: 100%; min-width: 900px; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background: var(--navy-dark); color: #ffffff;">
+                                        <th style="padding: 10px 12px; text-align: center; color: #ffffff !important; background-color: var(--navy-dark) !important; font-size: 11.5px; font-weight: 600; width: 80px;">รหัส</th>
+                                        <th style="padding: 10px 12px; text-align: left; color: #ffffff !important; background-color: var(--navy-dark) !important; font-size: 11.5px; font-weight: 600;">ชื่อโครงการ / โรงพยาบาล</th>
+                                        <th style="padding: 10px 12px; text-align: right; color: #ffffff !important; background-color: var(--navy-dark) !important; font-size: 11.5px; font-weight: 600; width: 140px;">มูลค่าสัญญา (Value)</th>
+                                        <th style="padding: 10px 12px; text-align: right; color: #ffffff !important; background-color: var(--navy-dark) !important; font-size: 11.5px; font-weight: 600; width: 140px;">ค่าใช้จ่ายจริง (Cost)</th>
+                                        <th style="padding: 10px 12px; text-align: right; color: #ffffff !important; background-color: var(--navy-dark) !important; font-size: 11.5px; font-weight: 600; width: 130px;">กำไรสุทธิ (Profit)</th>
+                                        <th style="padding: 10px 12px; text-align: center; color: #ffffff !important; background-color: var(--navy-dark) !important; font-size: 11.5px; font-weight: 600; width: 90px;">% กำไร</th>
+                                        <th style="padding: 10px 12px; text-align: left; color: #ffffff !important; background-color: var(--navy-dark) !important; font-size: 11.5px; font-weight: 600; width: 150px;">ผู้รับผิดชอบ (PM)</th>
+                                        <th style="padding: 10px 12px; text-align: center; color: #ffffff !important; background-color: var(--navy-dark) !important; font-size: 11.5px; font-weight: 600; width: 110px;">สถานะ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="project-cost-summary-tbody">
+                                    <!-- Dynamically populated in JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- Pagination Controls -->
+                        <div id="project-cost-pagination" style="display: flex; justify-content: center; align-items: center; gap: 12px; margin-top: 16px;"></div>
+                    </div>
+
                     <!-- Subtabs Navigation for Cost Management -->
                     <div class="cost-nav-tabs hide-customer" style="display: flex; gap: 8px; margin-top: 16px; margin-bottom: 16px; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; flex-wrap: wrap;">
                         <button class="cost-tab-btn active" data-cost-tab="all-costs" style="padding: 8px 18px; border: 1px solid var(--primary-blue); border-radius: var(--radius-sm); font-family: 'Prompt'; font-size: 12.5px; font-weight: 700; cursor: pointer; background: var(--primary-blue); color: #ffffff; display: flex; align-items: center; gap: 6px; transition: all 0.2s ease;">
@@ -6011,6 +6037,7 @@ const appState = {
     selectedYearFilterA: "2025",
     selectedYearFilterB: "2026",
     selectedCostYearFilter: "all",
+    projectCostCurrentPage: 1,
     currentCustomerUser: localStorage.getItem("technical_water_current_customer_user") || "user1",
     userPermissions: null, // Loaded below
     customerAccounts: null, // Loaded below
@@ -8853,7 +8880,7 @@ function renderCostDashboardOverview() {
     renderCostOverallDonutChart(filteredProjects);
 
     // Render Project Cost Summary Table
-    renderProjectCostSummaryTable(filteredProjects);
+    renderProjectCostSummaryTable();
 }
 
 function renderCostOverallBarChart(projectsList) {
@@ -8997,20 +9024,55 @@ function renderCostOverallDonutChart(projectsList) {
     }
 }
 
-function renderProjectCostSummaryTable(projectsList) {
+function renderProjectCostSummaryTable() {
     const tbody = document.getElementById("project-cost-summary-tbody");
     if (!tbody) return;
     tbody.innerHTML = "";
 
-    // Sort projects by value descending (largest first)
-    const sortedProjects = [...projectsList].sort((a, b) => (b.value || 0) - (a.value || 0));
+    const costDetailYearFilter = document.getElementById("cost-detail-year-filter");
+    const costDetailHospitalSelector = document.getElementById("cost-detail-hospital-selector");
+    const yearVal = costDetailYearFilter ? costDetailYearFilter.value : "all";
+    const hospitalVal = costDetailHospitalSelector ? costDetailHospitalSelector.value : "all";
 
-    if (sortedProjects.length === 0) {
+    // Filter projects based on Year and Hospital of Part B selectors
+    const allProjects = Object.values(projectsData);
+    const filteredProjects = allProjects.filter(p => {
+        const hospitalMatch = hospitalVal === "all" || p.customer === hospitalVal;
+        const yearMatch = yearVal === "all" || p.year === parseInt(yearVal);
+        return hospitalMatch && yearMatch;
+    });
+
+    // Sort projects by value descending (largest first)
+    const sortedProjects = filteredProjects.sort((a, b) => (b.value || 0) - (a.value || 0));
+
+    // Pagination logic
+    const totalItems = sortedProjects.length;
+    const PAGE_SIZE = 10;
+    const totalPages = Math.ceil(totalItems / PAGE_SIZE) || 1;
+
+    if (!appState.projectCostCurrentPage) {
+        appState.projectCostCurrentPage = 1;
+    }
+    if (appState.projectCostCurrentPage > totalPages) {
+        appState.projectCostCurrentPage = totalPages;
+    }
+    if (appState.projectCostCurrentPage < 1) {
+        appState.projectCostCurrentPage = 1;
+    }
+
+    const startIdx = (appState.projectCostCurrentPage - 1) * PAGE_SIZE;
+    const pageProjects = sortedProjects.slice(startIdx, startIdx + PAGE_SIZE);
+
+    if (pageProjects.length === 0) {
         tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; padding: 20px; color: var(--text-muted);">ไม่มีข้อมูลโครงการสำหรับตัวกรองนี้</td></tr>`;
+        
+        // Hide pagination if empty
+        const paginationEl = document.getElementById("project-cost-pagination");
+        if (paginationEl) paginationEl.innerHTML = "";
         return;
     }
 
-    sortedProjects.forEach(p => {
+    pageProjects.forEach(p => {
         const tr = document.createElement("tr");
         tr.style.cursor = "pointer";
         
@@ -9065,6 +9127,46 @@ function renderProjectCostSummaryTable(projectsList) {
         `;
         tbody.appendChild(tr);
     });
+
+    // Render pagination controls
+    const paginationEl = document.getElementById("project-cost-pagination");
+    if (paginationEl) {
+        if (totalPages <= 1) {
+            paginationEl.innerHTML = "";
+        } else {
+            const prevDisabled = appState.projectCostCurrentPage === 1 ? "disabled style='opacity: 0.4; cursor: not-allowed; font-family: Prompt; font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: #f3f4f6; color: var(--text-muted);'" : "style='font-family: Prompt; font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: #ffffff; color: var(--navy-dark); cursor: pointer;'";
+            const nextDisabled = appState.projectCostCurrentPage === totalPages ? "disabled style='opacity: 0.4; cursor: not-allowed; font-family: Prompt; font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: #f3f4f6; color: var(--text-muted);'" : "style='font-family: Prompt; font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); background: #ffffff; color: var(--navy-dark); cursor: pointer;'";
+            
+            paginationEl.innerHTML = `
+                <button ${prevDisabled} id="proj-cost-prev-btn">
+                    <i class="fa-solid fa-chevron-left mr-1"></i> ก่อนหน้า
+                </button>
+                <span style="font-family: &#39;Prompt&#39;; font-size: 12.5px; font-weight: 600; color: var(--navy-dark); margin: 0 10px;">
+                    หน้า ${appState.projectCostCurrentPage} / ${totalPages} (${totalItems} รายการ)
+                </span>
+                <button ${nextDisabled} id="proj-cost-next-btn">
+                    ถัดไป <i class="fa-solid fa-chevron-right ml-1"></i>
+                </button>
+            `;
+            
+            // Wire events
+            const prevBtn = document.getElementById("proj-cost-prev-btn");
+            if (prevBtn && appState.projectCostCurrentPage > 1) {
+                prevBtn.onclick = function() {
+                    appState.projectCostCurrentPage--;
+                    renderProjectCostSummaryTable();
+                };
+            }
+            
+            const nextBtn = document.getElementById("proj-cost-next-btn");
+            if (nextBtn && appState.projectCostCurrentPage < totalPages) {
+                nextBtn.onclick = function() {
+                    appState.projectCostCurrentPage++;
+                    renderProjectCostSummaryTable();
+                };
+            }
+        }
+    }
 }
 
 // 4. Cost Management View (Section 4)
@@ -10006,6 +10108,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (costDetailYearFilter) {
         costDetailYearFilter.addEventListener("change", function() {
+            appState.projectCostCurrentPage = 1;
             populateCostProjects();
             updateSelectedCostProject(costSelector ? costSelector.value : "");
             renderCostManagement();
@@ -10014,6 +10117,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (costDetailHospitalSelector) {
         costDetailHospitalSelector.addEventListener("change", function() {
+            appState.projectCostCurrentPage = 1;
             populateCostProjects();
             updateSelectedCostProject(costSelector ? costSelector.value : "");
             renderCostManagement();
