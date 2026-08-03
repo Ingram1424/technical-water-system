@@ -3949,25 +3949,42 @@ body.public-view-mode #public-view-header {
                         </button>
                     </div>
                     
-                    <!-- Search Input (Full Width & Sleek) -->
+                    <!-- Grid filters & Search panel -->
                     <div style="display: flex; flex-direction: column; gap: 16px; padding: 20px; background: #ffffff; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); width: 100%;">
-                        <!-- Hidden selectors so JS doesn't break -->
-                        <div style="display: none;">
-                            <select id="portal-year-filter">
-                                <option value="all" selected>ทั้งหมดทุกปี</option>
-                                <option value="2024">ปี 2024</option>
-                                <option value="2025">ปี 2025</option>
-                                <option value="2026">ปี 2026</option>
-                            </select>
-                            <select id="portal-hospital-selector">
-                                <option value="all" selected>ทั้งหมดทุกโรงพยาบาล</option>
-                            </select>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; width: 100%;">
+                            <!-- Year Selector -->
+                            <div>
+                                <label style="font-size: 13px; font-weight: 700; color: var(--navy-dark); display: block; margin-bottom: 8px;">ปีโครงการ :</label>
+                                <select id="portal-year-filter" class="form-control" style="font-size: 13px; padding: 10px; height: 42px; border-radius: var(--radius-md); border: 1px solid var(--border-color); width: 100%;">
+                                    <option value="all" selected>ทั้งหมดทุกปี</option>
+                                    <option value="2024">ปี 2024 (พ.ศ. 2567)</option>
+                                    <option value="2025">ปี 2025 (พ.ศ. 2568)</option>
+                                    <option value="2026">ปี 2026 (พ.ศ. 2569)</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Hospital Selector -->
+                            <div>
+                                <label style="font-size: 13px; font-weight: 700; color: var(--navy-dark); display: block; margin-bottom: 8px;">เลือกโรงพยาบาล :</label>
+                                <select id="portal-hospital-selector" class="form-control" style="font-size: 13px; padding: 10px; height: 42px; border-radius: var(--radius-md); border: 1px solid var(--border-color); width: 100%;">
+                                    <option value="all" selected>ทั้งหมดทุกโรงพยาบาล</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Project Select Dropdown -->
+                            <div>
+                                <label style="font-size: 13px; font-weight: 700; color: var(--navy-dark); display: block; margin-bottom: 8px;">เลือกงาน/โครงการ :</label>
+                                <select id="portal-project-dropdown" class="form-control" style="font-size: 13px; padding: 10px; height: 42px; border-radius: var(--radius-md); border: 1px solid var(--border-color); width: 100%;">
+                                    <option value="">-- เลือกโครงการ --</option>
+                                </select>
+                            </div>
                         </div>
                         
-                        <div style="position: relative; width: 100%;">
+                        <!-- Search text field -->
+                        <div style="position: relative; width: 100%; border-top: 1px dashed var(--border-color); padding-top: 16px;">
                             <label style="font-size: 13px; font-weight: 700; color: var(--navy-dark); display: block; margin-bottom: 8px;">พิมพ์ค้นหาโครงการ :</label>
                             <div style="position: relative; width: 100%;">
-                                <input type="text" id="portal-project-search" class="form-control" placeholder="ค้นหาด้วยรหัสโครงการ, ชื่องาน, ชื่อโรงพยาบาล หรือปีโครงการ..." style="font-size: 13.5px; padding: 10px 42px 10px 14px; height: auto; border-radius: var(--radius-md); border: 1px solid var(--border-color); width: 100%;" autocomplete="off">
+                                <input type="text" id="portal-project-search" class="form-control" placeholder="ค้นหาด้วยรหัสโครงการ, ชื่องาน, ชื่อโรงพยาบาล หรือปีโครงการ..." style="font-size: 13.5px; padding: 10px 42px 10px 14px; height: 42px; border-radius: var(--radius-md); border: 1px solid var(--border-color); width: 100%;" autocomplete="off">
                                 <i class="fa-solid fa-magnifying-glass" style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 14px;"></i>
                             </div>
                         </div>
@@ -4021,6 +4038,10 @@ body.public-view-mode #public-view-header {
 
                                     <!-- Action Buttons Group -->
                                     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                        <!-- Back to Portal Button -->
+                                        <button class="btn btn-outline btn-sm" id="btn-back-to-portal-inline" style="height: 36px; padding: 0 14px; display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; border-radius: 6px; background: #f1f5f9; border: 1px solid #cbd5e1; color: #334155; cursor: pointer; transition: background 0.2s;">
+                                            <i class="fa-solid fa-arrow-left" style="color: #475569; font-size: 13px;"></i> ย้อนกลับหน้าเลือกโครงการ
+                                        </button>
                                         <!-- Edit Button -->
                                         <button class="btn btn-outline btn-sm hide-accounting hide-customer" id="open-edit-project-btn-inline" style="height: 36px; padding: 0 14px; display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; border-radius: 6px; background: #ffffff; border: 1px solid var(--border-color); color: var(--navy-dark); cursor: pointer; transition: background 0.2s;">
                                             <i class="fa-solid fa-pen-to-square" style="color: var(--primary-blue); font-size: 13px;"></i> แก้ไข/ลบโครงการ
@@ -6206,6 +6227,14 @@ function showToast(message, type = "success") {
 
 // View Navigation Handler
 function switchView(viewName) {
+    // If they are leaving the specific project view with unsaved Gantt chart changes, prompt them
+    if (window.ganttIsDirty && viewName !== "projects-list" && viewName !== "quoting-projects-list") {
+        if (!confirm("⚠️ คุณมีข้อมูลแผนงาน (Plan Work) ที่ยังไม่ได้บันทึก!\nหากเปลี่ยนหน้า ข้อมูลล่าสุดที่คุณแก้ไขจะสูญหาย\n\nคุณต้องการเปลี่ยนหน้าโดยไม่บันทึกใช่หรือไม่?")) {
+            return;
+        }
+        window.ganttIsDirty = false;
+    }
+
     // Check permission rules first
     if (appState.currentRole === "customer" && (viewName === "cost" || viewName === "dashboard" || viewName === "permissions-mgmt")) {
         showToast("สิทธิ์ลูกค้าเข้าดูได้เฉพาะหน้าโครงการของตนเองเท่านั้น", "info");
@@ -6213,6 +6242,13 @@ function switchView(viewName) {
     }
     
     appState.currentView = viewName;
+
+    // Reset active project state when going to general views
+    if (viewName === "dashboard" || viewName === "cost" || viewName === "permissions-mgmt") {
+        appState.selectedDetailProject = "all";
+        appState.showCumulativeOverview = (viewName === "dashboard");
+        sessionStorage.setItem("technical_water_last_detail_project", "all");
+    }
     
     // Toggle sidebar project subnav visibility
     const sidebarSubnav = document.getElementById("sidebar-project-subnav");
@@ -6281,13 +6317,16 @@ function switchView(viewName) {
     // Special renders when navigating
     if (viewName === "dashboard") {
         renderOverallDashboard();
+        renderSubnavProjectWorkspace();
     } else if (viewName === "cost") {
         renderCostManagement();
+        renderSubnavProjectWorkspace();
     } else if (viewName === "projects-list" || viewName === "quoting-projects-list") {
         populateSubnavProjects(document.getElementById("subnav-year-filter") ? document.getElementById("subnav-year-filter").value : "all");
         renderSubnavProjectWorkspace();
     } else if (viewName === "permissions-mgmt") {
         renderPermissionsManagement();
+        renderSubnavProjectWorkspace();
     }
 }
 
@@ -6744,6 +6783,8 @@ function renderSubnavProjectWorkspace() {
         
         // Hide nested project details, show main navigation links
         if (sidebarSubnav) sidebarSubnav.style.display = "none";
+        if (sidebarSelectorWrapper) sidebarSelectorWrapper.style.display = "none";
+        if (sidebarBackWrapper) sidebarBackWrapper.style.display = "none";
         mainNavItems.forEach(item => item.style.display = "");
         
         renderProjectSelectionPortal();
@@ -6752,15 +6793,25 @@ function renderSubnavProjectWorkspace() {
         if (portal) portal.style.display = "none";
         if (workspace) workspace.style.display = "block";
 
-        // Show nested project details, hide main navigation links
-        if (sidebarSubnav) sidebarSubnav.style.display = "block";
-        if (sidebarSelectorWrapper) sidebarSelectorWrapper.style.display = "none";
-        if (sidebarBackWrapper) sidebarBackWrapper.style.display = "block";
-        
-        mainNavItems.forEach(item => item.style.display = "none");
-        
-        const tabsNav = document.querySelector(".subnav-tabs");
-        if (tabsNav) tabsNav.style.display = "flex";
+        if (activeCode !== "all") {
+            // SPECIFIC PROJECT VIEW: Show project subnav details, hide main nav
+            if (sidebarSubnav) sidebarSubnav.style.display = "block";
+            if (sidebarSelectorWrapper) sidebarSelectorWrapper.style.display = "none";
+            if (sidebarBackWrapper) sidebarBackWrapper.style.display = "block";
+            mainNavItems.forEach(item => item.style.display = "none");
+            
+            const tabsNav = document.querySelector(".subnav-tabs");
+            if (tabsNav) tabsNav.style.display = "flex";
+        } else {
+            // CUMULATIVE DASHBOARD VIEW: Hide project subnav details, show main nav
+            if (sidebarSubnav) sidebarSubnav.style.display = "none";
+            if (sidebarSelectorWrapper) sidebarSelectorWrapper.style.display = "none";
+            if (sidebarBackWrapper) sidebarBackWrapper.style.display = "none";
+            mainNavItems.forEach(item => item.style.display = "");
+            
+            const tabsNav = document.querySelector(".subnav-tabs");
+            if (tabsNav) tabsNav.style.display = "none";
+        }
     }
 
     const hospitalSelector = document.getElementById("subnav-hospital-selector");
@@ -9230,6 +9281,13 @@ document.addEventListener("DOMContentLoaded", () => {
         option.addEventListener("click", function(e) {
             e.preventDefault();
             
+            if (window.ganttIsDirty) {
+                if (!confirm("⚠️ คุณมีข้อมูลแผนงาน (Plan Work) ที่ยังไม่ได้บันทึก!\nหากสลับบทบาท ข้อมูลล่าสุดที่คุณแก้ไขจะสูญหาย\n\nคุณต้องการสลับบทบาทโดยไม่บันทึกใช่หรือไม่?")) {
+                    return;
+                }
+                window.ganttIsDirty = false;
+            }
+
             // Toggle active classes on roles dropdown
             document.querySelectorAll(".profile-dropdown .role-option").forEach(opt => opt.classList.remove("active"));
             this.classList.add("active");
@@ -9418,17 +9476,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (!portalProjectsGrid) return;
 
-        // 1. Sync & populate portal hospital select if empty
-        if (portalHospitalSelector && portalHospitalSelector.innerHTML.trim() === "") {
+        // 1. Sync & populate portal hospital select if empty or has only the default option
+        if (portalHospitalSelector && (portalHospitalSelector.options.length <= 1 || portalHospitalSelector.innerHTML.trim() === "")) {
             const subnavHosp = document.getElementById("subnav-hospital-selector");
             if (subnavHosp) {
                 portalHospitalSelector.innerHTML = subnavHosp.innerHTML;
+                // Match current selection value
+                portalHospitalSelector.value = subnavHosp.value;
             } else {
                 portalHospitalSelector.innerHTML = `<option value="all">ทั้งหมดทุกโรงพยาบาล</option>`;
+                portalHospitalSelector.value = "all";
             }
-            
-            // Match current selection value
-            portalHospitalSelector.value = subnavHosp ? subnavHosp.value : "all";
         }
 
         const selectedHospital = portalHospitalSelector ? portalHospitalSelector.value : "all";
@@ -9464,6 +9522,18 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (portalProjectsCount) portalProjectsCount.textContent = projects.length;
+
+        // Populate portal select project dropdown
+        const portalProjDropdown = document.getElementById("portal-project-dropdown");
+        if (portalProjDropdown) {
+            portalProjDropdown.innerHTML = `<option value="">-- เลือกโครงการ (${projects.length} รายการ) --</option>`;
+            projects.forEach(p => {
+                const opt = document.createElement("option");
+                opt.value = p.code;
+                opt.textContent = `${p.code} : ${p.name.replace(/ \(\d{4}\)$/, '')} (${p.customer.replace('โรงพยาบาล', 'รพ.')})`;
+                portalProjDropdown.appendChild(opt);
+            });
+        }
 
         // 3. Render grid of project cards
         portalProjectsGrid.innerHTML = "";
@@ -9606,6 +9676,27 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    const portalProjectDropdown = document.getElementById("portal-project-dropdown");
+    if (portalProjectDropdown) {
+        portalProjectDropdown.addEventListener("change", function() {
+            const code = this.value;
+            if (!code) return;
+            
+            appState.selectedDetailProject = code;
+            sessionStorage.setItem("technical_water_last_detail_project", code);
+            
+            // Sync to original selector dropdown
+            const projSelector = document.getElementById("subnav-project-selector");
+            if (projSelector) projSelector.value = code;
+
+            renderSubnavProjectWorkspace();
+            showToast(`เปิดโครงการ ${code} สำเร็จ`, "success");
+            
+            // Reset dropdown selection so it doesn't stay selected
+            this.value = "";
+        });
+    }
+
     // Toggle portal / cumulative overview buttons
     const btnShowCumulative = document.getElementById("btn-show-cumulative-dashboard");
     if (btnShowCumulative) {
@@ -9615,25 +9706,32 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    function handleBackToPortal() {
+        if (window.ganttIsDirty) {
+            if (!confirm("⚠️ คุณมีข้อมูลแผนงาน (Plan Work) ที่ยังไม่ได้บันทึก!\nหากกดย้อนกลับ ข้อมูลล่าสุดที่คุณแก้ไขจะสูญหาย\n\nคุณต้องการย้อนกลับโดยไม่บันทึกใช่หรือไม่?")) {
+                return;
+            }
+            window.ganttIsDirty = false;
+        }
+
+        appState.showCumulativeOverview = false;
+        appState.selectedDetailProject = "all";
+        sessionStorage.setItem("technical_water_last_detail_project", "all");
+        
+        const projSelector = document.getElementById("subnav-project-selector");
+        if (projSelector) projSelector.value = "all";
+
+        renderSubnavProjectWorkspace();
+    }
+
     const btnBackToPortal = document.getElementById("btn-back-to-portal");
     if (btnBackToPortal) {
-        btnBackToPortal.addEventListener("click", function() {
-            if (window.ganttIsDirty) {
-                if (!confirm("⚠️ คุณมีข้อมูลแผนงาน (Plan Work) ที่ยังไม่ได้บันทึก!\nหากกดย้อนกลับ ข้อมูลล่าสุดที่คุณแก้ไขจะสูญหาย\n\nคุณต้องการย้อนกลับโดยไม่บันทึกใช่หรือไม่?")) {
-                    return;
-                }
-                window.ganttIsDirty = false;
-            }
+        btnBackToPortal.addEventListener("click", handleBackToPortal);
+    }
 
-            appState.showCumulativeOverview = false;
-            appState.selectedDetailProject = "all";
-            sessionStorage.setItem("technical_water_last_detail_project", "all");
-            
-            const projSelector = document.getElementById("subnav-project-selector");
-            if (projSelector) projSelector.value = "all";
-
-            renderSubnavProjectWorkspace();
-        });
+    const btnBackToPortalInline = document.getElementById("btn-back-to-portal-inline");
+    if (btnBackToPortalInline) {
+        btnBackToPortalInline.addEventListener("click", handleBackToPortal);
     }
 
     // Inline Project actions linkage
@@ -12981,6 +13079,12 @@ function initPublicView(projectCode) {
     if (logoutBtn) {
         logoutBtn.addEventListener("click", function(e) {
             e.preventDefault();
+            if (window.ganttIsDirty) {
+                if (!confirm("⚠️ คุณมีข้อมูลแผนงาน (Plan Work) ที่ยังไม่ได้บันทึก!\nหากออกจากระบบ ข้อมูลล่าสุดที่คุณแก้ไขจะสูญหาย\n\nคุณต้องการออกจากระบบโดยไม่บันทึกใช่หรือไม่?")) {
+                    return;
+                }
+                window.ganttIsDirty = false;
+            }
             if (confirm("คุณต้องการออกจากระบบใช่ไหม?")) {
                 clearSession();
                 const overlay = document.getElementById("login-overlay");
