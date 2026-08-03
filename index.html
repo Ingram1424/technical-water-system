@@ -2963,8 +2963,11 @@ select.form-control {
 body.public-view-mode .sidebar,
 body.public-view-mode .topbar .profile-area,
 body.public-view-mode #role-switcher-wrapper,
-body.public-view-mode .hide-pm,
-body.public-view-mode .add-project-btn,
+body.public-view-mode .hide-pm, body.public-view-mode .hide-customer,
+body.public-view-mode .role-pm,
+body.public-view-mode .role-customer {
+    display: none !important;
+}
 body.public-view-mode [id^="add-task-btn"],
 body.public-view-mode [id^="add-plan-btn"],
 body.public-view-mode [id^="add-report-btn"],
@@ -2981,7 +2984,9 @@ body.public-view-mode .main-content {
     padding-top: 0 !important;
 }
 
-body.public-view-mode .app-container {
+body.public-view-mode #detail-info-manager {
+    display: none !important;
+}
     grid-template-columns: 1fr !important;
 }
 
@@ -6885,8 +6890,8 @@ function renderHospitalsGrid(activeProjects) {
 function renderSubnavProjectWorkspace() {
     const activeCode = appState.selectedDetailProject;
     
-    // Reset active subtab to general-info on transitioning to a specific project details workspace
-    if (activeCode !== "all" && window.lastRenderedProject !== activeCode) {
+    // Reset active subtab to general-info when not in public view mode
+    if (activeCode !== "all" && window.lastRenderedProject !== activeCode && !document.body.classList.contains("public-view-mode")) {
         appState.activeProjectTab = "general-info";
     }
     window.lastRenderedProject = activeCode;
@@ -8209,6 +8214,7 @@ function renderSubnavPhotosFiles(project) {
 let currentScurveMode = 'plan'; // Global state for S-Curve mode
 let currentGanttBrush = 'red'; // Global state for Gantt brush
 let isGanttPainting = false;
+let ganttSelectedRowIdx = -1; // Track selected row for insert-between feature
 
 // Format date to YYYY-MM-DD in local timezone safely
 function formatDateLocal(date) {
@@ -8442,6 +8448,31 @@ function renderSubnavPlanWork(project) {
 
                         tr.innerHTML = rowHtml;
                     }
+
+                    // Row selection for insert-between
+                    if (canEdit) {
+                        tr.style.cursor = 'pointer';
+                        if (idx === ganttSelectedRowIdx) {
+                            tr.style.outline = '2px solid #3b82f6';
+                            tr.style.outlineOffset = '-2px';
+                            tr.style.background = tr.style.background || '';
+                            if (task.rowType === 'task') {
+                                tr.style.background = '#eff6ff';
+                            }
+                        }
+                        tr.addEventListener('click', function(e) {
+                            // Don't select row when clicking inputs, buttons, checkboxes, or painting cells
+                            if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.classList.contains('gantt-cell')) return;
+                            const clickedIdx = parseInt(this.getAttribute('data-row-idx'));
+                            if (ganttSelectedRowIdx === clickedIdx) {
+                                ganttSelectedRowIdx = -1; // Deselect
+                            } else {
+                                ganttSelectedRowIdx = clickedIdx;
+                            }
+                            renderSubnavPlanWork(project);
+                        });
+                    }
+
                     tableBody.appendChild(tr);
                 });
 
@@ -8464,6 +8495,12 @@ function renderSubnavPlanWork(project) {
                         const rIdx = parseInt(this.getAttribute("data-idx"));
                         if (confirm("คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?")) {
                             project.ganttData.tasks.splice(rIdx, 1);
+                            // Adjust selected row index after deletion
+                            if (ganttSelectedRowIdx === rIdx) {
+                                ganttSelectedRowIdx = -1;
+                            } else if (ganttSelectedRowIdx > rIdx) {
+                                ganttSelectedRowIdx--;
+                            }
                             window.ganttIsDirty = true;
                             renderSubnavPlanWork(project);
                         }
@@ -11217,11 +11254,23 @@ document.addEventListener("DOMContentLoaded", () => {
         return (code && code !== "all") ? projectsData[code] : null;
     };
 
+    // Helper: insert at selected position or push to end
+    function ganttInsertAt(tasks, newItem) {
+        if (ganttSelectedRowIdx >= 0 && ganttSelectedRowIdx < tasks.length) {
+            const insertPos = ganttSelectedRowIdx + 1;
+            tasks.splice(insertPos, 0, newItem);
+            ganttSelectedRowIdx = insertPos; // Select the newly inserted row
+        } else {
+            tasks.push(newItem);
+            ganttSelectedRowIdx = tasks.length - 1;
+        }
+    }
+
     if (btnAddGanttPhase) {
         btnAddGanttPhase.addEventListener("click", function() {
             const proj = getActiveProj();
             if (!proj) return showToast("กรุณาเลือกโครงการเฉพาะก่อน", "warning");
-            proj.ganttData.tasks.push({
+            ganttInsertAt(proj.ganttData.tasks, {
                 id: Math.random().toString(36).substr(2, 9),
                 rowType: 'phase',
                 itemNum: "",
@@ -11229,7 +11278,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             window.ganttIsDirty = true;
             renderSubnavPlanWork(proj);
-            showToast("เพิ่ม Phase เรียบร้อย", "info");
+            showToast("เพิ่ม Phase เรียบร้อย" + (ganttSelectedRowIdx >= 0 ? " (แทรกหลังแถวที่เลือก)" : ""), "info");
         });
     }
 
@@ -11237,7 +11286,7 @@ document.addEventListener("DOMContentLoaded", () => {
         btnAddGanttType.addEventListener("click", function() {
             const proj = getActiveProj();
             if (!proj) return showToast("กรุณาเลือกโครงการเฉพาะก่อน", "warning");
-            proj.ganttData.tasks.push({
+            ganttInsertAt(proj.ganttData.tasks, {
                 id: Math.random().toString(36).substr(2, 9),
                 rowType: 'type',
                 itemNum: "",
@@ -11245,7 +11294,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             window.ganttIsDirty = true;
             renderSubnavPlanWork(proj);
-            showToast("เพิ่มประเภทงานเรียบร้อย", "info");
+            showToast("เพิ่มประเภทงานเรียบร้อย" + (ganttSelectedRowIdx >= 0 ? " (แทรกหลังแถวที่เลือก)" : ""), "info");
         });
     }
 
@@ -11253,7 +11302,7 @@ document.addEventListener("DOMContentLoaded", () => {
         btnAddGanttCat.addEventListener("click", function() {
             const proj = getActiveProj();
             if (!proj) return showToast("กรุณาเลือกโครงการเฉพาะก่อน", "warning");
-            proj.ganttData.tasks.push({
+            ganttInsertAt(proj.ganttData.tasks, {
                 id: Math.random().toString(36).substr(2, 9),
                 rowType: 'category',
                 itemNum: "",
@@ -11261,7 +11310,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             window.ganttIsDirty = true;
             renderSubnavPlanWork(proj);
-            showToast("เพิ่มหมวดงานเรียบร้อย", "info");
+            showToast("เพิ่มหมวดงานเรียบร้อย" + (ganttSelectedRowIdx >= 0 ? " (แทรกหลังแถวที่เลือก)" : ""), "info");
         });
     }
 
@@ -11269,7 +11318,7 @@ document.addEventListener("DOMContentLoaded", () => {
         btnAddGanttTask.addEventListener("click", function() {
             const proj = getActiveProj();
             if (!proj) return showToast("กรุณาเลือกโครงการเฉพาะก่อน", "warning");
-            proj.ganttData.tasks.push({
+            ganttInsertAt(proj.ganttData.tasks, {
                 id: Math.random().toString(36).substr(2, 9),
                 rowType: 'task',
                 isSubtask: false,
@@ -11279,7 +11328,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
             window.ganttIsDirty = true;
             renderSubnavPlanWork(proj);
-            showToast("เพิ่มงานย่อยเรียบร้อย", "info");
+            showToast("เพิ่มงานย่อยเรียบร้อย" + (ganttSelectedRowIdx >= 0 ? " (แทรกหลังแถวที่เลือก)" : ""), "info");
         });
     }
 
@@ -13461,6 +13510,12 @@ function initPublicView(projectCode) {
     document.body.classList.add("role-pm");
 
     appState.selectedDetailProject = projectCode;
+    // Allow specifying a subtab via URL parameter, e.g., ?project=XYZ&tab=plan-work
+    const publicUrlParams = new URLSearchParams(window.location.search);
+    const tabParam = publicUrlParams.get("tab");
+    if (tabParam) {
+        appState.activeProjectTab = tabParam;
+    }
 
     // Navigate to projects-list view (which shows project detail workspace)
     switchView("projects-list");
