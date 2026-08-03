@@ -4686,7 +4686,7 @@ body.public-view-mode #public-view-header {
                     </div>
                     <div class="form-group mt-3">
                         <label class="form-label" for="media-file">เลือกไฟล์รูปภาพ</label>
-                        <input type="file" id="media-file" class="form-control" accept="image/*" required style="padding: 6px 12px; height: auto;">
+                        <input type="file" id="media-file" class="form-control" accept="image/*" multiple required style="padding: 6px 12px; height: auto;">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -10444,47 +10444,74 @@ document.addEventListener("DOMContentLoaded", () => {
             const title = document.getElementById("media-title").value;
             const fileInput = document.getElementById("media-file");
             
-            let imgUrl = "https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&w=250&q=80";
-            
-            if (fileInput && fileInput.files && fileInput.files.length > 0) {
-                const result = await readFileAsBase64(fileInput.files[0]);
-                
-                // Save image in separate row
-                const projectCode = appState.selectedDetailProject;
-                const fileKey = `FILE:${projectCode}:MEDIA:${Date.now()}:${fileInput.files[0].name}`;
-                
-                showToast("กำลังบันทึกรูปภาพขึ้นคลาวด์...", "info");
-                const { error: fileErr } = await supabaseClient.from('projects').upsert({
-                    code: fileKey,
-                    data: { fileUrl: result.dataUrl },
-                    updated_at: new Date().toISOString()
-                });
-                if (fileErr) {
-                    showToast(`อัปโหลดรูปภาพล้มเหลว: ${fileErr.message}`, "error");
-                    return;
-                }
-                imgUrl = fileKey; // Store reference key!
+            const project = projectsData[appState.selectedDetailProject];
+            if (!project) {
+                showToast("ไม่พบข้อมูลโครงการ", "error");
+                return;
             }
             
-            const project = projectsData[appState.selectedDetailProject];
-            if (project) {
+            if (fileInput && fileInput.files && fileInput.files.length > 0) {
+                const files = fileInput.files;
+                showToast(`กำลังเริ่มอัปโหลดรูปภาพ ${files.length} รูป...`, "info");
+                
                 if (!project.media) project.media = [];
                 
                 const now = new Date();
                 const formattedDate = `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()}`;
                 
-                project.media.unshift({
-                    title: title,
-                    date: formattedDate,
-                    img: imgUrl
-                });
+                let successCount = 0;
+                let failCount = 0;
+                
+                for (let i = 0; i < files.length; i++) {
+                    const fileObj = files[i];
+                    try {
+                        const result = await readFileAsBase64(fileObj);
+                        
+                        const projectCode = appState.selectedDetailProject;
+                        // Use timestamp + loop index to make sure fileKey is unique
+                        const fileKey = `FILE:${projectCode}:MEDIA:${Date.now()}_${i}:${fileObj.name}`;
+                        
+                        const { error: fileErr } = await supabaseClient.from('projects').upsert({
+                            code: fileKey,
+                            data: { fileUrl: result.dataUrl },
+                            updated_at: new Date().toISOString()
+                        });
+                        
+                        if (fileErr) {
+                            console.error("Upload error for file:", fileObj.name, fileErr);
+                            failCount++;
+                            continue;
+                        }
+                        
+                        // Append index if uploading multiple files
+                        const finalTitle = files.length > 1 ? `${title} - ${i + 1}` : title;
+                        
+                        project.media.unshift({
+                            title: finalTitle,
+                            date: formattedDate,
+                            img: fileKey
+                        });
+                        
+                        successCount++;
+                    } catch (err) {
+                        console.error("Processing error for file:", fileObj.name, err);
+                        failCount++;
+                    }
+                }
                 
                 // Save and sync immediately
                 saveToLocalStorage();
                 
-                showToast(`อัปโหลดรูปภาพ ${title} สำเร็จ!`, "success");
+                if (successCount > 0) {
+                    showToast(`อัปโหลดรูปภาพสำเร็จ ${successCount} รูป!${failCount > 0 ? ` (ล้มเหลว ${failCount} รูป)` : ''}`, "success");
+                } else {
+                    showToast("อัปโหลดรูปภาพล้มเหลวทั้งหมด", "error");
+                }
+                
                 closeMediaModal();
                 renderSubnavProjectWorkspace();
+            } else {
+                showToast("กรุณาเลือกรูปภาพอย่างน้อย 1 รูป", "warning");
             }
         });
     }
