@@ -3141,8 +3141,8 @@ body.public-view-mode #public-view-header {
                             </label>
                             <select id="subnav-project-status-selector" class="form-control" style="font-size: 11.5px; padding: 6px; height: auto; font-weight: 600; border-radius: var(--radius-sm); background-color: #f8fafc;">
                                 <option value="งานที่กำลังดำเนินการ">🟢 งานที่กำลังดำเนินการ</option>
-                                <option value="งานเสร็จแล้วรอส่งงาน">🔵 งานเสร็จแล้วรอส่งงาน</option>
-                                <option value="งานรออนุมัติ">🟠 งานรออนุมัติ</option>
+                                <option value="งานเสร็จแล้วรอส่งงาน/อนุมัติ">🔵 งานเสร็จแล้วรอส่งงาน/อนุมัติ</option>
+                                <option value="งานที่รอเสนอราคา">🟠 งานที่รอเสนอราคา</option>
                             </select>
                         </div>
                         
@@ -3390,7 +3390,7 @@ body.public-view-mode #public-view-header {
                                 <i class="fa-solid fa-circle-check"></i>
                             </div>
                             <div class="kpi-content">
-                                <span class="kpi-label">งานเสร็จแล้วรอส่งงาน</span>
+                                <span class="kpi-label">งานเสร็จแล้วรอส่งงาน/อนุมัติ</span>
                                 <h3 class="kpi-value" id="kpi-completed-jobs">0</h3>
                                 <span class="kpi-unit">รายการ</span>
                             </div>
@@ -3402,7 +3402,7 @@ body.public-view-mode #public-view-header {
                                 <i class="fa-solid fa-circle-pause"></i>
                             </div>
                             <div class="kpi-content">
-                                <span class="kpi-label">งานรออนุมัติ</span>
+                                <span class="kpi-label">งานที่รอเสนอราคา</span>
                                 <h3 class="kpi-value" id="kpi-pending-approval-jobs">0</h3>
                                 <span class="kpi-unit">รายการ</span>
                             </div>
@@ -4071,8 +4071,8 @@ body.public-view-mode #public-view-header {
                                         <span style="font-size: 12px; font-weight: 700; color: var(--navy-dark); white-space: nowrap;">สถานะโครงการ:</span>
                                         <select id="subnav-project-status-selector-inline" class="form-control" style="font-size: 12px; padding: 6px 12px; height: 36px; font-weight: 600; background-color: #ffffff; border: 1px solid var(--border-color); border-radius: 6px; width: 180px;">
                                             <option value="งานที่กำลังดำเนินการ">🟢 งานที่กำลังดำเนินการ</option>
-                                            <option value="งานเสร็จแล้วรอส่งงาน">🔵 งานเสร็จแล้วรอส่งงาน</option>
-                                            <option value="งานรออนุมัติ">🟠 งานรออนุมัติ</option>
+                                            <option value="งานเสร็จแล้วรอส่งงาน/อนุมัติ">🔵 งานเสร็จแล้วรอส่งงาน/อนุมัติ</option>
+                                            <option value="งานที่รอเสนอราคา">🟠 งานที่รอเสนอราคา</option>
                                         </select>
                                     </div>
                                     
@@ -5146,8 +5146,8 @@ body.public-view-mode #public-view-header {
                         <label class="form-label" for="edit-project-status">สถานะโครงการ</label>
                         <select id="edit-project-status" class="form-control">
                             <option value="งานที่กำลังดำเนินการ">งานที่กำลังดำเนินการ</option>
-                            <option value="งานเสร็จแล้วรอส่งงาน">งานเสร็จแล้วรอส่งงาน</option>
-                            <option value="งานรออนุมัติ">งานรออนุมัติ</option>
+                            <option value="งานเสร็จแล้วรอส่งงาน/อนุมัติ">งานเสร็จแล้วรอส่งงาน/อนุมัติ</option>
+                            <option value="งานที่รอเสนอราคา">งานที่รอเสนอราคา</option>
                         </select>
                     </div>
                     <div class="form-group mt-3">
@@ -5609,8 +5609,8 @@ function populateSubnavProjects(yearFilter) {
         const hospitalMatch = selectedHospital === "all" || p.customer === selectedHospital;
         const yearMatch = yearFilter === "all" || p.year === parseInt(yearFilter);
         const isQuotingTab = appState.currentView === "quoting-projects-list";
-        const isQuotingStatus = (p.status === "งานที่กำลังเสนอราคา" || p.status === "กำลังเสนอราคา");
-        const quotingMatch = isQuotingTab ? isQuotingStatus : true;
+        const isQuotingStatus = (p.status === "งานที่กำลังเสนอราคา" || p.status === "กำลังเสนอราคา" || p.status === "งานที่รอเสนอราคา");
+        const quotingMatch = isQuotingTab ? isQuotingStatus : !isQuotingStatus;
         return hospitalMatch && yearMatch && quotingMatch;
     });
 
@@ -5811,9 +5811,9 @@ function renderOverallDashboard() {
     
     combinedProjects.forEach(p => {
         // Count projects by status
-        if (p.status === "เสร็จสิ้น" || p.status === "เสร็จแล้ว" || p.status === "งานเสร็จแล้วรอส่งงาน") {
+        if (p.status === "เสร็จสิ้น" || p.status === "เสร็จแล้ว" || p.status === "งานเสร็จแล้วรอส่งงาน" || p.status === "งานเสร็จแล้วรอส่งงาน/อนุมัติ") {
             completedJobs++;
-        } else if (p.status === "รออนุมัติ" || p.status === "งานรออนุมัติ") {
+        } else if (p.status === "รออนุมัติ" || p.status === "งานรออนุมัติ" || p.status === "งานที่รอเสนอราคา" || p.status === "งานที่กำลังเสนอราคา" || p.status === "กำลังเสนอราคา") {
             pendingApprovalJobs++;
         } else {
             inprogressJobs++;
@@ -5848,9 +5848,9 @@ function renderOverallDashboard() {
         const idx = hospitalsList.indexOf(p.customer);
         if (idx === -1) return;
         
-        if (p.status === "เสร็จสิ้น" || p.status === "เสร็จแล้ว" || p.status === "งานเสร็จแล้วรอส่งงาน") {
+        if (p.status === "เสร็จสิ้น" || p.status === "เสร็จแล้ว" || p.status === "งานเสร็จแล้วรอส่งงาน" || p.status === "งานเสร็จแล้วรอส่งงาน/อนุมัติ") {
             completedCounts[idx]++;
-        } else if (p.status === "รออนุมัติ" || p.status === "งานรออนุมัติ") {
+        } else if (p.status === "รออนุมัติ" || p.status === "งานรออนุมัติ" || p.status === "งานที่รอเสนอราคา" || p.status === "งานที่กำลังเสนอราคา" || p.status === "กำลังเสนอราคา") {
             pendingApprovalCounts[idx]++;
         } else {
             inprogressCounts[idx]++;
@@ -5885,13 +5885,13 @@ function renderOverallBarChart(labels, inprogress, completed, pendingApproval) {
                 borderRadius: 4
             },
             {
-                label: 'เสร็จแล้วรอส่งงาน',
+                label: 'งานเสร็จแล้วรอส่งงาน/อนุมัติ',
                 data: completed,
                 backgroundColor: '#0284c7', // Teal (matches KPI card)
                 borderRadius: 4
             },
             {
-                label: 'รออนุมัติ',
+                label: 'งานที่รอเสนอราคา',
                 data: pendingApproval,
                 backgroundColor: '#f59e0b', // Amber/Orange (matches KPI card)
                 borderRadius: 4
@@ -6634,8 +6634,8 @@ function renderOverallDonutChart(inprogress, completed, pendingApproval) {
             data: {
                 labels: [
                     `งานที่กำลังดำเนินการ ${ipPercent}%`, 
-                    `เสร็จแล้วรอส่งงาน ${compPercent}%`, 
-                    `รออนุมัติ ${pendingPercent}%`
+                    `งานเสร็จแล้วรอส่งงาน/อนุมัติ ${compPercent}%`, 
+                    `งานที่รอเสนอราคา ${pendingPercent}%`
                 ],
                 datasets: [{
                     data: [inprogress, completed, pendingApproval],
@@ -6715,7 +6715,7 @@ function renderHospitalsGrid(activeProjects) {
             today.setHours(0, 0, 0, 0);
             
             allHospitalProjects.forEach(p => {
-                if (p.progress >= 100 || p.status === "เสร็จสิ้น" || p.status === "เสร็จแล้ว" || p.status === "งานเสร็จแล้วรอส่งงาน") {
+                if (p.progress >= 100 || p.status === "เสร็จสิ้น" || p.status === "เสร็จแล้ว" || p.status === "งานเสร็จแล้วรอส่งงาน" || p.status === "งานเสร็จแล้วรอส่งงาน/อนุมัติ") {
                     completedProjects++;
                 } else {
                     const parts = (p.end || "").split("/");
@@ -6726,7 +6726,7 @@ function renderHospitalsGrid(activeProjects) {
                             isDelayed = true;
                         }
                     }
-                    if (isDelayed || p.status === "รออนุมัติ" || p.status === "งานรออนุมัติ") {
+                    if (isDelayed || p.status === "รออนุมัติ" || p.status === "งานรออนุมัติ" || p.status === "งานที่รอเสนอราคา") {
                         delayedProjects++;
                     } else {
                         inprogressProjects++;
@@ -6958,7 +6958,9 @@ function renderSubnavProjectWorkspace() {
         if (sidebarBackWrapper) sidebarBackWrapper.style.display = "none";
         mainNavItems.forEach(item => item.style.display = "");
         
-        renderProjectSelectionPortal();
+        if (typeof window.renderProjectSelectionPortal === "function") {
+            window.renderProjectSelectionPortal();
+        }
         return;
     } else {
         if (portal) portal.style.display = "none";
@@ -7137,19 +7139,19 @@ function renderSubnavProjectWorkspace() {
             if (inlineStatusSelect) inlineStatusSelect.disabled = false;
             
             let currentStatus = project.status || "งานที่กำลังดำเนินการ";
-            if (currentStatus === "กำลังดำเนินการ" || currentStatus === "งานที่กำลังเสนอราคา" || currentStatus === "กำลังเสนอราคา") currentStatus = "งานที่กำลังดำเนินการ";
-            if (currentStatus === "เสร็จสิ้น") currentStatus = "งานเสร็จแล้วรอส่งงาน";
-            if (currentStatus === "รออนุมัติ") currentStatus = "งานรออนุมัติ";
+            if (currentStatus === "กำลังดำเนินการ" || currentStatus === "กำลังเสนอราคา") currentStatus = "งานที่กำลังดำเนินการ";
+            if (currentStatus === "เสร็จสิ้น" || currentStatus === "งานเสร็จแล้วรอส่งงาน") currentStatus = "งานเสร็จแล้วรอส่งงาน/อนุมัติ";
+            if (currentStatus === "รออนุมัติ" || currentStatus === "งานรออนุมัติ" || currentStatus === "งานที่กำลังเสนอราคา") currentStatus = "งานที่รอเสนอราคา";
             
             subnavStatusSelect.value = currentStatus;
             if (inlineStatusSelect) inlineStatusSelect.value = currentStatus;
 
             if (subnavStatusBadge) {
                 subnavStatusBadge.textContent = currentStatus;
-                if (currentStatus === "งานเสร็จแล้วรอส่งงาน") {
+                if (currentStatus === "งานเสร็จแล้วรอส่งงาน/อนุมัติ") {
                     subnavStatusBadge.style.background = "#e0f2fe";
                     subnavStatusBadge.style.color = "#0369a1";
-                } else if (currentStatus === "งานรออนุมัติ") {
+                } else if (currentStatus === "งานที่รอเสนอราคา") {
                     subnavStatusBadge.style.background = "#fef3c7";
                     subnavStatusBadge.style.color = "#b45309";
                 } else {
@@ -7160,10 +7162,10 @@ function renderSubnavProjectWorkspace() {
 
             if (inlineStatusBadge) {
                 inlineStatusBadge.textContent = currentStatus;
-                if (currentStatus === "งานเสร็จแล้วรอส่งงาน") {
+                if (currentStatus === "งานเสร็จแล้วรอส่งงาน/อนุมัติ") {
                     inlineStatusBadge.style.background = "#e0f2fe";
                     inlineStatusBadge.style.color = "#0369a1";
-                } else if (currentStatus === "งานรออนุมัติ") {
+                } else if (currentStatus === "งานที่รอเสนอราคา") {
                     inlineStatusBadge.style.background = "#fef3c7";
                     inlineStatusBadge.style.color = "#b45309";
                 } else {
@@ -7329,7 +7331,7 @@ function renderQuotingStorageView(project) {
     const quotingProjects = Object.values(projectsData).filter(p => {
         const hMatch = hospitalVal === "all" || p.customer === hospitalVal;
         const yMatch = yearVal === "all" || p.year === parseInt(yearVal);
-        const qMatch = p.status === "งานที่กำลังเสนอราคา" || p.status === "กำลังเสนอราคา";
+        const qMatch = p.status === "งานที่กำลังเสนอราคา" || p.status === "กำลังเสนอราคา" || p.status === "งานที่รอเสนอราคา";
         return hMatch && yMatch && qMatch;
     });
 
@@ -8007,7 +8009,7 @@ function renderSubnavProjectBarChart(wb) {
                         borderRadius: 2
                     },
                     {
-                        label: 'เสร็จแล้วรอส่งงาน',
+                        label: 'งานเสร็จแล้วรอส่งงาน/อนุมัติ',
                         data: completed,
                         backgroundColor: '#0284c7', // Teal (matches KPI card)
                         borderRadius: 2
@@ -8071,7 +8073,7 @@ function renderSubnavProjectDonutChart(inprogress, completed, delayed) {
             data: {
                 labels: [
                     `งานที่กำลังดำเนินการ ${ipPercent}%`, 
-                    `เสร็จแล้วรอส่งงาน ${compPercent}%`, 
+                    `งานเสร็จแล้วรอส่งงาน/อนุมัติ ${compPercent}%`, 
                     `งานอนุมัติ ${delayPercent}%`
                 ],
                 datasets: [{
@@ -9916,10 +9918,23 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!activeCode || activeCode === "all" || !projectsData[activeCode]) return;
             const newStatus = this.value;
             projectsData[activeCode].status = newStatus;
-            localStorage.setItem("technical_water_projects_data_v2", JSON.stringify(projectsData));
+            saveToLocalStorage(); // Use the standard function that syncs with Supabase!
+            
             showToast(`ปรับสถานะโครงการ ${activeCode} เป็น "${newStatus}" เรียบร้อยแล้ว!`, "success");
-            renderOverallDashboard();
-            renderSubnavProjectWorkspace();
+            
+            const isNewQuoting = (newStatus === "งานที่รอเสนอราคา" || newStatus === "งานที่กำลังเสนอราคา" || newStatus === "กำลังเสนอราคา");
+            const isQuotingTab = appState.currentView === "quoting-projects-list";
+            
+            if (isNewQuoting && !isQuotingTab) {
+                appState.selectedDetailProject = activeCode;
+                switchView("quoting-projects-list");
+            } else if (!isNewQuoting && isQuotingTab) {
+                appState.selectedDetailProject = activeCode;
+                switchView("projects-list");
+            } else {
+                renderOverallDashboard();
+                renderSubnavProjectWorkspace();
+            }
         });
     }
 
@@ -10039,7 +10054,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const hospitalMatch = selectedHospital === "all" || p.customer === selectedHospital;
             const yearMatch = selectedYear === "all" || p.year === parseInt(selectedYear);
             const isQuotingTab = appState.currentView === "quoting-projects-list";
-            const isQuotingStatus = (p.status === "งานที่กำลังเสนอราคา" || p.status === "กำลังเสนอราคา");
+            const isQuotingStatus = (p.status === "งานที่กำลังเสนอราคา" || p.status === "กำลังเสนอราคา" || p.status === "งานที่รอเสนอราคา");
             const quotingMatch = isQuotingTab ? isQuotingStatus : !isQuotingStatus;
             
             let searchMatch = true;
@@ -10117,14 +10132,14 @@ document.addEventListener("DOMContentLoaded", () => {
             let badgeBg = "#dcfce7";
             let badgeColor = "#15803d";
             let displayStatus = p.status || "งานที่กำลังดำเนินการ";
-            if (displayStatus === "งานเสร็จแล้วรอส่งงาน" || displayStatus === "เสร็จสิ้น") {
+            if (displayStatus === "งานเสร็จแล้วรอส่งงาน" || displayStatus === "เสร็จสิ้น" || displayStatus === "งานเสร็จแล้วรอส่งงาน/อนุมัติ") {
                 badgeBg = "#e0f2fe";
                 badgeColor = "#0369a1";
-                displayStatus = "งานเสร็จแล้วรอส่งงาน";
-            } else if (displayStatus === "งานรออนุมัติ" || displayStatus === "รออนุมัติ") {
+                displayStatus = "งานเสร็จแล้วรอส่งงาน/อนุมัติ";
+            } else if (displayStatus === "งานรออนุมัติ" || displayStatus === "รออนุมัติ" || displayStatus === "งานที่รอเสนอราคา" || displayStatus === "งานที่กำลังเสนอราคา" || displayStatus === "กำลังเสนอราคา") {
                 badgeBg = "#fef3c7";
                 badgeColor = "#b45309";
-                displayStatus = "งานรออนุมัติ";
+                displayStatus = "งานที่รอเสนอราคา";
             }
 
             const isPM = appState.currentRole === "pm";
@@ -13403,7 +13418,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const proj = projectsData[code];
         if (!proj) return;
 
-        const isQuoting = (appState.currentView === "quoting-projects-list") || (proj.status === "งานที่กำลังเสนอราคา");
+        const isQuoting = (appState.currentView === "quoting-projects-list") || (proj.status === "งานที่กำลังเสนอราคา" || proj.status === "งานที่รอเสนอราคา");
         const modalTitle = editProjectModal.querySelector(".modal-title");
         const valCostRow = document.getElementById("edit-proj-val-cost-row");
         const datesRow = document.getElementById("edit-proj-dates-row");
@@ -13499,7 +13514,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const proj = projectsData[code];
             if (!proj) return;
 
-            const isQuoting = (appState.currentView === "quoting-projects-list") || (proj.status === "งานที่กำลังเสนอราคา");
+            const isQuoting = (appState.currentView === "quoting-projects-list") || (proj.status === "งานที่กำลังเสนอราคา" || proj.status === "งานที่รอเสนอราคา");
 
             // Convert YYYY-MM-DD → DD/MM/YYYY
             const toThai = (str) => {
@@ -13565,10 +13580,21 @@ document.addEventListener("DOMContentLoaded", () => {
             showToast(`แก้ไขข้อมูล ${code} เรียบร้อยแล้ว!`, "success");
             closeEditProjectModal();
 
-            populateSubnavProjects(document.getElementById("subnav-year-filter") ? document.getElementById("subnav-year-filter").value : "all");
-            populateCostProjects();
-            renderOverallDashboard();
-            renderSubnavProjectWorkspace();
+            const isNewQuoting = (proj.status === "งานที่รอเสนอราคา" || proj.status === "งานที่กำลังเสนอราคา" || proj.status === "กำลังเสนอราคา");
+            const isQuotingTab = appState.currentView === "quoting-projects-list";
+
+            if (isNewQuoting && !isQuotingTab) {
+                appState.selectedDetailProject = code;
+                switchView("quoting-projects-list");
+            } else if (!isNewQuoting && isQuotingTab) {
+                appState.selectedDetailProject = code;
+                switchView("projects-list");
+            } else {
+                populateSubnavProjects(document.getElementById("subnav-year-filter") ? document.getElementById("subnav-year-filter").value : "all");
+                populateCostProjects();
+                renderOverallDashboard();
+                renderSubnavProjectWorkspace();
+            }
         });
     }
 
@@ -13581,7 +13607,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 delete projectsData[code];
                 
                 // Save updated list to local storage
-                localStorage.setItem("technical_water_projects_data_v2", JSON.stringify(projectsData));
+                saveToLocalStorage();
                 
                 // Delete from Supabase
                 deleteProjectFromSupabase(code);
