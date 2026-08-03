@@ -4289,7 +4289,7 @@ body.public-view-mode #public-view-header {
                                 <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
                                     <div>
                                         <h2 class="section-title">แผนการดำเนินงาน (Gantt Chart Scheduler)</h2>
-                                        <p class="section-subtitle">กำหนดช่วงเวลาวันเริ่มต้น-สิ้นสุด และระบายสีแถบความคืบหน้า (เหลือง = แผนงาน, เขียว = งานจริง)</p>
+                                        <p class="section-subtitle">กำหนดช่วงเวลาวันเริ่มต้น-สิ้นสุด และระบายสีแถบระดับเสียงดัง (แดง = เสียงดังมาก, เหลือง = เสียงดังปานกลาง, เขียว = เสียงดังน้อย)</p>
                                     </div>
                                     <div style="display: flex; gap: 8px;" class="hide-accounting hide-customer">
                                         <button class="btn btn-sm btn-outline" id="btn-add-gantt-phase" style="font-size: 11px; padding: 6px 12px; height: auto;">
@@ -4326,8 +4326,9 @@ body.public-view-mode #public-view-header {
                                     <div class="hide-accounting hide-customer" style="display: flex; flex-direction: column; justify-content: flex-end;">
                                         <span style="font-size: 11px; font-weight: 600; color: var(--navy-dark); display: block; margin-bottom: 4px;">เครื่องมือระบายสี (Brush):</span>
                                         <div style="display: flex; gap: 8px;">
-                                            <button id="brush-plan" class="btn btn-sm active" style="font-size: 10px; padding: 4px 10px; background: #fef08a; color: #854d0e; border: 1px solid #eab308; font-weight: 600; cursor: pointer; border-radius: 4px; border-style: solid;">แผนงาน (สีเหลือง)</button>
-                                            <button id="brush-actual" class="btn btn-sm" style="font-size: 10px; padding: 4px 10px; background: #bbf7d0; color: #166534; border: 1px solid #22c55e; font-weight: 600; cursor: pointer; border-radius: 4px; opacity: 0.6; border-style: solid;">งานจริง (สีเขียว)</button>
+                                            <button id="brush-red" class="btn btn-sm active" style="font-size: 10px; padding: 4px 10px; background: #fca5a5; color: #991b1b; border: 1px solid #ef4444; font-weight: 600; cursor: pointer; border-radius: 4px; border-style: solid;">เสียงดังมาก (สีแดง)</button>
+                                            <button id="brush-yellow" class="btn btn-sm" style="font-size: 10px; padding: 4px 10px; background: #fef08a; color: #854d0e; border: 1px solid #eab308; font-weight: 600; cursor: pointer; border-radius: 4px; opacity: 0.6; border-style: solid;">เสียงดังปานกลาง (สีเหลือง)</button>
+                                            <button id="brush-green" class="btn btn-sm" style="font-size: 10px; padding: 4px 10px; background: #bbf7d0; color: #166534; border: 1px solid #22c55e; font-weight: 600; cursor: pointer; border-radius: 4px; opacity: 0.6; border-style: solid;">เสียงดังน้อย (สีเขียว)</button>
                                             <button id="brush-eraser" class="btn btn-sm" style="font-size: 10px; padding: 4px 10px; background: #ffffff; color: #64748b; border: 1px solid #cbd5e1; font-weight: 600; cursor: pointer; border-radius: 4px; opacity: 0.6; border-style: solid;">ยางลบ</button>
                                         </div>
                                     </div>
@@ -8206,7 +8207,7 @@ function renderSubnavPhotosFiles(project) {
 }
 
 let currentScurveMode = 'plan'; // Global state for S-Curve mode
-let currentGanttBrush = 'plan'; // Global state for Gantt brush
+let currentGanttBrush = 'red'; // Global state for Gantt brush
 let isGanttPainting = false;
 
 // Format date to YYYY-MM-DD in local timezone safely
@@ -8423,8 +8424,9 @@ function renderSubnavPlanWork(project) {
                             const dStr = formatDateLocal(d);
                             const val = task.cells ? (task.cells[dStr] || 0) : 0;
                             let cellBg = "";
-                            if (val === 1) cellBg = "background-color: #fef08a;"; // Plan yellow
-                            else if (val === 2) cellBg = "background-color: #bbf7d0;"; // Actual green
+                            if (val === 1) cellBg = "background-color: #fef08a;"; // Yellow (เสียงดังปานกลาง)
+                            else if (val === 2) cellBg = "background-color: #bbf7d0;"; // Green (เสียงดังน้อย)
+                            else if (val === 3) cellBg = "background-color: #fca5a5;"; // Red (เสียงดังมาก)
                             
                             rowHtml += `
                                 <td class="gantt-cell" data-row-idx="${idx}" data-date="${dStr}" style="border: 1px solid var(--border-color); ${cellBg} cursor: ${canEdit ? 'crosshair' : 'default'}; user-select: none;">
@@ -8481,10 +8483,13 @@ function renderSubnavPlanWork(project) {
 
                         window.ganttIsDirty = true; // Mark dirty on color click/drag
 
-                        if (currentGanttBrush === 'plan') {
+                        if (currentGanttBrush === 'red') {
+                            task.cells[dStr] = 3;
+                            cell.style.backgroundColor = "#fca5a5";
+                        } else if (currentGanttBrush === 'yellow') {
                             task.cells[dStr] = 1;
                             cell.style.backgroundColor = "#fef08a";
-                        } else if (currentGanttBrush === 'actual') {
+                        } else if (currentGanttBrush === 'green') {
                             task.cells[dStr] = 2;
                             cell.style.backgroundColor = "#bbf7d0";
                         } else {
@@ -11201,8 +11206,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const ganttStartDate = document.getElementById("gantt-start-date");
     const ganttEndDate = document.getElementById("gantt-end-date");
 
-    const brushPlan = document.getElementById("brush-plan");
-    const brushActual = document.getElementById("brush-actual");
+    const brushRed = document.getElementById("brush-red");
+    const brushYellow = document.getElementById("brush-yellow");
+    const brushGreen = document.getElementById("brush-green");
     const brushEraser = document.getElementById("brush-eraser");
 
     // Dynamic Row Actions Helpers
@@ -11280,17 +11286,20 @@ document.addEventListener("DOMContentLoaded", () => {
     // Brush Toggles
     const updateBrushUI = (activeBrush) => {
         currentGanttBrush = activeBrush;
-        [brushPlan, brushActual, brushEraser].forEach(btn => {
+        [brushRed, brushYellow, brushGreen, brushEraser].forEach(btn => {
             if (btn) btn.style.opacity = "0.6";
         });
-        if (activeBrush === 'plan' && brushPlan) brushPlan.style.opacity = "1";
-        if (activeBrush === 'actual' && brushActual) brushActual.style.opacity = "1";
+        if (activeBrush === 'red' && brushRed) brushRed.style.opacity = "1";
+        if (activeBrush === 'yellow' && brushYellow) brushYellow.style.opacity = "1";
+        if (activeBrush === 'green' && brushGreen) brushGreen.style.opacity = "1";
         if (activeBrush === 'eraser' && brushEraser) brushEraser.style.opacity = "1";
     };
 
-    if (brushPlan) brushPlan.addEventListener("click", () => updateBrushUI('plan'));
-    if (brushActual) brushActual.addEventListener("click", () => updateBrushUI('actual'));
+    if (brushRed) brushRed.addEventListener("click", () => updateBrushUI('red'));
+    if (brushYellow) brushYellow.addEventListener("click", () => updateBrushUI('yellow'));
+    if (brushGreen) brushGreen.addEventListener("click", () => updateBrushUI('green'));
     if (brushEraser) brushEraser.addEventListener("click", () => updateBrushUI('eraser'));
+    updateBrushUI('red');
 
     // Date changes
     if (ganttStartDate) {
@@ -11424,8 +11433,9 @@ document.addEventListener("DOMContentLoaded", () => {
                         const dStr = formatDateLocal(d);
                         const val = task.cells ? (task.cells[dStr] || 0) : 0;
                         let cellBg = "";
-                        if (val === 1) cellBg = "class='cell-plan'";
-                        else if (val === 2) cellBg = "class='cell-actual'";
+                        if (val === 1) cellBg = "class='cell-yellow'";
+                        else if (val === 2) cellBg = "class='cell-green'";
+                        else if (val === 3) cellBg = "class='cell-red'";
                         gridCellsHtml += `<td ${cellBg} style="border: 1px solid #94a3b8; width: 22px;"></td>`;
                     });
 
@@ -11539,13 +11549,18 @@ document.addEventListener("DOMContentLoaded", () => {
                         .desc-col {
                             text-align: left !important;
                         }
-                        .cell-plan {
+                        .cell-yellow {
                             background-color: #fef08a !important;
                             -webkit-print-color-adjust: exact;
                             print-color-adjust: exact;
                         }
-                        .cell-actual {
+                        .cell-green {
                             background-color: #bbf7d0 !important;
+                            -webkit-print-color-adjust: exact;
+                            print-color-adjust: exact;
+                        }
+                        .cell-red {
+                            background-color: #fca5a5 !important;
                             -webkit-print-color-adjust: exact;
                             print-color-adjust: exact;
                         }
