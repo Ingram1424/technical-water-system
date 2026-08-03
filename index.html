@@ -6263,6 +6263,8 @@ function switchView(viewName) {
         appState.selectedDetailProject = "all";
         appState.showCumulativeOverview = (viewName === "dashboard");
         sessionStorage.setItem("technical_water_last_detail_project", "all");
+    } else if (viewName === "projects-list" || viewName === "quoting-projects-list") {
+        appState.showCumulativeOverview = false;
     }
     
     // Toggle sidebar project subnav visibility
@@ -6780,6 +6782,13 @@ function renderHospitalsGrid(activeProjects) {
 
 function renderSubnavProjectWorkspace() {
     const activeCode = appState.selectedDetailProject;
+    
+    // Reset active subtab to general-info on transitioning to a specific project details workspace
+    if (activeCode !== "all" && window.lastRenderedProject !== activeCode) {
+        appState.activeProjectTab = "general-info";
+    }
+    window.lastRenderedProject = activeCode;
+
     const showCumulative = !!appState.showCumulativeOverview;
 
     const portal = document.getElementById("project-selection-portal");
