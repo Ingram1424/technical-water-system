@@ -5333,6 +5333,33 @@ async function loadFromSupabase() {
                 if (typeof window.updateSignerNamesDatalist === "function") window.updateSignerNamesDatalist();
             }
         } catch (e) {}
+
+        // Sync customer accounts from Supabase
+        try {
+            const { data: accsRes } = await supabaseClient.from('projects').select('data').eq('code', 'FILE:CUSTOMER_ACCOUNTS_DATA').single();
+            if (accsRes && accsRes.data && accsRes.data.accounts) {
+                appState.customerAccounts = accsRes.data.accounts;
+                localStorage.setItem("technical_water_customer_accounts", JSON.stringify(appState.customerAccounts));
+                if (typeof window.renderCustomerAccountsTable === "function") {
+                    window.renderCustomerAccountsTable();
+                }
+                if (typeof renderPermissionsManagement === "function") {
+                    renderPermissionsManagement();
+                }
+            }
+        } catch (e) {}
+
+        // Sync user permissions from Supabase
+        try {
+            const { data: permsRes } = await supabaseClient.from('projects').select('data').eq('code', 'FILE:USER_PERMISSIONS_DATA').single();
+            if (permsRes && permsRes.data && permsRes.data.permissions) {
+                appState.userPermissions = permsRes.data.permissions;
+                localStorage.setItem("technical_water_user_permissions", JSON.stringify(appState.userPermissions));
+                if (typeof renderPermissionsManagement === "function") {
+                    renderPermissionsManagement();
+                }
+            }
+        } catch (e) {}
     } catch (e) {
         console.error("Failed to load from Supabase:", e);
     }
@@ -6134,6 +6161,20 @@ window.saveCustomerAccounts = async function() {
             });
         } catch (err) {
             console.error("Failed to sync customer accounts to Supabase:", err);
+        }
+    }
+};
+
+window.saveUserPermissions = async function() {
+    localStorage.setItem("technical_water_user_permissions", JSON.stringify(appState.userPermissions));
+    if (typeof supabaseClient !== "undefined") {
+        try {
+            await supabaseClient.from('projects').upsert({
+                code: 'FILE:USER_PERMISSIONS_DATA',
+                data: { permissions: appState.userPermissions }
+            });
+        } catch (err) {
+            console.error("Failed to sync user permissions to Supabase:", err);
         }
     }
 };
@@ -11213,7 +11254,7 @@ document.addEventListener("DOMContentLoaded", () => {
             appState.userPermissions[newKey] = { hospitals: [], projects: [] };
 
             saveCustomerAccounts();
-            localStorage.setItem("technical_water_user_permissions", JSON.stringify(appState.userPermissions));
+            saveUserPermissions();
 
             showToast(`🎉 สร้างบัญชีลูกค้า "${name}" เรียบร้อยแล้ว!`, "success");
             window.closeCreateCustomerModal();
@@ -13906,7 +13947,7 @@ window.deleteCustomerAccount = function(key) {
         delete appState.userPermissions[key];
     }
     saveCustomerAccounts();
-    localStorage.setItem("technical_water_user_permissions", JSON.stringify(appState.userPermissions));
+    saveUserPermissions();
     showToast(`ลบบัญชี "${acc.name}" เรียบร้อยแล้ว`, "info");
     renderPermissionsManagement();
 };
@@ -14161,7 +14202,7 @@ function renderPermissionsManagement() {
             const projects = Array.from(currentAllowedProjects).filter(Boolean);
             if (!appState.userPermissions) appState.userPermissions = {};
             appState.userPermissions[cUserKey] = { hospitals, projects };
-            localStorage.setItem("technical_water_user_permissions", JSON.stringify(appState.userPermissions));
+            saveUserPermissions();
             
             const acc = (appState.customerAccounts || {})[cUserKey];
             const userName = acc ? acc.name : cUserKey;
@@ -14176,7 +14217,7 @@ function renderPermissionsManagement() {
         resetBtn.onclick = function() {
             if (!confirm("ยืนยันการรีเซ็ตสิทธิ์ทั้งหมด (ทุก Customer User) กลับสู่ค่าเริ่มต้น?")) return;
             appState.userPermissions = defaultPermissions;
-            localStorage.setItem("technical_water_user_permissions", JSON.stringify(defaultPermissions));
+            saveUserPermissions();
             loadCheckboxes(document.getElementById("perm-user-selector").value || "user1");
             showToast("🔄 รีเซ็ตสิทธิ์ทั้งหมดกลับสู่ค่าเริ่มต้นเรียบร้อยแล้ว", "info");
             renderCustomerAccountsTable();
