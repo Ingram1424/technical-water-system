@@ -4115,13 +4115,16 @@ body.public-view-mode #public-view-header {
                                         <p class="section-subtitle">กำหนดช่วงเวลาวันเริ่มต้น-สิ้นสุด และระบายสีแถบความคืบหน้า (เหลือง = แผนงาน, เขียว = งานจริง)</p>
                                     </div>
                                     <div style="display: flex; gap: 8px;" class="hide-accounting hide-customer">
-                                        <button class="btn btn-sm btn-outline" id="btn-add-gantt-header" style="font-size: 11px; padding: 6px 12px; height: auto;">
-                                            <i class="fa-solid fa-folder-plus"></i> เพิ่มหมวดหมู่
+                                        <button class="btn btn-sm btn-outline" id="btn-add-gantt-phase" style="font-size: 11px; padding: 6px 12px; height: auto;">
+                                            <i class="fa-solid fa-folder-plus"></i> เพิ่ม Phase
                                         </button>
-                                        <button class="btn btn-sm btn-outline" id="btn-add-gantt-main" style="font-size: 11px; padding: 6px 12px; height: auto;">
-                                            <i class="fa-solid fa-list"></i> เพิ่มงานหลัก
+                                        <button class="btn btn-sm btn-outline" id="btn-add-gantt-type" style="font-size: 11px; padding: 6px 12px; height: auto;">
+                                            <i class="fa-solid fa-tags"></i> เพิ่มประเภทงาน
                                         </button>
-                                        <button class="btn btn-sm btn-outline" id="btn-add-gantt-sub" style="font-size: 11px; padding: 6px 12px; height: auto;">
+                                        <button class="btn btn-sm btn-outline" id="btn-add-gantt-cat" style="font-size: 11px; padding: 6px 12px; height: auto;">
+                                            <i class="fa-solid fa-list"></i> เพิ่มหมวดงาน
+                                        </button>
+                                        <button class="btn btn-sm btn-outline" id="btn-add-gantt-task" style="font-size: 11px; padding: 6px 12px; height: auto;">
                                             <i class="fa-solid fa-bars-staggered"></i> เพิ่มงานย่อย
                                         </button>
                                         <button class="btn btn-sm btn-outline" id="btn-print-gantt" style="font-size: 11px; padding: 6px 12px; height: auto; background: #f1f5f9; color: #334155;">
@@ -7955,6 +7958,15 @@ function renderSubnavPlanWork(project) {
                 tableBody.innerHTML = `<tr><td colspan="${3 + dateList.length}" style="text-align:center; padding: 40px; color: var(--text-muted); font-style: italic;">ยังไม่มีรายการงาน — กดปุ่มด้านบนเพื่อเพิ่มแถว</td></tr>`;
             } else {
                 project.ganttData.tasks.forEach((task, idx) => {
+                    // Backward compatibility migration
+                    if (!task.rowType) {
+                        if (task.isHeader) {
+                            task.rowType = 'phase';
+                        } else {
+                            task.rowType = 'task';
+                        }
+                    }
+
                     const tr = document.createElement("tr");
                     tr.style.borderBottom = "1px solid var(--border-color)";
                     tr.setAttribute("data-row-idx", idx);
@@ -7963,34 +7975,64 @@ function renderSubnavPlanWork(project) {
                     const inputStyle = `style="width: 100%; font-size: 11px; padding: 4px 6px; border: 1px solid transparent; background: transparent;"`;
                     const editStyle = `style="width: 100%; font-size: 11px; padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 4px; background: #fff;"`;
 
-                    if (task.isHeader) {
-                        // Header category row style (Full width colspan)
-                        tr.style.background = "#f1f5f9";
+                    if (task.rowType === 'phase') {
+                        // Level 1: Phase (Spans all columns, light gray background)
+                        tr.style.background = "#e2e8f0";
                         tr.style.fontWeight = "700";
                         tr.innerHTML = `
-                            <td style="padding: 6px; text-align: center; border: 1px solid var(--border-color);">
-                                <input type="text" class="gantt-item-num" data-idx="${idx}" value="${task.itemNum || ''}" ${readonlyAttr} ${canEdit ? editStyle : inputStyle} placeholder="เช่น 1">
+                            <td style="padding: 6px; text-align: center; border: 1px solid var(--border-color); width: 60px;">
+                                <input type="text" class="gantt-item-num" data-idx="${idx}" value="${task.itemNum || ''}" ${readonlyAttr} ${canEdit ? editStyle : inputStyle} placeholder="เช่น Phase 1">
                             </td>
                             <td colspan="${dateList.length + 1}" style="padding: 6px; border: 1px solid var(--border-color);">
-                                <input type="text" class="gantt-item-name" data-idx="${idx}" value="${task.name || ''}" ${readonlyAttr} style="width: 100%; font-size: 11.5px; font-weight: 700; padding: 4px 6px; border: 1px solid ${canEdit ? 'var(--border-color)' : 'transparent'}; border-radius: 4px; background: ${canEdit ? '#fff' : 'transparent'};" placeholder="ชื่อหมวดหมู่ เช่น Phase 1">
+                                <input type="text" class="gantt-item-name" data-idx="${idx}" value="${task.name || ''}" ${readonlyAttr} style="width: 100%; font-size: 11.5px; font-weight: 700; padding: 4px 6px; border: 1px solid ${canEdit ? 'var(--border-color)' : 'transparent'}; border-radius: 4px; background: ${canEdit ? '#fff' : 'transparent'};" placeholder="Phase เช่น Phase 1 ปรับปรุงพื้นที่แผนกต้อนรับ...">
                             </td>
-                            <td class="hide-accounting hide-customer" style="padding: 6px; text-align: center; border: 1px solid var(--border-color);">
+                            <td class="hide-accounting hide-customer" style="padding: 6px; text-align: center; border: 1px solid var(--border-color); width: 50px;">
+                                ${canEdit ? `<button class="btn-delete-gantt-row" data-idx="${idx}" style="background:none; border:none; color:#e63946; cursor:pointer; font-size:12px;"><i class="fa-solid fa-trash-can"></i></button>` : ''}
+                            </td>
+                        `;
+                    } else if (task.rowType === 'type') {
+                        // Level 2: ประเภทงาน (Spans all columns, light blue background)
+                        tr.style.background = "#eff6ff";
+                        tr.style.fontWeight = "700";
+                        tr.innerHTML = `
+                            <td style="padding: 6px; text-align: center; border: 1px solid var(--border-color); width: 60px;">
+                                <input type="text" class="gantt-item-num" data-idx="${idx}" value="${task.itemNum || ''}" ${readonlyAttr} ${canEdit ? editStyle : inputStyle} placeholder="เช่น 1.1">
+                            </td>
+                            <td colspan="${dateList.length + 1}" style="padding: 6px; border: 1px solid var(--border-color);">
+                                <input type="text" class="gantt-item-name" data-idx="${idx}" value="${task.name || ''}" ${readonlyAttr} style="width: 100%; font-size: 11px; font-weight: 700; color: #1e40af; padding: 4px 6px; border: 1px solid ${canEdit ? 'var(--border-color)' : 'transparent'}; border-radius: 4px; background: ${canEdit ? '#fff' : 'transparent'};" placeholder="ประเภทงาน เช่น 1.1 งานรื้อถอน">
+                            </td>
+                            <td class="hide-accounting hide-customer" style="padding: 6px; text-align: center; border: 1px solid var(--border-color); width: 50px;">
+                                ${canEdit ? `<button class="btn-delete-gantt-row" data-idx="${idx}" style="background:none; border:none; color:#e63946; cursor:pointer; font-size:12px;"><i class="fa-solid fa-trash-can"></i></button>` : ''}
+                            </td>
+                        `;
+                    } else if (task.rowType === 'category') {
+                        // Level 3: หมวดงาน (Spans all columns, white background, bold underline)
+                        tr.style.background = "#ffffff";
+                        tr.style.fontWeight = "700";
+                        tr.innerHTML = `
+                            <td style="padding: 6px; text-align: center; border: 1px solid var(--border-color); width: 60px;">
+                                <input type="text" class="gantt-item-num" data-idx="${idx}" value="${task.itemNum || ''}" ${readonlyAttr} ${canEdit ? editStyle : inputStyle} placeholder="เช่น 1.2.1">
+                            </td>
+                            <td colspan="${dateList.length + 1}" style="padding: 6px; border: 1px solid var(--border-color);">
+                                <input type="text" class="gantt-item-name" data-idx="${idx}" value="${task.name || ''}" ${readonlyAttr} style="width: 100%; font-size: 11px; font-weight: 700; padding: 4px 6px; border: 1px solid ${canEdit ? 'var(--border-color)' : 'transparent'}; border-radius: 4px; background: ${canEdit ? '#fff' : 'transparent'}; text-decoration: underline;" placeholder="หมวดงาน เช่น 1.2.1 หมวดงานผนัง">
+                            </td>
+                            <td class="hide-accounting hide-customer" style="padding: 6px; text-align: center; border: 1px solid var(--border-color); width: 50px;">
                                 ${canEdit ? `<button class="btn-delete-gantt-row" data-idx="${idx}" style="background:none; border:none; color:#e63946; cursor:pointer; font-size:12px;"><i class="fa-solid fa-trash-can"></i></button>` : ''}
                             </td>
                         `;
                     } else {
-                        // Task & Subtask row style
+                        // Level 4: งานย่อย (Daily Grid Row)
                         const indent = task.isSubtask ? "padding-left: 20px;" : "";
                         const nameWeight = task.isSubtask ? "normal" : "600";
                         
                         let rowHtml = `
-                            <td style="padding: 6px; text-align: center; border: 1px solid var(--border-color);">
-                                <input type="text" class="gantt-item-num" data-idx="${idx}" value="${task.itemNum || ''}" ${readonlyAttr} ${canEdit ? editStyle : inputStyle} placeholder="1.1">
+                            <td style="padding: 6px; text-align: center; border: 1px solid var(--border-color); width: 60px;">
+                                <input type="text" class="gantt-item-num" data-idx="${idx}" value="${task.itemNum || ''}" ${readonlyAttr} ${canEdit ? editStyle : inputStyle} placeholder="-">
                             </td>
-                            <td style="padding: 6px; border: 1px solid var(--border-color);">
-                                <div style="display: flex; gap: 4px; ${indent}">
-                                    ${task.isSubtask ? '<span style="color:#64748b;">-</span>' : ''}
-                                    <input type="text" class="gantt-item-name" data-idx="${idx}" value="${task.name || ''}" ${readonlyAttr} style="width: 100%; font-size: 11px; padding: 4px 6px; border: 1px solid ${canEdit ? 'var(--border-color)' : 'transparent'}; border-radius: 4px; background: ${canEdit ? '#fff' : 'transparent'}; font-weight: ${nameWeight};" placeholder="${task.isSubtask ? 'ชื่องานย่อย' : 'ชื่องานหลัก'}">
+                            <td style="padding: 6px; border: 1px solid var(--border-color); min-width: 250px;">
+                                <div style="display: flex; align-items: center; gap: 4px; ${indent}">
+                                    ${canEdit ? `<input type="checkbox" class="gantt-subtask-toggle" data-idx="${idx}" ${task.isSubtask ? 'checked' : ''} title="ย่อหน้าเป็นงานย่อย" style="margin-right: 4px;">` : (task.isSubtask ? '<span style="color:#64748b; margin-right:4px;">-</span>' : '')}
+                                    <input type="text" class="gantt-item-name" data-idx="${idx}" value="${task.name || ''}" ${readonlyAttr} style="width: 100%; font-size: 11px; padding: 4px 6px; border: 1px solid ${canEdit ? 'var(--border-color)' : 'transparent'}; border-radius: 4px; background: ${canEdit ? '#fff' : 'transparent'}; font-weight: ${nameWeight};" placeholder="ชื่องานย่อย/รายการงาน">
                                 </div>
                             </td>
                         `;
@@ -8010,7 +8052,7 @@ function renderSubnavPlanWork(project) {
                         });
 
                         rowHtml += `
-                            <td class="hide-accounting hide-customer" style="padding: 6px; text-align: center; border: 1px solid var(--border-color);">
+                            <td class="hide-accounting hide-customer" style="padding: 6px; text-align: center; border: 1px solid var(--border-color); width: 50px;">
                                 ${canEdit ? `<button class="btn-delete-gantt-row" data-idx="${idx}" style="background:none; border:none; color:#e63946; cursor:pointer; font-size:12px;"><i class="fa-solid fa-trash-can"></i></button>` : ''}
                             </td>
                         `;
@@ -8018,6 +8060,18 @@ function renderSubnavPlanWork(project) {
                         tr.innerHTML = rowHtml;
                     }
                     tableBody.appendChild(tr);
+                });
+
+                // Attach subtask checkbox toggle listener
+                tableBody.querySelectorAll(".gantt-subtask-toggle").forEach(chk => {
+                    chk.addEventListener("change", function() {
+                        const rIdx = parseInt(this.getAttribute("data-idx"));
+                        const task = project.ganttData.tasks[rIdx];
+                        if (task) {
+                            task.isSubtask = this.checked;
+                            renderSubnavPlanWork(project);
+                        }
+                    });
                 });
 
                 // Attach row delete listener
@@ -10261,9 +10315,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Gantt Chart Event Listeners
-    const btnAddGanttHeader = document.getElementById("btn-add-gantt-header");
-    const btnAddGanttMain = document.getElementById("btn-add-gantt-main");
-    const btnAddGanttSub = document.getElementById("btn-add-gantt-sub");
+    const btnAddGanttPhase = document.getElementById("btn-add-gantt-phase");
+    const btnAddGanttType = document.getElementById("btn-add-gantt-type");
+    const btnAddGanttCat = document.getElementById("btn-add-gantt-cat");
+    const btnAddGanttTask = document.getElementById("btn-add-gantt-task");
     const btnSaveGantt = document.getElementById("btn-save-gantt");
     const btnPrintGantt = document.getElementById("btn-print-gantt");
 
@@ -10280,46 +10335,59 @@ document.addEventListener("DOMContentLoaded", () => {
         return (code && code !== "all") ? projectsData[code] : null;
     };
 
-    if (btnAddGanttHeader) {
-        btnAddGanttHeader.addEventListener("click", function() {
+    if (btnAddGanttPhase) {
+        btnAddGanttPhase.addEventListener("click", function() {
             const proj = getActiveProj();
             if (!proj) return showToast("กรุณาเลือกโครงการเฉพาะก่อน", "warning");
             proj.ganttData.tasks.push({
                 id: Math.random().toString(36).substr(2, 9),
-                isHeader: true,
+                rowType: 'phase',
                 itemNum: "",
                 name: ""
             });
             renderSubnavPlanWork(proj);
-            showToast("เพิ่มหมวดหมู่เรียบร้อย", "info");
+            showToast("เพิ่ม Phase เรียบร้อย", "info");
         });
     }
 
-    if (btnAddGanttMain) {
-        btnAddGanttMain.addEventListener("click", function() {
+    if (btnAddGanttType) {
+        btnAddGanttType.addEventListener("click", function() {
             const proj = getActiveProj();
             if (!proj) return showToast("กรุณาเลือกโครงการเฉพาะก่อน", "warning");
             proj.ganttData.tasks.push({
                 id: Math.random().toString(36).substr(2, 9),
-                isHeader: false,
-                isSubtask: false,
+                rowType: 'type',
                 itemNum: "",
-                name: "",
-                cells: {}
+                name: ""
             });
             renderSubnavPlanWork(proj);
-            showToast("เพิ่มงานหลักเรียบร้อย", "info");
+            showToast("เพิ่มประเภทงานเรียบร้อย", "info");
         });
     }
 
-    if (btnAddGanttSub) {
-        btnAddGanttSub.addEventListener("click", function() {
+    if (btnAddGanttCat) {
+        btnAddGanttCat.addEventListener("click", function() {
             const proj = getActiveProj();
             if (!proj) return showToast("กรุณาเลือกโครงการเฉพาะก่อน", "warning");
             proj.ganttData.tasks.push({
                 id: Math.random().toString(36).substr(2, 9),
-                isHeader: false,
-                isSubtask: true,
+                rowType: 'category',
+                itemNum: "",
+                name: ""
+            });
+            renderSubnavPlanWork(proj);
+            showToast("เพิ่มหมวดงานเรียบร้อย", "info");
+        });
+    }
+
+    if (btnAddGanttTask) {
+        btnAddGanttTask.addEventListener("click", function() {
+            const proj = getActiveProj();
+            if (!proj) return showToast("กรุณาเลือกโครงการเฉพาะก่อน", "warning");
+            proj.ganttData.tasks.push({
+                id: Math.random().toString(36).substr(2, 9),
+                rowType: 'task',
+                isSubtask: false,
                 itemNum: "",
                 name: "",
                 cells: {}
@@ -10435,11 +10503,34 @@ document.addEventListener("DOMContentLoaded", () => {
 
             let rowsHtml = "";
             proj.ganttData.tasks.forEach(task => {
-                if (task.isHeader) {
+                // Backward compatibility migration in print
+                if (!task.rowType) {
+                    if (task.isHeader) {
+                        task.rowType = 'phase';
+                    } else {
+                        task.rowType = 'task';
+                    }
+                }
+
+                if (task.rowType === 'phase') {
                     rowsHtml += `
-                        <tr class="header-row">
+                        <tr class="header-row" style="background: #e2e8f0; font-weight: bold;">
                             <td style="text-align: center; font-weight: bold; border: 1px solid #94a3b8;">${task.itemNum || ''}</td>
                             <td colspan="${dateList.length + 1}" style="font-weight: bold; border: 1px solid #94a3b8; text-align: left; padding: 6px;">${task.name || ''}</td>
+                        </tr>
+                    `;
+                } else if (task.rowType === 'type') {
+                    rowsHtml += `
+                        <tr class="header-row" style="background: #eff6ff; font-weight: bold; color: #1e40af;">
+                            <td style="text-align: center; font-weight: bold; border: 1px solid #94a3b8; color: #1e40af;">${task.itemNum || ''}</td>
+                            <td colspan="${dateList.length + 1}" style="font-weight: bold; border: 1px solid #94a3b8; text-align: left; padding: 6px; color: #1e40af;">${task.name || ''}</td>
+                        </tr>
+                    `;
+                } else if (task.rowType === 'category') {
+                    rowsHtml += `
+                        <tr class="header-row" style="background: #ffffff; font-weight: bold;">
+                            <td style="text-align: center; font-weight: bold; border: 1px solid #94a3b8;">${task.itemNum || ''}</td>
+                            <td colspan="${dateList.length + 1}" style="font-weight: bold; border: 1px solid #94a3b8; text-align: left; padding: 6px; text-decoration: underline;">${task.name || ''}</td>
                         </tr>
                     `;
                 } else {
