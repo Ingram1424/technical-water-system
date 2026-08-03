@@ -6935,6 +6935,38 @@ function renderSubnavGeneralInfo(project) {
     renderSubnavYearlyComparisonChart(project.customer);
 }
 
+function syncScurveDOMToObject(proj) {
+    if (!proj || !proj.scurveData) return;
+    const monthInputs = document.querySelectorAll('.scurve-month-name');
+    if (monthInputs && monthInputs.length > 0) {
+        proj.scurveMonths = Array.from(monthInputs).map(inp => inp.value.trim() || 'Month');
+    }
+    proj.scurveData.forEach((item, idx) => {
+        const itemEl = document.querySelector(`.scurve-item-num[data-idx="${idx}"]`);
+        const nameEl = document.querySelector(`.scurve-item-name[data-idx="${idx}"]`);
+        const budgetEl = document.querySelector(`.scurve-budget[data-idx="${idx}"]`);
+        const weightEl = document.querySelector(`.scurve-weight[data-idx="${idx}"]`);
+        if (nameEl) item.name = nameEl.value.trim();
+        if (!item.isSubtask) {
+            if (itemEl) item.item = itemEl.value.trim();
+            if (budgetEl) item.budget = parseFloat(budgetEl.value) || 0;
+            if (weightEl) item.weight = parseFloat(weightEl.value) || 0;
+        }
+        const cellVals = document.querySelectorAll(`.scurve-cell-val[data-idx="${idx}"]`);
+        cellVals.forEach(cell => {
+            const wIdx = parseInt(cell.getAttribute('data-widx'));
+            const val = parseFloat(cell.value) || 0;
+            if (currentScurveMode === 'plan') {
+                if (!item.plan) item.plan = [];
+                item.plan[wIdx] = val;
+            } else {
+                if (!item.actual) item.actual = [];
+                item.actual[wIdx] = val;
+            }
+        });
+    });
+}
+
 function updateScurveTotals(project) {
     const foot = document.getElementById("scurve-table-foot");
     if (!foot || !project.scurveData || !project.scurveMonths) return;
@@ -7241,22 +7273,34 @@ function renderSubnavActualProgress(project) {
             body.appendChild(row);
         });
 
-        // Add real-time event listener to update % (รวม) when weekly cell changes
+        // Add real-time event listener to update % (รวม) when weekly cell changes and sync to object
         if (canEdit) {
             body.removeEventListener("input", window._scurveInputHandler); // clean up previous
             window._scurveInputHandler = function(e) {
-                if (e.target.classList.contains("scurve-cell-val")) {
-                    const rowIdx = e.target.getAttribute("data-idx");
-                    const rowTr = document.querySelector(`tr[data-row-idx="${rowIdx}"]`);
-                    if (rowTr) {
-                        let sum = 0;
-                        rowTr.querySelectorAll(".scurve-cell-val").forEach(inp => {
-                            sum += parseFloat(inp.value) || 0;
-                        });
-                        const totalEl = rowTr.querySelector(".scurve-total-pct");
-                        if (totalEl) {
-                            totalEl.value = sum;
-                            totalEl.style.color = sum === 100 ? '#10b981' : '#e63946';
+                // If it's an S-Curve input, sync the DOM to the object immediately
+                if (e.target.classList.contains("scurve-cell-val") || 
+                    e.target.classList.contains("scurve-item-num") || 
+                    e.target.classList.contains("scurve-item-name") || 
+                    e.target.classList.contains("scurve-budget") || 
+                    e.target.classList.contains("scurve-weight") || 
+                    e.target.classList.contains("scurve-month-name")) {
+                    
+                    syncScurveDOMToObject(project);
+
+                    // If it was a weekly cell value, update the visual row total
+                    if (e.target.classList.contains("scurve-cell-val")) {
+                        const rowIdx = e.target.getAttribute("data-idx");
+                        const rowTr = document.querySelector(`tr[data-row-idx="${rowIdx}"]`);
+                        if (rowTr) {
+                            let sum = 0;
+                            rowTr.querySelectorAll(".scurve-cell-val").forEach(inp => {
+                                sum += parseFloat(inp.value) || 0;
+                            });
+                            const totalEl = rowTr.querySelector(".scurve-total-pct");
+                            if (totalEl) {
+                                totalEl.value = sum;
+                                totalEl.style.color = sum === 100 ? '#10b981' : '#e63946';
+                            }
                         }
                     }
                 }
