@@ -4218,12 +4218,14 @@ body.public-view-mode #public-view-header {
                                         <table class="table" style="width: 100%; font-size: 12px;">
                                             <thead>
                                                 <tr style="background: var(--bg-light); border-bottom: 1px solid var(--border-color);">
-                                                    <th style="padding: 10px 12px; width: 60px; text-align: center;">#</th>
+                                                    <th style="padding: 10px 12px; width: 60px; text-align: center;">ลำดับ</th>
+                                                    <th style="padding: 10px 12px; width: 120px;">วันที่ไปดูงาน</th>
+                                                    <th style="padding: 10px 12px; width: 140px;">เลขที่ใบเสนอราคา</th>
                                                     <th style="padding: 10px 12px;">ชื่องาน</th>
-                                                    <th style="padding: 10px 12px;">ระบุโรงพยาบาล</th>
-                                                    <th style="padding: 10px 12px; width: 180px;">ความคืบหน้า (%)</th>
-                                                    <th style="padding: 10px 12px; width: 120px; text-align: center;">สถานะ</th>
-                                                    <th style="padding: 10px 12px; width: 110px; text-align: center;">จัดการ</th>
+                                                    <th style="padding: 10px 12px; width: 180px; text-align: center;">BOQ</th>
+                                                    <th style="padding: 10px 12px; width: 120px; text-align: center;">คู่เทียบ 1</th>
+                                                    <th style="padding: 10px 12px; width: 120px; text-align: center;">คู่เทียบ 2</th>
+                                                    <th style="padding: 10px 12px; width: 100px; text-align: center;">จัดการ</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="quoting-storage-table-body">
@@ -4797,6 +4799,28 @@ body.public-view-mode #public-view-header {
                         </div>
                     </div>
                     
+                    <!-- Quoting-specific fields (site visit, BOQ file, comparison links) -->
+                    <div id="create-quoting-fields-section" style="display: none; border-top: 1px dashed var(--border-color); margin-top: 16px; padding-top: 16px;">
+                        <div class="form-group">
+                            <label class="form-label" for="new-quoting-site-visit-date"><i class="fa-solid fa-calendar-day text-blue mr-1"></i> วันที่ไปดูงาน</label>
+                            <input type="date" id="new-quoting-site-visit-date" class="form-control">
+                        </div>
+                        <div class="form-group mt-3">
+                            <label class="form-label" for="new-quoting-boq-file"><i class="fa-solid fa-file-pdf text-red mr-1"></i> แนบไฟล์ BOQ</label>
+                            <input type="file" id="new-quoting-boq-file" class="form-control" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt" style="padding: 5px; height: auto;">
+                        </div>
+                        <div class="form-row-2 mt-3">
+                            <div class="form-group">
+                                <label class="form-label" for="new-quoting-comparison-1"><i class="fa-solid fa-link text-blue mr-1"></i> ลิงก์คู่เทียบ 1</label>
+                                <input type="url" id="new-quoting-comparison-1" class="form-control" placeholder="https://...">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="new-quoting-comparison-2"><i class="fa-solid fa-link text-blue mr-1"></i> ลิงก์คู่เทียบ 2</label>
+                                <input type="url" id="new-quoting-comparison-2" class="form-control" placeholder="https://...">
+                            </div>
+                        </div>
+                    </div>
+                    
                     <!-- Excel/CSV Import Section -->
                     <div id="create-proj-csv-section" style="border-top: 1px dashed var(--border-color); margin-top: 16px; padding-top: 16px;">
                         <label class="form-label" style="font-weight: 600; color: var(--navy-medium);"><i class="fa-solid fa-file-csv text-green mr-1"></i> หรือ นำเข้าหลายโครงการพร้อมกัน (Import CSV)</label>
@@ -5078,6 +5102,29 @@ body.public-view-mode #public-view-header {
                         <label class="form-label" for="edit-project-desc">รายละเอียดโครงการ</label>
                         <textarea id="edit-project-desc" class="form-control" rows="3" style="resize: vertical;"></textarea>
                     </div>
+                    <!-- Quoting-specific fields (site visit, BOQ file, comparison links) -->
+                    <div id="edit-quoting-fields-section" style="display: none; border-top: 1px dashed var(--border-color); margin-top: 16px; padding-top: 16px;">
+                        <div class="form-group">
+                            <label class="form-label" for="edit-quoting-site-visit-date"><i class="fa-solid fa-calendar-day text-blue mr-1"></i> วันที่ไปดูงาน</label>
+                            <input type="date" id="edit-quoting-site-visit-date" class="form-control">
+                        </div>
+                        <div class="form-group mt-3">
+                            <label class="form-label" for="edit-quoting-boq-file"><i class="fa-solid fa-file-pdf text-red mr-1"></i> แนบไฟล์ BOQ (อัปโหลดใหม่เพื่อเปลี่ยน)</label>
+                            <input type="file" id="edit-quoting-boq-file" class="form-control" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt" style="padding: 5px; height: auto;">
+                            <div id="edit-quoting-boq-current-file" style="font-size: 11px; color: var(--text-muted); margin-top: 4px;"></div>
+                        </div>
+                        <div class="form-row-2 mt-3">
+                            <div class="form-group">
+                                <label class="form-label" for="edit-quoting-comparison-1"><i class="fa-solid fa-link text-blue mr-1"></i> ลิงก์คู่เทียบ 1</label>
+                                <input type="url" id="edit-quoting-comparison-1" class="form-control" placeholder="https://...">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="edit-quoting-comparison-2"><i class="fa-solid fa-link text-blue mr-1"></i> ลิงก์คู่เทียบ 2</label>
+                                <input type="url" id="edit-quoting-comparison-2" class="form-control" placeholder="https://...">
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div style="border-top: 1px solid var(--border-color); margin-top: 20px; padding-top: 16px;">
                         <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 10px;"><i class="fa-solid fa-triangle-exclamation" style="color: #f59e0b;"></i> ลบโครงการนี้ออกจากระบบถาวร</p>
                         <button type="button" class="btn btn-sm" id="btn-delete-project" style="background: rgba(239,68,68,0.1); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); font-size: 12px; display: inline-flex; align-items: center; gap: 6px;">
@@ -7187,7 +7234,7 @@ function renderQuotingStorageView(project) {
     });
 
     if (quotingProjects.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color: var(--text-muted); padding: 24px;">ไม่พบรายการเสนอราคาในระบบ</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color: var(--text-muted); padding: 24px;">ไม่พบรายการเสนอราคาในระบบ</td></tr>`;
         return;
     }
 
@@ -7203,24 +7250,44 @@ function renderQuotingStorageView(project) {
             renderSubnavProjectWorkspace();
         };
 
+        const formatDate = (isoStr) => {
+            if (!isoStr) return `<span style="color: var(--text-muted); font-size: 11px;">-</span>`;
+            const parts = isoStr.split("-");
+            if (parts.length === 3) return `<span style="font-weight: 600; color: var(--navy-dark);">${parts[2]}/${parts[1]}/${parts[0]}</span>`;
+            return isoStr;
+        };
+        const siteVisitDateDisplay = formatDate(p.siteVisitDate);
+        
+        let boqHtml = `<span style="color: var(--text-muted);">-</span>`;
+        if (p.boqFileBase64 && p.boqFileName) {
+            boqHtml = `<a href="${p.boqFileBase64}" download="${p.boqFileName}" class="btn btn-xs btn-outline" style="font-size: 11px; padding: 2px 6px; color: #dc2626; border-color: #fca5a5; background: #fef2f2; display: inline-flex; align-items: center; gap: 4px;" onclick="event.stopPropagation();"><i class="fa-solid fa-file-pdf"></i> ดาวน์โหลด</a>`;
+        }
+        
+        let comp1Html = `<span style="color: var(--text-muted);">-</span>`;
+        if (p.comparison1) {
+            let url = p.comparison1;
+            if (!/^https?:\/\//i.test(url)) url = "https://" + url;
+            comp1Html = `<a href="${url}" target="_blank" class="btn btn-xs btn-outline" style="font-size: 11px; padding: 2px 6px; color: #2563eb; border-color: #93c5fd; background: #eff6ff; display: inline-flex; align-items: center; gap: 4px;" onclick="event.stopPropagation();"><i class="fa-solid fa-link"></i> ลิงก์</a>`;
+        }
+        
+        let comp2Html = `<span style="color: var(--text-muted);">-</span>`;
+        if (p.comparison2) {
+            let url = p.comparison2;
+            if (!/^https?:\/\//i.test(url)) url = "https://" + url;
+            comp2Html = `<a href="${url}" target="_blank" class="btn btn-xs btn-outline" style="font-size: 11px; padding: 2px 6px; color: #2563eb; border-color: #93c5fd; background: #eff6ff; display: inline-flex; align-items: center; gap: 4px;" onclick="event.stopPropagation();"><i class="fa-solid fa-link"></i> ลิงก์</a>`;
+        }
+
         tr.innerHTML = `
             <td style="padding: 10px 12px; text-align: center; font-weight: 700; color: var(--text-muted);">${index + 1}</td>
+            <td style="padding: 10px 12px; text-align: center;">${siteVisitDateDisplay}</td>
+            <td style="padding: 10px 12px; font-weight: 700; color: var(--navy-dark); text-align: center;">${p.code}</td>
             <td style="padding: 10px 12px;">
                 <strong style="color: var(--navy-dark); font-size: 12.5px;">${p.name.replace(/ \(\d{4}\)$/, '')}</strong>
-                <div style="font-size: 10.5px; color: var(--text-muted);">${p.code}</div>
+                <div style="font-size: 10.5px; color: var(--text-muted);">${p.customer || "-"}</div>
             </td>
-            <td style="padding: 10px 12px; font-weight: 600; color: var(--navy-dark);">${p.customer.replace("โรงพยาบาล", "รพ.")}</td>
-            <td style="padding: 10px 12px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-size: 11px;">
-                    <span style="font-weight: 700; color: #059669;">${p.progress || 0}%</span>
-                </div>
-                <div style="height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden;">
-                    <div style="height: 100%; width: ${p.progress || 0}%; background: #059669; border-radius: 3px;"></div>
-                </div>
-            </td>
-            <td style="padding: 10px 12px; text-align: center;">
-                <span style="font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 12px; background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0;">🟢 เสนอราคา</span>
-            </td>
+            <td style="padding: 10px 12px; text-align: center;">${boqHtml}</td>
+            <td style="padding: 10px 12px; text-align: center;">${comp1Html}</td>
+            <td style="padding: 10px 12px; text-align: center;">${comp2Html}</td>
             <td style="padding: 10px 12px; text-align: center;" onclick="event.stopPropagation();">
                 <button class="btn btn-sm btn-outline" style="font-size: 10.5px; padding: 2px 8px;" onclick="appState.selectedDetailProject='${p.code}'; document.getElementById('open-edit-project-btn').click();">
                     <i class="fa-solid fa-pen-to-square"></i> แก้ไข
@@ -10707,25 +10774,38 @@ document.addEventListener("DOMContentLoaded", () => {
         const codeInput = document.getElementById("new-project-code");
         const valInput = document.getElementById("new-project-value");
         const costInput = document.getElementById("new-project-cost");
+        
+        const codeLabel = codeYearRow ? codeYearRow.querySelector("label[for='new-project-code']") : null;
+        const quotingFields = document.getElementById("create-quoting-fields-section");
 
         if (isQuoting) {
             if (modalTitle) modalTitle.innerHTML = `<i class="fa-solid fa-file-circle-plus"></i> เพิ่มรายการเสนอราคาใหม่`;
             if (submitBtn) submitBtn.textContent = "สร้างรายการเสนอราคา";
-            if (codeYearRow) codeYearRow.style.display = "none";
+            if (codeYearRow) codeYearRow.style.display = "flex";
+            if (codeLabel) codeLabel.innerHTML = `เลขที่ใบเสนอราคา (ว่างไว้เพื่อระบบสุ่มรหัส)`;
+            if (codeInput) {
+                codeInput.removeAttribute("required");
+                codeInput.placeholder = "เช่น QT-385041";
+            }
             if (valCostRow) valCostRow.style.display = "none";
             if (csvSection) csvSection.style.display = "none";
-            if (codeInput) codeInput.removeAttribute("required");
             if (valInput) valInput.removeAttribute("required");
             if (costInput) costInput.removeAttribute("required");
+            if (quotingFields) quotingFields.style.display = "block";
         } else {
             if (modalTitle) modalTitle.innerHTML = `<i class="fa-solid fa-folder-plus"></i> สร้างโครงการใหม่`;
             if (submitBtn) submitBtn.textContent = "สร้างโครงการ";
             if (codeYearRow) codeYearRow.style.display = "flex";
+            if (codeLabel) codeLabel.innerHTML = `รหัสโครงการ <span class="required">*</span>`;
+            if (codeInput) {
+                codeInput.setAttribute("required", "true");
+                codeInput.placeholder = "เช่น PRJ-2613";
+            }
             if (valCostRow) valCostRow.style.display = "flex";
             if (csvSection) csvSection.style.display = "block";
-            if (codeInput) codeInput.setAttribute("required", "true");
             if (valInput) valInput.setAttribute("required", "true");
             if (costInput) costInput.setAttribute("required", "true");
+            if (quotingFields) quotingFields.style.display = "none";
         }
 
         const hasDraft = sessionStorage.getItem("draft_create_project");
@@ -10736,6 +10816,16 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("new-project-cost").value = "";
             const managerEl = document.getElementById("new-project-manager");
             if (managerEl) managerEl.value = "";
+            
+            // Clear quoting fields
+            const siteVisitEl = document.getElementById("new-quoting-site-visit-date");
+            const boqFileEl = document.getElementById("new-quoting-boq-file");
+            const comp1El = document.getElementById("new-quoting-comparison-1");
+            const comp2El = document.getElementById("new-quoting-comparison-2");
+            if (siteVisitEl) siteVisitEl.value = "";
+            if (boqFileEl) boqFileEl.value = "";
+            if (comp1El) comp1El.value = "";
+            if (comp2El) comp2El.value = "";
         }
         createProjectModal.classList.add("active");
     };
@@ -11309,13 +11399,18 @@ document.addEventListener("DOMContentLoaded", () => {
     if (cancelCreateProjectBtn) cancelCreateProjectBtn.addEventListener("click", closeCreateProjectModal);
 
     if (createProjectForm) {
-        createProjectForm.addEventListener("submit", function(e) {
+        createProjectForm.addEventListener("submit", async function(e) {
             e.preventDefault();
             
             const isQuoting = (appState.currentView === "quoting-projects-list");
             let code = document.getElementById("new-project-code").value.trim().toUpperCase();
-            if (isQuoting || !code) {
-                code = "QT-" + Math.floor(100000 + Math.random() * 900000);
+            if (!code) {
+                if (isQuoting) {
+                    code = "QT-" + Math.floor(100000 + Math.random() * 900000);
+                } else {
+                    showToast("กรุณาระบุรหัสโครงการ", "error");
+                    return;
+                }
             }
             const name = document.getElementById("new-project-name").value.trim();
             const year = document.getElementById("new-project-year").value || "2026";
@@ -11326,6 +11421,33 @@ document.addEventListener("DOMContentLoaded", () => {
             const owner = document.getElementById("new-project-owner") ? document.getElementById("new-project-owner").value.trim() : "";
             const boq = document.getElementById("new-project-boq") ? document.getElementById("new-project-boq").value.trim() : "";
             
+            // Read quoting specific fields
+            let siteVisitDate = "";
+            let boqFileName = "";
+            let boqFileBase64 = "";
+            let comparison1 = "";
+            let comparison2 = "";
+
+            if (isQuoting) {
+                const siteVisitEl = document.getElementById("new-quoting-site-visit-date");
+                if (siteVisitEl) siteVisitDate = siteVisitEl.value;
+
+                const boqFileEl = document.getElementById("new-quoting-boq-file");
+                if (boqFileEl && boqFileEl.files && boqFileEl.files.length > 0) {
+                    const file = boqFileEl.files[0];
+                    boqFileName = file.name;
+                    showToast("กำลังเข้ารหัสไฟล์ BOQ...", "info");
+                    const base64Res = await readFileAsBase64(file);
+                    boqFileBase64 = base64Res.dataUrl;
+                }
+
+                const comp1El = document.getElementById("new-quoting-comparison-1");
+                if (comp1El) comparison1 = comp1El.value.trim();
+
+                const comp2El = document.getElementById("new-quoting-comparison-2");
+                if (comp2El) comparison2 = comp2El.value.trim();
+            }
+
             if (projectsData[code]) {
                 showToast(`รหัส ${code} ซ้ำกับรายการที่มีอยู่แล้ว!`, "error");
                 return;
@@ -11361,7 +11483,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 media: [],
                 expenses: [],
                 dailyReports: [],
-                planDocs: []
+                planDocs: [],
+                
+                // Save Quoting fields
+                siteVisitDate: siteVisitDate,
+                boqFileName: boqFileName,
+                boqFileBase64: boqFileBase64,
+                comparison1: comparison1,
+                comparison2: comparison2
             };
             
             // Save and sync immediately
@@ -12747,11 +12876,35 @@ document.addEventListener("DOMContentLoaded", () => {
             if (valCostRow) valCostRow.style.display = "none";
             if (datesRow) datesRow.style.display = "none";
             if (plannedGroup) plannedGroup.style.display = "none";
+            const codeLabel = editProjectModal.querySelector("label[for='edit-project-code-display']");
+            if (codeLabel) codeLabel.innerHTML = `เลขที่ใบเสนอราคา`;
+            
+            const editQuotingFields = document.getElementById("edit-quoting-fields-section");
+            if (editQuotingFields) editQuotingFields.style.display = "block";
+            
+            document.getElementById("edit-quoting-site-visit-date").value = proj.siteVisitDate || "";
+            document.getElementById("edit-quoting-comparison-1").value = proj.comparison1 || "";
+            document.getElementById("edit-quoting-comparison-2").value = proj.comparison2 || "";
+            document.getElementById("edit-quoting-boq-file").value = ""; // Clear file selector
+            
+            const curFileEl = document.getElementById("edit-quoting-boq-current-file");
+            if (curFileEl) {
+                if (proj.boqFileName) {
+                    curFileEl.innerHTML = `ไฟล์ BOQ ปัจจุบัน: <a href="${proj.boqFileBase64}" download="${proj.boqFileName}" style="font-weight: 700; color: var(--primary-blue); text-decoration: underline;"><i class="fa-solid fa-file-arrow-down"></i> ${proj.boqFileName}</a>`;
+                } else {
+                    curFileEl.innerHTML = "ยังไม่มีไฟล์ BOQ";
+                }
+            }
         } else {
             if (modalTitle) modalTitle.innerHTML = `<i class="fa-solid fa-pen-to-square"></i> แก้ไขข้อมูลโครงการ`;
             if (valCostRow) valCostRow.style.display = "flex";
             if (datesRow) datesRow.style.display = "flex";
             if (plannedGroup) plannedGroup.style.display = "block";
+            const codeLabel = editProjectModal.querySelector("label[for='edit-project-code-display']");
+            if (codeLabel) codeLabel.innerHTML = `รหัสโครงการ`;
+            
+            const editQuotingFields = document.getElementById("edit-quoting-fields-section");
+            if (editQuotingFields) editQuotingFields.style.display = "none";
         }
 
         document.getElementById("edit-project-code").value = code;
@@ -12801,11 +12954,13 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     if (editProjectForm) {
-        editProjectForm.addEventListener("submit", function(e) {
+        editProjectForm.addEventListener("submit", async function(e) {
             e.preventDefault();
             const code = document.getElementById("edit-project-code").value;
             const proj = projectsData[code];
             if (!proj) return;
+
+            const isQuoting = (appState.currentView === "quoting-projects-list") || (proj.status === "งานที่กำลังเสนอราคา");
 
             // Convert YYYY-MM-DD → DD/MM/YYYY
             const toThai = (str) => {
@@ -12839,6 +12994,27 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             if (document.getElementById("edit-project-boq")) {
                 proj.boq = document.getElementById("edit-project-boq").value.trim();
+            }
+
+            // Save Quoting fields
+            if (isQuoting) {
+                const siteVisitEl = document.getElementById("edit-quoting-site-visit-date");
+                if (siteVisitEl) proj.siteVisitDate = siteVisitEl.value;
+
+                const comp1El = document.getElementById("edit-quoting-comparison-1");
+                if (comp1El) proj.comparison1 = comp1El.value.trim();
+
+                const comp2El = document.getElementById("edit-quoting-comparison-2");
+                if (comp2El) proj.comparison2 = comp2El.value.trim();
+
+                const boqFileEl = document.getElementById("edit-quoting-boq-file");
+                if (boqFileEl && boqFileEl.files && boqFileEl.files.length > 0) {
+                    const file = boqFileEl.files[0];
+                    proj.boqFileName = file.name;
+                    showToast("กำลังเข้ารหัสไฟล์ BOQ...", "info");
+                    const base64Res = await readFileAsBase64(file);
+                    proj.boqFileBase64 = base64Res.dataUrl;
+                }
             }
 
             // Save and sync immediately
