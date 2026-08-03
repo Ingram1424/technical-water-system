@@ -4057,60 +4057,71 @@ body.public-view-mode #public-view-header {
                                     </div>
                                 </div>
 
-                                <!-- Project-level KPI Summary -->
-                                <div class="mini-kpi-grid" style="grid-template-columns: repeat(3, 1fr);">
-                                    <div class="mini-kpi-card blue">
-                                        <div class="mini-icon"><i class="fa-solid fa-circle-play"></i></div>
-                                        <div class="mini-lbl-val">
-                                            <span class="lbl">งานที่กำลังดำเนินการ</span>
-                                            <h3 class="val" id="detail-inprogress-jobs">0</h3>
-                                        </div>
-                                        <span class="unit">รายการ</span>
+                                <!-- Project Info Card -->
+                                <div class="project-info-card" style="background: var(--bg-white); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 20px; box-shadow: var(--shadow-sm);">
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--border-color);">
+                                        <i class="fa-solid fa-clipboard-list" style="font-size: 16px; color: var(--primary-blue);"></i>
+                                        <h4 style="margin: 0; font-size: 14px; font-weight: 700; color: var(--navy-dark);">ข้อมูลโครงการ</h4>
                                     </div>
-                                    <div class="mini-kpi-card teal">
-                                        <div class="mini-icon"><i class="fa-solid fa-circle-check"></i></div>
-                                        <div class="mini-lbl-val">
-                                            <span class="lbl">งานเสร็จแล้วรอส่งงาน</span>
-                                            <h3 class="val" id="detail-completed-jobs">0</h3>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                                        <!-- Row 1: รหัสโครงการ + ปีโครงการ -->
+                                        <div style="display: flex; align-items: center; gap: 10px; background: var(--bg-light); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                                            <i class="fa-solid fa-hashtag" style="font-size: 14px; color: var(--primary-blue); width: 18px; text-align: center;"></i>
+                                            <div>
+                                                <div style="font-size: 10.5px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;">รหัสโครงการ</div>
+                                                <div id="detail-info-code" style="font-size: 14px; font-weight: 700; color: var(--navy-dark); margin-top: 2px;">-</div>
+                                            </div>
                                         </div>
-                                        <span class="unit">รายการ</span>
-                                    </div>
-                                    <div class="mini-kpi-card orange">
-                                        <div class="mini-icon"><i class="fa-solid fa-circle-check"></i></div>
-                                        <div class="mini-lbl-val">
-                                            <span class="lbl">งานอนุมัติ</span>
-                                            <h3 class="val" id="detail-delayed-jobs">0</h3>
+                                        <div style="display: flex; align-items: center; gap: 10px; background: var(--bg-light); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                                            <i class="fa-solid fa-calendar-days" style="font-size: 14px; color: #0d9488; width: 18px; text-align: center;"></i>
+                                            <div>
+                                                <div style="font-size: 10.5px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;">ปีโครงการ</div>
+                                                <div id="detail-info-year" style="font-size: 14px; font-weight: 700; color: var(--navy-dark); margin-top: 2px;">-</div>
+                                            </div>
                                         </div>
-                                        <span class="unit">รายการ</span>
+                                        <!-- Row 2: ชื่องาน (full width) -->
+                                        <div style="grid-column: 1 / -1; display: flex; align-items: flex-start; gap: 10px; background: var(--bg-light); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                                            <i class="fa-solid fa-file-lines" style="font-size: 14px; color: #6366f1; width: 18px; text-align: center; margin-top: 2px;"></i>
+                                            <div>
+                                                <div style="font-size: 10.5px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;">ชื่องาน</div>
+                                                <div id="detail-info-name" style="font-size: 14px; font-weight: 700; color: var(--navy-dark); margin-top: 2px; line-height: 1.5;">-</div>
+                                            </div>
+                                        </div>
+                                        <!-- Row 3: โรงพยาบาล + ผู้รับผิดชอบ -->
+                                        <div style="display: flex; align-items: center; gap: 10px; background: var(--bg-light); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                                            <i class="fa-solid fa-hospital" style="font-size: 14px; color: #e11d48; width: 18px; text-align: center;"></i>
+                                            <div>
+                                                <div style="font-size: 10.5px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;">ชื่อโรงพยาบาล</div>
+                                                <div id="detail-info-hospital" style="font-size: 14px; font-weight: 700; color: var(--navy-dark); margin-top: 2px;">-</div>
+                                            </div>
+                                        </div>
+                                        <div style="display: flex; align-items: center; gap: 10px; background: var(--bg-light); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                                            <i class="fa-solid fa-user-tie" style="font-size: 14px; color: #f59e0b; width: 18px; text-align: center;"></i>
+                                            <div>
+                                                <div style="font-size: 10.5px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;">ผู้รับผิดชอบโครงการ</div>
+                                                <div id="detail-info-manager" style="font-size: 14px; font-weight: 700; color: var(--navy-dark); margin-top: 2px;">-</div>
+                                            </div>
+                                        </div>
+                                        <!-- Row 4: ความคืบหน้า (full width with progress bar) -->
+                                        <div style="grid-column: 1 / -1; background: var(--bg-light); padding: 14px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                                                <div style="display: flex; align-items: center; gap: 8px;">
+                                                    <i class="fa-solid fa-chart-line" style="font-size: 14px; color: #10b981;"></i>
+                                                    <span style="font-size: 10.5px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;">ความคืบหน้า (Actual Progress)</span>
+                                                </div>
+                                                <span id="detail-info-progress-text" style="font-size: 18px; font-weight: 800; color: #10b981;">0%</span>
+                                            </div>
+                                            <div style="width: 100%; height: 10px; background: #e2e8f0; border-radius: 5px; overflow: hidden;">
+                                                <div id="detail-info-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, #10b981, #059669); border-radius: 5px; transition: width 0.5s ease;"></div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                
+
                                 <!-- Project charts -->
                                 <div class="project-charts-row">
                                     <div class="chart-container-card">
-                                        <h4 class="chart-title">ความก้าวหน้าโครงการ</h4>
-                                        <div class="progress-section">
-                                            <div class="progress-item-group">
-                                                <div class="progress-text-label">
-                                                    <span>แผนงาน (Planned)</span>
-                                                    <span class="progress-val-text" id="detail-prog-planned-text">0%</span>
-                                                </div>
-                                                <div class="progress-bar-bg">
-                                                    <div class="progress-bar-fill blue-fill" id="detail-prog-planned-bar" style="width: 0%"></div>
-                                                </div>
-                                            </div>
-                                            <div class="progress-item-group">
-                                                <div class="progress-text-label">
-                                                    <span>ผลงานจริง (Actual)</span>
-                                                    <span class="progress-val-text" id="detail-prog-actual-text">0%</span>
-                                                </div>
-                                                <div class="progress-bar-bg">
-                                                    <div class="progress-bar-fill green-fill" id="detail-prog-actual-bar" style="width: 0%"></div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <h4 class="chart-title mt-4">สรุปค่าใช้จ่ายโครงการ</h4>
+                                        <h4 class="chart-title">สรุปค่าใช้จ่ายโครงการ</h4>
                                         <div class="financial-summary-widget hide-customer">
                                             <div class="fin-row">
                                                 <div class="fin-box">
@@ -4771,9 +4782,9 @@ body.public-view-mode #public-view-header {
                             <option value="โรงพยาบาลเปาโล โชคชัย 4">โรงพยาบาลเปาโล โชคชัย 4</option>
                         </select>
                     </div>
-                    <div class="form-group mt-3" id="create-proj-progress-group">
-                        <label class="form-label" for="new-project-progress">ความคืบหน้า (%) <span class="required">*</span></label>
-                        <input type="number" id="new-project-progress" class="form-control" min="0" max="100" step="any" placeholder="0 - 100" value="0">
+                    <div class="form-group mt-3" id="create-proj-manager-group">
+                        <label class="form-label" for="new-project-manager">ผู้รับผิดชอบโครงการ <span class="required">*</span></label>
+                        <input type="text" id="new-project-manager" class="form-control" placeholder="เช่น วิศวกรโครงการอาวุโส (PM Team)" required>
                     </div>
                     <div class="form-row-2 mt-3" id="create-proj-val-cost-row">
                         <div class="form-group">
@@ -5017,6 +5028,10 @@ body.public-view-mode #public-view-header {
                             <option value="โรงพยาบาลเปาโล โชคชัย 4">โรงพยาบาลเปาโล โชคชัย 4</option>
                         </select>
                     </div>
+                    <div class="form-group mt-3" id="edit-proj-manager-group">
+                        <label class="form-label" for="edit-project-manager">ผู้รับผิดชอบโครงการ <span class="required">*</span></label>
+                        <input type="text" id="edit-project-manager" class="form-control" required>
+                    </div>
                     <div class="form-row-2 mt-3" id="edit-proj-val-cost-row">
                         <div class="form-group">
                             <label class="form-label" for="edit-project-value">มูลค่าสัญญา (บาท)</label>
@@ -5047,8 +5062,8 @@ body.public-view-mode #public-view-header {
                             <input type="number" id="edit-project-planned" class="form-control" min="0" max="100" step="any">
                         </div>
                         <div class="form-group" id="edit-proj-progress-group">
-                            <label class="form-label" for="edit-project-progress">ความคืบหน้า (%)</label>
-                            <input type="number" id="edit-project-progress" class="form-control" min="0" max="100" step="any">
+                            <label class="form-label" for="edit-project-progress">ความคืบหน้า (%) (คำนวณอัตโนมัติ)</label>
+                            <input type="number" id="edit-project-progress" class="form-control" min="0" max="100" step="any" disabled style="background: var(--bg-light); color: var(--text-muted);">
                         </div>
                     </div>
                     <div class="form-group mt-3">
@@ -7214,16 +7229,24 @@ function renderSubnavGeneralInfo(project) {
     }
     renderQuotingStorageView(project);
 
-    // Mini KPIs
-    document.getElementById("detail-inprogress-jobs").textContent = project.jobs.inprogress;
-    document.getElementById("detail-completed-jobs").textContent = project.jobs.completed;
-    document.getElementById("detail-delayed-jobs").textContent = project.jobs.delayed;
+    // Project Info Card
+    const codeEl = document.getElementById("detail-info-code");
+    const yearEl = document.getElementById("detail-info-year");
+    const nameEl = document.getElementById("detail-info-name");
+    const hospitalEl = document.getElementById("detail-info-hospital");
+    const managerEl = document.getElementById("detail-info-manager");
+    const progressTextEl = document.getElementById("detail-info-progress-text");
+    const progressBarEl = document.getElementById("detail-info-progress-bar");
+
+    if (codeEl) codeEl.textContent = project.code || "-";
+    if (yearEl) yearEl.textContent = project.year ? `${project.year + 543} (ค.ศ. ${project.year})` : "-";
+    if (nameEl) nameEl.textContent = project.name || "-";
+    if (hospitalEl) hospitalEl.textContent = project.customer || "-";
+    if (managerEl) managerEl.textContent = project.manager || "-";
     
-    // Progress Bars
-    document.getElementById("detail-prog-planned-text").textContent = `${project.plannedProgress}%`;
-    document.getElementById("detail-prog-planned-bar").style.width = `${project.plannedProgress}%`;
-    document.getElementById("detail-prog-actual-text").textContent = `${project.progress}%`;
-    document.getElementById("detail-prog-actual-bar").style.width = `${project.progress}%`;
+    const actualProgress = project.progress || 0;
+    if (progressTextEl) progressTextEl.textContent = `${actualProgress}%`;
+    if (progressBarEl) progressBarEl.style.width = `${actualProgress}%`;
     
     // Financial cards
     document.getElementById("detail-fin-cost").textContent = formatNumber(project.cost);
@@ -10702,8 +10725,8 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("new-project-name").value = "";
             document.getElementById("new-project-value").value = "";
             document.getElementById("new-project-cost").value = "";
-            const progressEl = document.getElementById("new-project-progress");
-            if (progressEl) progressEl.value = "0";
+            const managerEl = document.getElementById("new-project-manager");
+            if (managerEl) managerEl.value = "";
         }
         createProjectModal.classList.add("active");
     };
@@ -11288,7 +11311,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const name = document.getElementById("new-project-name").value.trim();
             const year = document.getElementById("new-project-year").value || "2026";
             const hospital = document.getElementById("new-project-hospital").value;
-            const progress = parseFloat(document.getElementById("new-project-progress").value) || 0;
+            const managerVal = document.getElementById("new-project-manager") ? document.getElementById("new-project-manager").value.trim() : "วิศวกรโครงการอาวุโส (PM Team)";
             const value = parseFloat(document.getElementById("new-project-value").value) || 0;
             const cost = parseFloat(document.getElementById("new-project-cost").value) || 0;
             const owner = document.getElementById("new-project-owner") ? document.getElementById("new-project-owner").value.trim() : "";
@@ -11308,7 +11331,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 customer: hospital,
                 name: name,
                 description: `${name} ของสาขา ${hospital} ประจำปีงบประมาณ ${year}`,
-                manager: "วิศวกรโครงการอาวุโส (PM Team)",
+                manager: managerVal || "วิศวกรโครงการอาวุโส (PM Team)",
                 owner: owner || "วิศวกรโครงการอาวุโส (PM Team)",
                 boq: boq,
                 start: `01/01/${year}`,
@@ -11316,7 +11339,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 value: value,
                 cost: cost,
                 profit: value - cost,
-                progress: progress,
+                progress: 0,
                 plannedProgress: 10,
                 status: initialStatus,
                 jobs: { total: 10, inprogress: 10, completed: 0, delayed: 0 },
@@ -12744,6 +12767,9 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("edit-project-progress").value = proj.progress || 0;
         document.getElementById("edit-project-status").value = proj.status || "งานที่กำลังดำเนินการ";
         document.getElementById("edit-project-desc").value = proj.description || "";
+        if (document.getElementById("edit-project-manager")) {
+            document.getElementById("edit-project-manager").value = proj.manager || "";
+        }
         if (document.getElementById("edit-project-owner")) {
             document.getElementById("edit-project-owner").value = proj.owner || "";
         }
@@ -12796,6 +12822,9 @@ document.addEventListener("DOMContentLoaded", () => {
             proj.progress = parseFloat(document.getElementById("edit-project-progress").value) || 0;
             proj.status = document.getElementById("edit-project-status").value;
             proj.description = document.getElementById("edit-project-desc").value.trim();
+            if (document.getElementById("edit-project-manager")) {
+                proj.manager = document.getElementById("edit-project-manager").value.trim();
+            }
             if (document.getElementById("edit-project-owner")) {
                 proj.owner = document.getElementById("edit-project-owner").value.trim();
             }
