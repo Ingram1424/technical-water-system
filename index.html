@@ -1872,6 +1872,7 @@ select.form-control {
     justify-content: space-between;
     align-items: center;
     border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
 }
 
 .modal-title {
@@ -1902,6 +1903,16 @@ select.form-control {
     flex-direction: column;
     gap: 12px;
     overflow-y: auto;
+    flex-grow: 1;
+    min-height: 0;
+}
+
+.modal-card form {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    overflow: hidden;
+    margin: 0;
 }
 
 .form-group {
@@ -1939,6 +1950,7 @@ select.form-control {
     display: flex;
     justify-content: flex-end;
     gap: 10px;
+    flex-shrink: 0;
 }
 
 /* ----------------------------------------------------
