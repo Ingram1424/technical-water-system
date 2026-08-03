@@ -3142,8 +3142,8 @@ body.public-view-mode #public-view-header {
                     </div>
 
                     <!-- Back to Project selection portal button -->
-                    <div id="sidebar-back-to-portal-wrapper" style="padding: 10px 16px; border-bottom: 1px solid var(--border-color); display: none;">
-                        <button class="btn btn-sm btn-outline btn-block" id="btn-back-to-portal" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 11.5px; padding: 8px; height: auto; border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,0.2); color: #fff; cursor: pointer; background: rgba(255,255,255,0.1);">
+                    <div id="sidebar-back-to-portal-wrapper" style="padding: 4px 10px; margin-bottom: 12px; display: none;">
+                        <button class="btn btn-sm btn-block" id="btn-back-to-portal" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 11.5px; padding: 6px 12px; height: 34px; border-radius: 6px; border: 1px solid #cbd5e1; color: #334155; cursor: pointer; background: #f1f5f9; font-weight: 600; font-family: inherit;">
                             <i class="fa-solid fa-arrow-left"></i> ย้อนกลับหน้าเลือกโครงการ
                         </button>
                     </div>
@@ -3949,27 +3949,25 @@ body.public-view-mode #public-view-header {
                         </button>
                     </div>
                     
-                    <!-- Filters Grid (Full Width & Larger UI Elements) -->
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; padding: 24px; background: #ffffff; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm);">
-                        <div>
-                            <label style="font-size: 12.5px; font-weight: 700; color: var(--navy-dark); display: block; margin-bottom: 8px;">ปีโครงการ :</label>
-                            <select id="portal-year-filter" class="form-control" style="font-size: 13.5px; padding: 10px 12px; height: auto; border-radius: var(--radius-md); border: 1px solid var(--border-color); width: 100%;">
-                                <option value="all">ทั้งหมดทุกปี</option>
+                    <!-- Search Input (Full Width & Sleek) -->
+                    <div style="display: flex; flex-direction: column; gap: 16px; padding: 20px; background: #ffffff; border-radius: 12px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); width: 100%;">
+                        <!-- Hidden selectors so JS doesn't break -->
+                        <div style="display: none;">
+                            <select id="portal-year-filter">
+                                <option value="all" selected>ทั้งหมดทุกปี</option>
                                 <option value="2024">ปี 2024</option>
                                 <option value="2025">ปี 2025</option>
                                 <option value="2026">ปี 2026</option>
                             </select>
-                        </div>
-                        <div>
-                            <label style="font-size: 12.5px; font-weight: 700; color: var(--navy-dark); display: block; margin-bottom: 8px;">เลือกโรงพยาบาล :</label>
-                            <select id="portal-hospital-selector" class="form-control" style="font-size: 13.5px; padding: 10px 12px; height: auto; border-radius: var(--radius-md); border: 1px solid var(--border-color); width: 100%;">
-                                <!-- Populated dynamically -->
+                            <select id="portal-hospital-selector">
+                                <option value="all" selected>ทั้งหมดทุกโรงพยาบาล</option>
                             </select>
                         </div>
-                        <div>
-                            <label style="font-size: 12.5px; font-weight: 700; color: var(--navy-dark); display: block; margin-bottom: 8px;">พิมพ์ค้นหาโครงการ :</label>
-                            <div style="position: relative;">
-                                <input type="text" id="portal-project-search" class="form-control" placeholder="ค้นหาด้วยรหัสโครงการ หรือ ชื่อโครงการ..." style="font-size: 13.5px; padding: 10px 38px 10px 14px; height: auto; border-radius: var(--radius-md); border: 1px solid var(--border-color); width: 100%;">
+                        
+                        <div style="position: relative; width: 100%;">
+                            <label style="font-size: 13px; font-weight: 700; color: var(--navy-dark); display: block; margin-bottom: 8px;">พิมพ์ค้นหาโครงการ :</label>
+                            <div style="position: relative; width: 100%;">
+                                <input type="text" id="portal-project-search" class="form-control" placeholder="ค้นหาด้วยรหัสโครงการ, ชื่องาน, ชื่อโรงพยาบาล หรือปีโครงการ..." style="font-size: 13.5px; padding: 10px 42px 10px 14px; height: auto; border-radius: var(--radius-md); border: 1px solid var(--border-color); width: 100%;" autocomplete="off">
                                 <i class="fa-solid fa-magnifying-glass" style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 14px;"></i>
                             </div>
                         </div>
@@ -4000,32 +3998,42 @@ body.public-view-mode #public-view-header {
                         <div id="subtab-general-info-view" class="subtab-panel active">
                             <!-- Standard Project View Container -->
                             <div id="standard-project-info-container">
-                                <!-- Project Actions Panel (Larger buttons inside content tab instead of sidebar) -->
-                                <div class="project-actions-panel" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px;">
+                                <!-- Project Actions Row (Compact, balanced and elegant) -->
+                                <div class="project-actions-panel" style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 20px; background: #f8fafc; border: 1px solid var(--border-color); padding: 12px; border-radius: 8px;">
                                     <!-- Status Selector Box -->
-                                    <div class="action-card hide-customer" style="background: #f8fafc; border: 1px solid var(--border-color); padding: 12px 16px; border-radius: 8px; display: flex; flex-direction: column; justify-content: center; gap: 4px; box-shadow: var(--shadow-sm);">
-                                        <div style="font-size: 11px; font-weight: 700; color: var(--navy-dark); display: flex; justify-content: space-between; align-items: center;">
-                                            <span>สถานะโครงการ:</span>
-                                            <span id="subnav-status-badge-inline" style="font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; background: #dcfce7; color: #15803d;">กำลังดำเนินการ</span>
-                                        </div>
-                                        <select id="subnav-project-status-selector-inline" class="form-control" style="font-size: 12.5px; padding: 6px 8px; height: auto; font-weight: 600; background-color: #ffffff; border: 1px solid var(--border-color); margin-top: 4px; border-radius: 4px;">
+                                    <div class="action-card hide-customer" style="display: flex; align-items: center; gap: 8px;">
+                                        <span style="font-size: 12px; font-weight: 700; color: var(--navy-dark); white-space: nowrap;">สถานะโครงการ:</span>
+                                        <select id="subnav-project-status-selector-inline" class="form-control" style="font-size: 12px; padding: 6px 12px; height: 36px; font-weight: 600; background-color: #ffffff; border: 1px solid var(--border-color); border-radius: 6px; width: 180px;">
                                             <option value="งานที่กำลังดำเนินการ">🟢 งานที่กำลังดำเนินการ</option>
                                             <option value="งานเสร็จแล้วรอส่งงาน">🔵 งานเสร็จแล้วรอส่งงาน</option>
                                             <option value="งานรออนุมัติ">🟠 งานรออนุมัติ</option>
                                         </select>
                                     </div>
-                                    <!-- Edit Button -->
-                                    <button class="btn btn-outline hide-accounting hide-customer" id="open-edit-project-btn-inline" style="height: 100%; min-height: 56px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 12.5px; font-weight: 600; border-radius: 8px; background: #ffffff; border: 1px solid var(--border-color); color: var(--navy-dark); cursor: pointer; box-shadow: var(--shadow-sm);">
-                                        <i class="fa-solid fa-pen-to-square" style="color: var(--primary-blue); font-size: 14px;"></i> แก้ไข/ลบโครงการนี้
-                                    </button>
-                                    <!-- Share Link Button -->
-                                    <button class="btn hide-accounting hide-customer" id="copy-share-link-btn-inline" style="height: 100%; min-height: 56px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 12.5px; font-weight: 600; border-radius: 8px; background: linear-gradient(135deg, #0d9488, #0891b2); color: #fff; border: none; cursor: pointer; box-shadow: var(--shadow-sm);">
-                                        <i class="fa-solid fa-share-nodes" style="font-size: 14px;"></i> คัดลอกลิงก์แชร์โครงการ
-                                    </button>
-                                    <!-- Export PDF Button -->
-                                    <button class="btn" id="export-project-pdf-btn-inline" style="height: 100%; min-height: 56px; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 12.5px; font-weight: 600; border-radius: 8px; background: linear-gradient(135deg, #dc2626, #b91c1c); color: #fff; border: none; cursor: pointer; box-shadow: var(--shadow-sm);">
-                                        <i class="fa-solid fa-file-pdf" style="font-size: 14px;"></i> ส่งออก PDF รายงานโครงการ
-                                    </button>
+                                    
+                                    <!-- Status Badge for customer role -->
+                                    <div class="show-customer" style="display: none; align-items: center; gap: 8px;">
+                                        <span style="font-size: 12px; font-weight: 700; color: var(--navy-dark);">สถานะโครงการ:</span>
+                                        <span id="subnav-status-badge-inline" style="font-size: 12px; font-weight: 700; padding: 4px 10px; border-radius: 6px; background: #dcfce7; color: #15803d;">กำลังดำเนินการ</span>
+                                    </div>
+
+                                    <!-- Spacer to push actions to the right if space allows -->
+                                    <div style="flex-grow: 1;"></div>
+
+                                    <!-- Action Buttons Group -->
+                                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                        <!-- Edit Button -->
+                                        <button class="btn btn-outline btn-sm hide-accounting hide-customer" id="open-edit-project-btn-inline" style="height: 36px; padding: 0 14px; display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; border-radius: 6px; background: #ffffff; border: 1px solid var(--border-color); color: var(--navy-dark); cursor: pointer; transition: background 0.2s;">
+                                            <i class="fa-solid fa-pen-to-square" style="color: var(--primary-blue); font-size: 13px;"></i> แก้ไข/ลบโครงการ
+                                        </button>
+                                        <!-- Share Link Button -->
+                                        <button class="btn btn-sm hide-accounting hide-customer" id="copy-share-link-btn-inline" style="height: 36px; padding: 0 14px; display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; border-radius: 6px; background: linear-gradient(135deg, #0d9488, #0891b2); color: #fff; border: none; cursor: pointer; transition: opacity 0.2s;">
+                                            <i class="fa-solid fa-share-nodes" style="font-size: 13px;"></i> คัดลอกลิงก์แชร์
+                                        </button>
+                                        <!-- Export PDF Button -->
+                                        <button class="btn btn-sm" id="export-project-pdf-btn-inline" style="height: 36px; padding: 0 14px; display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; border-radius: 6px; background: linear-gradient(135deg, #dc2626, #b91c1c); color: #fff; border: none; cursor: pointer; transition: opacity 0.2s;">
+                                            <i class="fa-solid fa-file-pdf" style="font-size: 13px;"></i> ส่งออก PDF รายงาน
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <!-- Project-level KPI Summary -->
@@ -5257,11 +5265,16 @@ function updateCloudSyncStatus(status) {
 let isSyncing = false;
 const syncQueue = [];
 
-// Warn user if they try to close/refresh tab during sync
+// Warn user if they try to close/refresh tab during sync or with unsaved Gantt changes
 window.addEventListener('beforeunload', (e) => {
     if (isSyncing || syncQueue.length > 0) {
         e.preventDefault();
         e.returnValue = 'ระบบกำลังบันทึกข้อมูลล่าสุดขึ้นคลาวด์ กรุณารอสักครู่ก่อนออกจากหน้าเว็บ';
+        return e.returnValue;
+    }
+    if (window.ganttIsDirty) {
+        e.preventDefault();
+        e.returnValue = 'คุณมีข้อมูลแผนงาน (Plan Work) ที่ยังไม่ได้บันทึก หากออกจากหน้าเว็บข้อมูลล่าสุดจะสูญหาย';
         return e.returnValue;
     }
 });
@@ -5849,12 +5862,15 @@ function populateCostProjects() {
     }
 }
 
+// --- GANTT DIRTY TRACKER ---
+window.ganttIsDirty = false;
+
 // --- APP STATE ---
 const appState = {
     currentView: "dashboard",
     currentRole: "pm", // pm, accounting, customer
     selectedProjectFilter: "all", // all or specific PRJ code
-    selectedDetailProject: sessionStorage.getItem("technical_water_last_detail_project") || Object.keys(projectsData)[0] || "",
+    selectedDetailProject: "all",
     selectedCostProject: sessionStorage.getItem("technical_water_last_cost_project") || Object.keys(projectsData)[0] || "",
     selectedDocFilter: "all",
     activeProjectTab: "general-info",
@@ -6718,27 +6734,30 @@ function renderSubnavProjectWorkspace() {
     const sidebarSelectorWrapper = document.getElementById("sidebar-project-selector-wrapper");
     const sidebarBackWrapper = document.getElementById("sidebar-back-to-portal-wrapper");
 
+    // Toggle main navigation links visibility based on active workspace mode
+    const mainNavItems = document.querySelectorAll(".sidebar-nav > a.nav-item");
+
     // Toggle Portal vs Workspace display
     if (activeCode === "all" && !showCumulative) {
         if (portal) portal.style.display = "flex";
         if (workspace) workspace.style.display = "none";
         
-        if (sidebarSubnav) sidebarSubnav.style.display = "block";
-        if (sidebarSelectorWrapper) sidebarSelectorWrapper.style.display = "none";
-        if (sidebarBackWrapper) sidebarBackWrapper.style.display = "none";
+        // Hide nested project details, show main navigation links
+        if (sidebarSubnav) sidebarSubnav.style.display = "none";
+        mainNavItems.forEach(item => item.style.display = "");
         
-        const tabsNav = document.querySelector(".subnav-tabs");
-        if (tabsNav) tabsNav.style.display = "none";
-
         renderProjectSelectionPortal();
         return;
     } else {
         if (portal) portal.style.display = "none";
         if (workspace) workspace.style.display = "block";
 
+        // Show nested project details, hide main navigation links
         if (sidebarSubnav) sidebarSubnav.style.display = "block";
         if (sidebarSelectorWrapper) sidebarSelectorWrapper.style.display = "none";
         if (sidebarBackWrapper) sidebarBackWrapper.style.display = "block";
+        
+        mainNavItems.forEach(item => item.style.display = "none");
         
         const tabsNav = document.querySelector(".subnav-tabs");
         if (tabsNav) tabsNav.style.display = "flex";
@@ -8025,22 +8044,22 @@ function renderSubnavPlanWork(project) {
     if (docDateInput) {
         docDateInput.value = project.ganttData.header.date || "";
         docDateInput.disabled = !canEdit;
-        docDateInput.oninput = function() { project.ganttData.header.date = this.value.trim(); };
+        docDateInput.oninput = function() { project.ganttData.header.date = this.value.trim(); window.ganttIsDirty = true; };
     }
     if (docSubjectInput) {
         docSubjectInput.value = project.ganttData.header.subject || "";
         docSubjectInput.disabled = !canEdit;
-        docSubjectInput.oninput = function() { project.ganttData.header.subject = this.value.trim(); };
+        docSubjectInput.oninput = function() { project.ganttData.header.subject = this.value.trim(); window.ganttIsDirty = true; };
     }
     if (docToInput) {
         docToInput.value = project.ganttData.header.to || "";
         docToInput.disabled = !canEdit;
-        docToInput.oninput = function() { project.ganttData.header.to = this.value.trim(); };
+        docToInput.oninput = function() { project.ganttData.header.to = this.value.trim(); window.ganttIsDirty = true; };
     }
     if (docRefInput) {
         docRefInput.value = project.ganttData.header.refPo || "";
         docRefInput.disabled = !canEdit;
-        docRefInput.oninput = function() { project.ganttData.header.refPo = this.value.trim(); };
+        docRefInput.oninput = function() { project.ganttData.header.refPo = this.value.trim(); window.ganttIsDirty = true; };
     }
 
     // Calculate dates array
@@ -8221,6 +8240,7 @@ function renderSubnavPlanWork(project) {
                         const task = project.ganttData.tasks[rIdx];
                         if (task) {
                             task.isSubtask = this.checked;
+                            window.ganttIsDirty = true;
                             renderSubnavPlanWork(project);
                         }
                     });
@@ -8232,6 +8252,7 @@ function renderSubnavPlanWork(project) {
                         const rIdx = parseInt(this.getAttribute("data-idx"));
                         if (confirm("คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?")) {
                             project.ganttData.tasks.splice(rIdx, 1);
+                            window.ganttIsDirty = true;
                             renderSubnavPlanWork(project);
                         }
                     });
@@ -8247,6 +8268,8 @@ function renderSubnavPlanWork(project) {
                         const task = project.ganttData.tasks[rIdx];
                         if (!task) return;
                         if (!task.cells) task.cells = {};
+
+                        window.ganttIsDirty = true; // Mark dirty on color click/drag
 
                         if (currentGanttBrush === 'plan') {
                             task.cells[dStr] = 1;
@@ -8291,6 +8314,8 @@ function renderSubnavPlanWork(project) {
             const idx = parseInt(e.target.getAttribute("data-idx"));
             const task = project.ganttData.tasks[idx];
             if (!task) return;
+
+            window.ganttIsDirty = true; // Mark dirty on typing name/number
 
             if (e.target.classList.contains("gantt-item-num")) {
                 task.itemNum = e.target.value.trim();
@@ -9420,9 +9445,13 @@ document.addEventListener("DOMContentLoaded", () => {
             
             let searchMatch = true;
             if (searchText) {
+                const yearTh = (p.year + 543).toString();
+                const yearEn = p.year.toString();
                 searchMatch = p.code.toLowerCase().includes(searchText) || 
                               p.name.toLowerCase().includes(searchText) || 
-                              p.customer.toLowerCase().includes(searchText);
+                              p.customer.toLowerCase().includes(searchText) ||
+                              yearTh.includes(searchText) ||
+                              yearEn.includes(searchText);
             }
             return hospitalMatch && yearMatch && quotingMatch && searchMatch;
         });
@@ -9589,6 +9618,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnBackToPortal = document.getElementById("btn-back-to-portal");
     if (btnBackToPortal) {
         btnBackToPortal.addEventListener("click", function() {
+            if (window.ganttIsDirty) {
+                if (!confirm("⚠️ คุณมีข้อมูลแผนงาน (Plan Work) ที่ยังไม่ได้บันทึก!\nหากกดย้อนกลับ ข้อมูลล่าสุดที่คุณแก้ไขจะสูญหาย\n\nคุณต้องการย้อนกลับโดยไม่บันทึกใช่หรือไม่?")) {
+                    return;
+                }
+                window.ganttIsDirty = false;
+            }
+
             appState.showCumulativeOverview = false;
             appState.selectedDetailProject = "all";
             sessionStorage.setItem("technical_water_last_detail_project", "all");
@@ -10753,6 +10789,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 itemNum: "",
                 name: ""
             });
+            window.ganttIsDirty = true;
             renderSubnavPlanWork(proj);
             showToast("เพิ่ม Phase เรียบร้อย", "info");
         });
@@ -10768,6 +10805,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 itemNum: "",
                 name: ""
             });
+            window.ganttIsDirty = true;
             renderSubnavPlanWork(proj);
             showToast("เพิ่มประเภทงานเรียบร้อย", "info");
         });
@@ -10783,6 +10821,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 itemNum: "",
                 name: ""
             });
+            window.ganttIsDirty = true;
             renderSubnavPlanWork(proj);
             showToast("เพิ่มหมวดงานเรียบร้อย", "info");
         });
@@ -10800,6 +10839,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 name: "",
                 cells: {}
             });
+            window.ganttIsDirty = true;
             renderSubnavPlanWork(proj);
             showToast("เพิ่มงานย่อยเรียบร้อย", "info");
         });
@@ -10826,6 +10866,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const proj = getActiveProj();
             if (proj) {
                 proj.ganttData.startDate = this.value;
+                window.ganttIsDirty = true;
                 renderSubnavPlanWork(proj);
             }
         });
@@ -10836,6 +10877,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const proj = getActiveProj();
             if (proj) {
                 proj.ganttData.endDate = this.value;
+                window.ganttIsDirty = true;
                 renderSubnavPlanWork(proj);
             }
         });
@@ -10858,6 +10900,7 @@ document.addEventListener("DOMContentLoaded", () => {
             proj.ganttData.header.to = docToVal;
             proj.ganttData.header.refPo = docRefVal;
 
+            window.ganttIsDirty = false; // Reset dirty tracker on save
             saveToLocalStorage();
             renderSubnavPlanWork(proj);
             showToast("บันทึกแผนการดำเนินงาน (Gantt Chart) เรียบร้อยแล้ว!", "success");
