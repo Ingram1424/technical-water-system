@@ -4531,6 +4531,7 @@ body.public-view-mode #public-view-header {
                                                     <th>รายการค่าใช้จ่าย</th>
                                                     <th>ประเภท</th>
                                                     <th class="text-right">จำนวนเงิน</th>
+                                                    <th class="text-center hide-accounting" style="width: 130px;">จัดการ</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="subtab-expenses-table-body">
@@ -8070,19 +8071,57 @@ function renderSubnavCostTab(project) {
     const tableBody = document.getElementById("subtab-expenses-table-body");
     if (tableBody) {
         tableBody.innerHTML = "";
+        const isPM = appState.currentRole === "pm";
+        const colCount = isPM ? 5 : 4;
         if (!project.expenses || project.expenses.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-4">ไม่มีข้อมูลธุรกรรมรายจ่าย</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="${colCount}" class="text-center text-muted py-4">ไม่มีข้อมูลธุรกรรมรายจ่าย</td></tr>`;
             return;
         }
-        project.expenses.forEach(e => {
+        project.expenses.forEach((e, idx) => {
             const tr = document.createElement("tr");
+            
+            const actionsHTML = `
+                <td class="text-center hide-accounting">
+                    <div style="display: flex; gap: 6px; justify-content: center; align-items: center;">
+                        <button class="btn btn-xs btn-outline-blue btn-edit-expense" 
+                            data-idx="${idx}"
+                            style="font-size: 10.5px; padding: 3px 8px; display: flex; align-items: center; gap: 4px; background: none; border: 1px solid #1d4ed8; color: #1d4ed8; border-radius: 4px; cursor: pointer;">
+                            <i class="fa-solid fa-pen"></i> แก้ไข
+                        </button>
+                        <button class="btn btn-xs btn-outline-red btn-delete-expense" 
+                            data-idx="${idx}"
+                            style="font-size: 10.5px; padding: 3px 8px; display: flex; align-items: center; gap: 4px; background: none; border: 1px solid #ef4444; color: #ef4444; border-radius: 4px; cursor: pointer;">
+                            <i class="fa-solid fa-trash-can"></i> ลบ
+                        </button>
+                    </div>
+                </td>
+            `;
+
             tr.innerHTML = `
                 <td>${e.date}</td>
                 <td><strong>${e.title}</strong></td>
                 <td><span class="badge-status ${e.type === "ค่าแรง" ? "success" : "warning"}">${e.type}</span></td>
                 <td class="text-right text-navy font-semibold">${formatNumber(e.amount)} บาท</td>
+                ${actionsHTML}
             `;
             tableBody.appendChild(tr);
+        });
+
+        // Add event listeners to the edit and delete buttons
+        tableBody.querySelectorAll(".btn-edit-expense").forEach(btn => {
+            btn.addEventListener("click", function() {
+                const expenseIdx = parseInt(this.getAttribute("data-idx"));
+                updateSelectedCostProject(project.code);
+                if (window.openExpenseModal) window.openExpenseModal(expenseIdx);
+            });
+        });
+
+        tableBody.querySelectorAll(".btn-delete-expense").forEach(btn => {
+            btn.addEventListener("click", function() {
+                const expenseIdx = parseInt(this.getAttribute("data-idx"));
+                updateSelectedCostProject(project.code);
+                deleteExpense(expenseIdx);
+            });
         });
     }
 }
@@ -9402,13 +9441,18 @@ function deleteExpense(index) {
     if (!project) return;
     
     const exp = project.expenses[index];
-    project.expenses.splice(index, 1);
-    recalculateCostStructure(project);
-    saveToLocalStorage();
-    
-    showToast(`ลบรายการ ${exp.title} สำเร็จ!`, "success");
-    renderCostManagement();
-    renderOverallDashboard(); // Update main dashboard financial values as well
+    if (confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบรายการ "${exp.title}"?`)) {
+        project.expenses.splice(index, 1);
+        recalculateCostStructure(project);
+        saveToLocalStorage();
+        
+        showToast(`ลบรายการ ${exp.title} สำเร็จ!`, "success");
+        renderCostManagement();
+        renderOverallDashboard(); // Update main dashboard financial values as well
+        if (appState.selectedDetailProject !== "all") {
+            renderSubnavProjectWorkspace();
+        }
+    }
 }
 
 function recalculateCostStructure(project) {
@@ -10261,19 +10305,46 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // 11. MODAL: Add Expense
+    // 11. MODAL: Add/Edit Expense
+    let editingExpenseIndex = -1;
     const expenseModal = document.getElementById("expense-modal");
     const openExpenseBtn = document.getElementById("open-expense-modal-btn");
     const closeExpenseBtn = document.getElementById("close-expense-modal");
     const cancelExpenseBtn = document.getElementById("cancel-expense-btn");
     const expenseForm = document.getElementById("add-expense-form");
 
-    const openExpenseModal = () => {
-        document.getElementById("exp-date").value = new Date().toISOString().substring(0, 10);
-        document.getElementById("exp-title").value = "";
-        document.getElementById("exp-amount").value = "";
+    window.openExpenseModal = (editIdx = -1) => {
+        editingExpenseIndex = editIdx;
+        const modalTitle = expenseModal.querySelector(".modal-title");
+        const submitBtn = expenseForm.querySelector("button[type='submit']");
         const fileEl = document.getElementById("exp-file");
         if (fileEl) fileEl.value = "";
+
+        const project = projectsData[appState.selectedCostProject];
+        if (!project) {
+            showToast("ไม่พบข้อมูลโครงการ", "error");
+            return;
+        }
+
+        if (editIdx === -1) {
+            if (modalTitle) modalTitle.innerHTML = `<i class="fa-solid fa-receipt"></i> บันทึกค่าใช้จ่ายใหม่`;
+            if (submitBtn) submitBtn.textContent = "บันทึกรายการ";
+            document.getElementById("exp-date").value = new Date().toISOString().substring(0, 10);
+            document.getElementById("exp-title").value = "";
+            document.getElementById("exp-amount").value = "";
+            document.getElementById("exp-type").value = "ค่าแรง";
+        } else {
+            if (modalTitle) modalTitle.innerHTML = `<i class="fa-solid fa-pen-to-square"></i> แก้ไขข้อมูลรายจ่าย`;
+            if (submitBtn) submitBtn.textContent = "บันทึกการแก้ไข";
+            
+            const exp = project.expenses[editIdx];
+            if (!exp) return;
+            
+            document.getElementById("exp-date").value = exp.date;
+            document.getElementById("exp-title").value = exp.title || "";
+            document.getElementById("exp-amount").value = exp.amount || "";
+            document.getElementById("exp-type").value = exp.type || "ค่าแรง";
+        }
         expenseModal.classList.add("active");
     };
 
@@ -10281,12 +10352,14 @@ document.addEventListener("DOMContentLoaded", () => {
         expenseModal.classList.remove("active");
     };
 
-    if (openExpenseBtn) openExpenseBtn.addEventListener("click", openExpenseModal);
+    if (openExpenseBtn) openExpenseBtn.addEventListener("click", () => window.openExpenseModal(-1));
     const subtabOpenExpenseBtn = document.getElementById("subtab-open-expense-modal-btn");
+    if (subtabOpenExpenseBtn) {
         subtabOpenExpenseBtn.addEventListener("click", () => {
             updateSelectedCostProject(appState.selectedDetailProject);
-            openExpenseModal();
+            window.openExpenseModal(-1);
         });
+    }
 
     if (closeExpenseBtn) closeExpenseBtn.addEventListener("click", closeExpenseModal);
     if (cancelExpenseBtn) cancelExpenseBtn.addEventListener("click", closeExpenseModal);
@@ -10311,15 +10384,28 @@ document.addEventListener("DOMContentLoaded", () => {
         const project = projectsData[appState.selectedCostProject];
         if (project) {
             if (!project.expenses) project.expenses = [];
-            project.expenses.unshift({ date, title, type, amount, file, fileUrl });
+            
+            if (editingExpenseIndex >= 0) {
+                // Edit existing expense
+                const oldExp = project.expenses[editingExpenseIndex];
+                if (!file && oldExp) {
+                    file = oldExp.file || "";
+                    fileUrl = oldExp.fileUrl || "";
+                }
+                project.expenses[editingExpenseIndex] = { date, title, type, amount, file, fileUrl };
+                showToast(`แก้ไขรายการจ่าย: ${title} สำเร็จ!`, "success");
+            } else {
+                // Add new expense
+                project.expenses.unshift({ date, title, type, amount, file, fileUrl });
+                showToast(`บันทึกรายการจ่าย: ${title} จำนวน ${formatNumber(amount)} บาท สำเร็จ!`, "success");
+            }
             
             recalculateCostStructure(project);
             saveToLocalStorage();
-            
-            showToast(`บันทึกรายการจ่าย: ${title} จำนวน ${formatNumber(amount)} บาท สำเร็จ!`, "success");
             closeExpenseModal();
             
             renderSubnavProjectWorkspace();
+            renderCostManagement();
             renderOverallDashboard();
         }
     });
