@@ -4039,6 +4039,17 @@ body.public-view-mode #public-view-header {
                                     <option value="">-- เลือกโครงการ --</option>
                                 </select>
                             </div>
+
+                            <!-- Status Selector -->
+                            <div>
+                                <label style="font-size: 13px; font-weight: 700; color: var(--navy-dark); display: block; margin-bottom: 8px;">สถานะโครงการ :</label>
+                                <select id="portal-status-filter" class="form-control" style="font-size: 13px; padding: 10px; height: 42px; border-radius: var(--radius-md); border: 1px solid var(--border-color); width: 100%;">
+                                    <option value="all" selected>ทั้งหมดทุกสถานะ</option>
+                                    <option value="งานที่กำลังดำเนินการ">🟢 งานที่กำลังดำเนินการ</option>
+                                    <option value="งานเสร็จแล้วรอส่งงาน/อนุมัติ">🔵 งานเสร็จแล้วรอส่งงาน/อนุมัติ</option>
+                                    <option value="งานที่รอเสนอราคา">🟠 งานที่รอเสนอราคา</option>
+                                </select>
+                            </div>
                         </div>
                         
                         <!-- Search text field -->
@@ -6497,6 +6508,10 @@ function switchView(viewName) {
         renderCostManagement();
         renderSubnavProjectWorkspace();
     } else if (viewName === "projects-list" || viewName === "quoting-projects-list") {
+        const portalStatusFilter = document.getElementById("portal-status-filter");
+        if (portalStatusFilter) {
+            portalStatusFilter.value = "all";
+        }
         populateSubnavProjects(document.getElementById("subnav-year-filter") ? document.getElementById("subnav-year-filter").value : "all");
         renderSubnavProjectWorkspace();
     } else if (viewName === "permissions-mgmt") {
@@ -9773,6 +9788,80 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    // 1.1b Clickable Dashboard KPI cards setup
+    const kpiTotalEl = document.getElementById("kpi-total-jobs");
+    const kpiInprogressEl = document.getElementById("kpi-inprogress-jobs");
+    const kpiCompletedEl = document.getElementById("kpi-completed-jobs");
+    const kpiPendingEl = document.getElementById("kpi-pending-approval-jobs");
+
+    if (kpiTotalEl) {
+        const card = kpiTotalEl.closest(".kpi-card");
+        if (card) {
+            card.style.cursor = "pointer";
+            card.addEventListener("click", () => {
+                switchView("projects-list");
+                const portalStatusFilter = document.getElementById("portal-status-filter");
+                if (portalStatusFilter) {
+                    portalStatusFilter.value = "all";
+                }
+                if (typeof window.renderProjectSelectionPortal === "function") {
+                    window.renderProjectSelectionPortal();
+                }
+            });
+        }
+    }
+
+    if (kpiInprogressEl) {
+        const card = kpiInprogressEl.closest(".kpi-card");
+        if (card) {
+            card.style.cursor = "pointer";
+            card.addEventListener("click", () => {
+                switchView("projects-list");
+                const portalStatusFilter = document.getElementById("portal-status-filter");
+                if (portalStatusFilter) {
+                    portalStatusFilter.value = "งานที่กำลังดำเนินการ";
+                }
+                if (typeof window.renderProjectSelectionPortal === "function") {
+                    window.renderProjectSelectionPortal();
+                }
+            });
+        }
+    }
+
+    if (kpiCompletedEl) {
+        const card = kpiCompletedEl.closest(".kpi-card");
+        if (card) {
+            card.style.cursor = "pointer";
+            card.addEventListener("click", () => {
+                switchView("projects-list");
+                const portalStatusFilter = document.getElementById("portal-status-filter");
+                if (portalStatusFilter) {
+                    portalStatusFilter.value = "งานเสร็จแล้วรอส่งงาน/อนุมัติ";
+                }
+                if (typeof window.renderProjectSelectionPortal === "function") {
+                    window.renderProjectSelectionPortal();
+                }
+            });
+        }
+    }
+
+    if (kpiPendingEl) {
+        const card = kpiPendingEl.closest(".kpi-card");
+        if (card) {
+            card.style.cursor = "pointer";
+            card.addEventListener("click", () => {
+                switchView("quoting-projects-list");
+                const portalStatusFilter = document.getElementById("portal-status-filter");
+                if (portalStatusFilter) {
+                    portalStatusFilter.value = "งานที่รอเสนอราคา";
+                }
+                if (typeof window.renderProjectSelectionPortal === "function") {
+                    window.renderProjectSelectionPortal();
+                }
+            });
+        }
+    }
+
     // 1.2 Cost Management Subtab Switch Listener
     document.addEventListener("click", function(e) {
         const btn = e.target.closest(".cost-tab-btn");
@@ -10057,6 +10146,9 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
 
+        const portalStatusFilter = document.getElementById("portal-status-filter");
+        const selectedStatus = portalStatusFilter ? portalStatusFilter.value : "all";
+
         const selectedHospital = portalHospitalSelector ? portalHospitalSelector.value : "all";
         const selectedYear = portalYearFilter ? portalYearFilter.value : "all";
         const searchText = portalProjectSearch ? portalProjectSearch.value.trim().toLowerCase() : "";
@@ -10069,6 +10161,19 @@ document.addEventListener("DOMContentLoaded", () => {
             const isQuotingStatus = (p.status === "งานที่กำลังเสนอราคา" || p.status === "กำลังเสนอราคา" || p.status === "งานที่รอเสนอราคา");
             const quotingMatch = isQuotingTab ? isQuotingStatus : !isQuotingStatus;
             
+            let statusMatch = true;
+            if (selectedStatus !== "all") {
+                if (selectedStatus === "งานเสร็จแล้วรอส่งงาน/อนุมัติ") {
+                    statusMatch = (p.status === "เสร็จสิ้น" || p.status === "เสร็จแล้ว" || p.status === "งานเสร็จแล้วรอส่งงาน" || p.status === "งานเสร็จแล้วรอส่งงาน/อนุมัติ");
+                } else if (selectedStatus === "งานที่รอเสนอราคา") {
+                    statusMatch = (p.status === "รออนุมัติ" || p.status === "งานรออนุมัติ" || p.status === "งานที่รอเสนอราคา" || p.status === "งานที่กำลังเสนอราคา" || p.status === "กำลังเสนอราคา");
+                } else if (selectedStatus === "งานที่กำลังดำเนินการ") {
+                    const isComp = (p.status === "เสร็จสิ้น" || p.status === "เสร็จแล้ว" || p.status === "งานเสร็จแล้วรอส่งงาน" || p.status === "งานเสร็จแล้วรอส่งงาน/อนุมัติ");
+                    const isQuot = (p.status === "รออนุมัติ" || p.status === "งานรออนุมัติ" || p.status === "งานที่รอเสนอราคา" || p.status === "งานที่กำลังเสนอราคา" || p.status === "กำลังเสนอราคา");
+                    statusMatch = !isComp && !isQuot;
+                }
+            }
+            
             let searchMatch = true;
             if (searchText) {
                 const yearTh = (p.year + 543).toString();
@@ -10079,7 +10184,7 @@ document.addEventListener("DOMContentLoaded", () => {
                               yearTh.includes(searchText) ||
                               yearEn.includes(searchText);
             }
-            return hospitalMatch && yearMatch && quotingMatch && searchMatch;
+            return hospitalMatch && yearMatch && quotingMatch && statusMatch && searchMatch;
         });
 
         // Customer role permissions restriction
@@ -10241,6 +10346,26 @@ document.addEventListener("DOMContentLoaded", () => {
                 sidebarSearch.value = this.value;
             }
             window.renderProjectSelectionPortal();
+        });
+    }
+
+    const portalStatusFilter = document.getElementById("portal-status-filter");
+    if (portalStatusFilter) {
+        portalStatusFilter.addEventListener("change", function() {
+            const val = this.value;
+            const isQuotingTab = appState.currentView === "quoting-projects-list";
+            
+            if (val === "งานที่รอเสนอราคา" && !isQuotingTab) {
+                switchView("quoting-projects-list");
+                const filter = document.getElementById("portal-status-filter");
+                if (filter) filter.value = "งานที่รอเสนอราคา";
+            } else if ((val === "งานที่กำลังดำเนินการ" || val === "งานเสร็จแล้วรอส่งงาน/อนุมัติ") && isQuotingTab) {
+                switchView("projects-list");
+                const filter = document.getElementById("portal-status-filter");
+                if (filter) filter.value = val;
+            } else {
+                window.renderProjectSelectionPortal();
+            }
         });
     }
 
