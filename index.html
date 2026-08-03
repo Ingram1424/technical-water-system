@@ -4107,6 +4107,86 @@ body.public-view-mode #public-view-header {
                         
                         <!-- Subtab 2: Plan Work -->
                         <div id="subtab-plan-work-view" class="subtab-panel">
+                            <!-- Gantt Timeline section -->
+                            <section class="section-card" style="margin-bottom: 20px;">
+                                <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
+                                    <div>
+                                        <h2 class="section-title">แผนการดำเนินงาน (Gantt Chart Scheduler)</h2>
+                                        <p class="section-subtitle">กำหนดช่วงเวลาวันเริ่มต้น-สิ้นสุด และระบายสีแถบความคืบหน้า (เหลือง = แผนงาน, เขียว = งานจริง)</p>
+                                    </div>
+                                    <div style="display: flex; gap: 8px;" class="hide-accounting hide-customer">
+                                        <button class="btn btn-sm btn-outline" id="btn-add-gantt-header" style="font-size: 11px; padding: 6px 12px; height: auto;">
+                                            <i class="fa-solid fa-folder-plus"></i> เพิ่มหมวดหมู่
+                                        </button>
+                                        <button class="btn btn-sm btn-outline" id="btn-add-gantt-main" style="font-size: 11px; padding: 6px 12px; height: auto;">
+                                            <i class="fa-solid fa-list"></i> เพิ่มงานหลัก
+                                        </button>
+                                        <button class="btn btn-sm btn-outline" id="btn-add-gantt-sub" style="font-size: 11px; padding: 6px 12px; height: auto;">
+                                            <i class="fa-solid fa-bars-staggered"></i> เพิ่มงานย่อย
+                                        </button>
+                                        <button class="btn btn-sm btn-outline" id="btn-print-gantt" style="font-size: 11px; padding: 6px 12px; height: auto; background: #f1f5f9; color: #334155;">
+                                            <i class="fa-solid fa-print"></i> พิมพ์แผนงาน
+                                        </button>
+                                        <button class="btn btn-sm btn-primary" id="btn-save-gantt" style="font-size: 11px; padding: 6px 12px; height: auto;">
+                                            <i class="fa-solid fa-floppy-disk"></i> บันทึกแผนงาน
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Gantt settings -->
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px; padding: 12px; background: #f8fafc; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                                    <div>
+                                        <label style="font-size: 11px; font-weight: 600; color: var(--navy-dark); display: block; margin-bottom: 4px;">วันเริ่มต้นแผนงาน:</label>
+                                        <input type="date" id="gantt-start-date" class="form-control" style="font-size: 11.5px; padding: 5px 10px; height: auto;">
+                                    </div>
+                                    <div>
+                                        <label style="font-size: 11px; font-weight: 600; color: var(--navy-dark); display: block; margin-bottom: 4px;">วันสิ้นสุดแผนงาน:</label>
+                                        <input type="date" id="gantt-end-date" class="form-control" style="font-size: 11.5px; padding: 5px 10px; height: auto;">
+                                    </div>
+                                    <div class="hide-accounting hide-customer" style="display: flex; flex-direction: column; justify-content: flex-end;">
+                                        <span style="font-size: 11px; font-weight: 600; color: var(--navy-dark); display: block; margin-bottom: 4px;">เครื่องมือระบายสี (Brush):</span>
+                                        <div style="display: flex; gap: 8px;">
+                                            <button id="brush-plan" class="btn btn-sm active" style="font-size: 10px; padding: 4px 10px; background: #fef08a; color: #854d0e; border: 1px solid #eab308; font-weight: 600; cursor: pointer; border-radius: 4px; border-style: solid;">แผนงาน (สีเหลือง)</button>
+                                            <button id="brush-actual" class="btn btn-sm" style="font-size: 10px; padding: 4px 10px; background: #bbf7d0; color: #166534; border: 1px solid #22c55e; font-weight: 600; cursor: pointer; border-radius: 4px; opacity: 0.6; border-style: solid;">งานจริง (สีเขียว)</button>
+                                            <button id="brush-eraser" class="btn btn-sm" style="font-size: 10px; padding: 4px 10px; background: #ffffff; color: #64748b; border: 1px solid #cbd5e1; font-weight: 600; cursor: pointer; border-radius: 4px; opacity: 0.6; border-style: solid;">ยางลบ</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Document header info inputs -->
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 20px; padding: 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                                    <div>
+                                        <label style="font-size: 11px; font-weight: 600; color: var(--navy-dark); display: block; margin-bottom: 4px;">วันที่เอกสาร:</label>
+                                        <input type="text" id="gantt-doc-date" class="form-control" style="font-size: 11px; padding: 4px 8px; height: auto;" placeholder="เช่น 5/3/2569">
+                                    </div>
+                                    <div>
+                                        <label style="font-size: 11px; font-weight: 600; color: var(--navy-dark); display: block; margin-bottom: 4px;">เรื่อง:</label>
+                                        <input type="text" id="gantt-doc-subject" class="form-control" style="font-size: 11px; padding: 4px 8px; height: auto;" placeholder="เช่น แผนงานปรับปรุงห้องต้อนรับ...">
+                                    </div>
+                                    <div>
+                                        <label style="font-size: 11px; font-weight: 600; color: var(--navy-dark); display: block; margin-bottom: 4px;">เรียน/ถึง:</label>
+                                        <input type="text" id="gantt-doc-to" class="form-control" style="font-size: 11px; padding: 4px 8px; height: auto;" placeholder="เช่น ฝ่ายวิศวกรรมฯ...">
+                                    </div>
+                                    <div>
+                                        <label style="font-size: 11px; font-weight: 600; color: var(--navy-dark); display: block; margin-bottom: 4px;">เอกสารอ้างอิง (Ref PO):</label>
+                                        <input type="text" id="gantt-doc-ref" class="form-control" style="font-size: 11px; padding: 4px 8px; height: auto;" placeholder="เช่น PO.22026002729">
+                                    </div>
+                                </div>
+
+                                <!-- Gantt Grid Table Container -->
+                                <div style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: #fff; margin-bottom: 12px;">
+                                    <table id="gantt-grid-table" style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; min-width: 900px;">
+                                        <thead id="gantt-grid-head" style="background: #f1f5f9; text-align: center; font-weight: 600;">
+                                            <!-- Dynamically rendered -->
+                                        </thead>
+                                        <tbody id="gantt-grid-body">
+                                            <!-- Dynamically rendered rows -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </section>
+
+                            <!-- Reference Files Section (Old Plan Docs cards) -->
                             <section class="section-card">
                                 <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                                     <div>
@@ -7742,9 +7822,279 @@ function renderSubnavPhotosFiles(project) {
 }
 
 let currentScurveMode = 'plan'; // Global state for S-Curve mode
+let currentGanttBrush = 'plan'; // Global state for Gantt brush
+let isGanttPainting = false;
+
+// Format date to YYYY-MM-DD in local timezone safely
+function formatDateLocal(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+}
 
 function renderSubnavPlanWork(project) {
-    // ---- Plan Documents Section ----
+    // 1. Initialize project.ganttData if not exists
+    if (!project.ganttData) {
+        project.ganttData = {
+            header: {
+                date: new Date().toLocaleDateString('th-TH'),
+                subject: "แผนการดำเนินงาน " + (project.name || ""),
+                to: "",
+                refPo: project.code || ""
+            },
+            startDate: project.startDate || formatDateLocal(new Date()),
+            endDate: project.endDate || formatDateLocal(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)),
+            tasks: []
+        };
+    }
+
+    // Set setup inputs value
+    const startDateInput = document.getElementById("gantt-start-date");
+    const endDateInput = document.getElementById("gantt-end-date");
+    const docDateInput = document.getElementById("gantt-doc-date");
+    const docSubjectInput = document.getElementById("gantt-doc-subject");
+    const docToInput = document.getElementById("gantt-doc-to");
+    const docRefInput = document.getElementById("gantt-doc-ref");
+
+    const canEdit = appState.currentRole === "pm" && appState.selectedDetailProject !== "all";
+
+    if (startDateInput) {
+        startDateInput.value = project.ganttData.startDate;
+        startDateInput.disabled = !canEdit;
+    }
+    if (endDateInput) {
+        endDateInput.value = project.ganttData.endDate;
+        endDateInput.disabled = !canEdit;
+    }
+    if (docDateInput) {
+        docDateInput.value = project.ganttData.header.date || "";
+        docDateInput.disabled = !canEdit;
+        docDateInput.oninput = function() { project.ganttData.header.date = this.value.trim(); };
+    }
+    if (docSubjectInput) {
+        docSubjectInput.value = project.ganttData.header.subject || "";
+        docSubjectInput.disabled = !canEdit;
+        docSubjectInput.oninput = function() { project.ganttData.header.subject = this.value.trim(); };
+    }
+    if (docToInput) {
+        docToInput.value = project.ganttData.header.to || "";
+        docToInput.disabled = !canEdit;
+        docToInput.oninput = function() { project.ganttData.header.to = this.value.trim(); };
+    }
+    if (docRefInput) {
+        docRefInput.value = project.ganttData.header.refPo || "";
+        docRefInput.disabled = !canEdit;
+        docRefInput.oninput = function() { project.ganttData.header.refPo = this.value.trim(); };
+    }
+
+    // Calculate dates array
+    const dateList = [];
+    if (project.ganttData.startDate && project.ganttData.endDate) {
+        const [sy, sm, sd] = project.ganttData.startDate.split('-').map(Number);
+        const [ey, em, ed] = project.ganttData.endDate.split('-').map(Number);
+        const start = new Date(sy, sm - 1, sd);
+        const end = new Date(ey, em - 1, ed);
+
+        let current = new Date(start);
+        // Safety guard: max 100 days to prevent browser crash
+        let count = 0;
+        while (current <= end && count < 100) {
+            dateList.push(new Date(current));
+            current.setDate(current.getDate() + 1);
+            count++;
+        }
+    }
+
+    // Render Table Header (Months and Days)
+    const tableHead = document.getElementById("gantt-grid-head");
+    const tableBody = document.getElementById("gantt-grid-body");
+
+    if (tableHead && tableBody) {
+        tableHead.innerHTML = "";
+        tableBody.innerHTML = "";
+
+        if (dateList.length === 0) {
+            tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding: 30px; color: var(--text-muted);">กรุณากำหนดวันเริ่มต้นและวันสิ้นสุดแผนงานด้านบน</td></tr>`;
+        } else {
+            // Group by Thai Month name
+            const monthGroups = [];
+            const monthThaiNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+            dateList.forEach(d => {
+                const mIdx = d.getMonth();
+                const yTh = d.getFullYear() + 543;
+                const mName = monthThaiNames[mIdx] + " " + yTh;
+                let grp = monthGroups.find(g => g.name === mName);
+                if (!grp) {
+                    grp = { name: mName, colspan: 0 };
+                    monthGroups.push(grp);
+                }
+                grp.colspan++;
+            });
+
+            // Head Row 1: Columns
+            let tr1 = `<tr style="background: #e0e7ff; border: 1px solid var(--border-color); text-align: center;">
+                <th rowspan="2" style="padding: 10px; width: 60px; border: 1px solid var(--border-color);">Items</th>
+                <th rowspan="2" style="padding: 10px; min-width: 250px; text-align: left; border: 1px solid var(--border-color);">Description</th>`;
+            monthGroups.forEach(grp => {
+                tr1 += `<th colspan="${grp.colspan}" style="padding: 6px; border: 1px solid var(--border-color);">${grp.name}</th>`;
+            });
+            tr1 += `<th rowspan="2" class="hide-accounting hide-customer" style="padding: 10px; width: 50px; border: 1px solid var(--border-color);">ลบ</th></tr>`;
+
+            // Head Row 2: Days
+            let tr2 = `<tr style="background: #f1f5f9; text-align: center;">`;
+            dateList.forEach(d => {
+                tr2 += `<th style="padding: 4px; border: 1px solid var(--border-color); font-weight: normal; font-size: 9px; min-width: 22px;">${d.getDate()}</th>`;
+            });
+            tr2 += `</tr>`;
+
+            tableHead.innerHTML = tr1 + tr2;
+
+            // Render Table Body
+            if (project.ganttData.tasks.length === 0) {
+                tableBody.innerHTML = `<tr><td colspan="${3 + dateList.length}" style="text-align:center; padding: 40px; color: var(--text-muted); font-style: italic;">ยังไม่มีรายการงาน — กดปุ่มด้านบนเพื่อเพิ่มแถว</td></tr>`;
+            } else {
+                project.ganttData.tasks.forEach((task, idx) => {
+                    const tr = document.createElement("tr");
+                    tr.style.borderBottom = "1px solid var(--border-color)";
+                    tr.setAttribute("data-row-idx", idx);
+
+                    const readonlyAttr = canEdit ? '' : 'readonly';
+                    const inputStyle = `style="width: 100%; font-size: 11px; padding: 4px 6px; border: 1px solid transparent; background: transparent;"`;
+                    const editStyle = `style="width: 100%; font-size: 11px; padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 4px; background: #fff;"`;
+
+                    if (task.isHeader) {
+                        // Header category row style (Full width colspan)
+                        tr.style.background = "#f1f5f9";
+                        tr.style.fontWeight = "700";
+                        tr.innerHTML = `
+                            <td style="padding: 6px; text-align: center; border: 1px solid var(--border-color);">
+                                <input type="text" class="gantt-item-num" data-idx="${idx}" value="${task.itemNum || ''}" ${readonlyAttr} ${canEdit ? editStyle : inputStyle} placeholder="เช่น 1">
+                            </td>
+                            <td colspan="${dateList.length + 1}" style="padding: 6px; border: 1px solid var(--border-color);">
+                                <input type="text" class="gantt-item-name" data-idx="${idx}" value="${task.name || ''}" ${readonlyAttr} style="width: 100%; font-size: 11.5px; font-weight: 700; padding: 4px 6px; border: 1px solid ${canEdit ? 'var(--border-color)' : 'transparent'}; border-radius: 4px; background: ${canEdit ? '#fff' : 'transparent'};" placeholder="ชื่อหมวดหมู่ เช่น Phase 1">
+                            </td>
+                            <td class="hide-accounting hide-customer" style="padding: 6px; text-align: center; border: 1px solid var(--border-color);">
+                                ${canEdit ? `<button class="btn-delete-gantt-row" data-idx="${idx}" style="background:none; border:none; color:#e63946; cursor:pointer; font-size:12px;"><i class="fa-solid fa-trash-can"></i></button>` : ''}
+                            </td>
+                        `;
+                    } else {
+                        // Task & Subtask row style
+                        const indent = task.isSubtask ? "padding-left: 20px;" : "";
+                        const nameWeight = task.isSubtask ? "normal" : "600";
+                        
+                        let rowHtml = `
+                            <td style="padding: 6px; text-align: center; border: 1px solid var(--border-color);">
+                                <input type="text" class="gantt-item-num" data-idx="${idx}" value="${task.itemNum || ''}" ${readonlyAttr} ${canEdit ? editStyle : inputStyle} placeholder="1.1">
+                            </td>
+                            <td style="padding: 6px; border: 1px solid var(--border-color);">
+                                <div style="display: flex; gap: 4px; ${indent}">
+                                    ${task.isSubtask ? '<span style="color:#64748b;">-</span>' : ''}
+                                    <input type="text" class="gantt-item-name" data-idx="${idx}" value="${task.name || ''}" ${readonlyAttr} style="width: 100%; font-size: 11px; padding: 4px 6px; border: 1px solid ${canEdit ? 'var(--border-color)' : 'transparent'}; border-radius: 4px; background: ${canEdit ? '#fff' : 'transparent'}; font-weight: ${nameWeight};" placeholder="${task.isSubtask ? 'ชื่องานย่อย' : 'ชื่องานหลัก'}">
+                                </div>
+                            </td>
+                        `;
+
+                        // Render timeline grid cells
+                        dateList.forEach(d => {
+                            const dStr = formatDateLocal(d);
+                            const val = task.cells ? (task.cells[dStr] || 0) : 0;
+                            let cellBg = "";
+                            if (val === 1) cellBg = "background-color: #fef08a;"; // Plan yellow
+                            else if (val === 2) cellBg = "background-color: #bbf7d0;"; // Actual green
+                            
+                            rowHtml += `
+                                <td class="gantt-cell" data-row-idx="${idx}" data-date="${dStr}" style="border: 1px solid var(--border-color); ${cellBg} cursor: ${canEdit ? 'crosshair' : 'default'}; user-select: none;">
+                                </td>
+                            `;
+                        });
+
+                        rowHtml += `
+                            <td class="hide-accounting hide-customer" style="padding: 6px; text-align: center; border: 1px solid var(--border-color);">
+                                ${canEdit ? `<button class="btn-delete-gantt-row" data-idx="${idx}" style="background:none; border:none; color:#e63946; cursor:pointer; font-size:12px;"><i class="fa-solid fa-trash-can"></i></button>` : ''}
+                            </td>
+                        `;
+
+                        tr.innerHTML = rowHtml;
+                    }
+                    tableBody.appendChild(tr);
+                });
+
+                // Attach row delete listener
+                tableBody.querySelectorAll(".btn-delete-gantt-row").forEach(btn => {
+                    btn.addEventListener("click", function() {
+                        const rIdx = parseInt(this.getAttribute("data-idx"));
+                        if (confirm("คุณแน่ใจหรือไม่ว่าต้องการลบรายการนี้?")) {
+                            project.ganttData.tasks.splice(rIdx, 1);
+                            renderSubnavPlanWork(project);
+                        }
+                    });
+                });
+
+                // Attach paint mouse event listeners to cells
+                if (canEdit) {
+                    const cells = tableBody.querySelectorAll(".gantt-cell");
+                    
+                    const paintCell = (cell) => {
+                        const rIdx = parseInt(cell.getAttribute("data-row-idx"));
+                        const dStr = cell.getAttribute("data-date");
+                        const task = project.ganttData.tasks[rIdx];
+                        if (!task) return;
+                        if (!task.cells) task.cells = {};
+
+                        if (currentGanttBrush === 'plan') {
+                            task.cells[dStr] = 1;
+                            cell.style.backgroundColor = "#fef08a";
+                        } else if (currentGanttBrush === 'actual') {
+                            task.cells[dStr] = 2;
+                            cell.style.backgroundColor = "#bbf7d0";
+                        } else {
+                            // Eraser
+                            delete task.cells[dStr];
+                            cell.style.backgroundColor = "";
+                        }
+                    };
+
+                    cells.forEach(cell => {
+                        cell.addEventListener("mousedown", function(e) {
+                            e.preventDefault();
+                            isGanttPainting = true;
+                            paintCell(this);
+                        });
+
+                        cell.addEventListener("mouseenter", function() {
+                            if (isGanttPainting) {
+                                paintCell(this);
+                            }
+                        });
+                    });
+
+                    // Add global mouseup to stop painting
+                    const stopPainting = () => { isGanttPainting = false; };
+                    document.removeEventListener("mouseup", stopPainting);
+                    document.addEventListener("mouseup", stopPainting);
+                }
+            }
+        }
+    }
+
+    // Attach local input sync listeners
+    if (canEdit && tableBody) {
+        // Sync item number and name in real-time
+        tableBody.addEventListener("input", function(e) {
+            const idx = parseInt(e.target.getAttribute("data-idx"));
+            const task = project.ganttData.tasks[idx];
+            if (!task) return;
+
+            if (e.target.classList.contains("gantt-item-num")) {
+                task.itemNum = e.target.value.trim();
+            } else if (e.target.classList.contains("gantt-item-name")) {
+                task.name = e.target.value.trim();
+            }
+        });
+    }
+
+    // ---- Render Plan Documents Section ----
     const docsContainer = document.getElementById("plan-docs-container");
     if (docsContainer) {
         docsContainer.innerHTML = "";
@@ -9907,6 +10257,379 @@ document.addEventListener("DOMContentLoaded", () => {
             saveToLocalStorage();
             renderSubnavActualProgress(proj);
             showToast("บันทึกข้อมูลแผนงาน S-Curve เรียบร้อยแล้ว!", "success");
+        });
+    }
+
+    // Gantt Chart Event Listeners
+    const btnAddGanttHeader = document.getElementById("btn-add-gantt-header");
+    const btnAddGanttMain = document.getElementById("btn-add-gantt-main");
+    const btnAddGanttSub = document.getElementById("btn-add-gantt-sub");
+    const btnSaveGantt = document.getElementById("btn-save-gantt");
+    const btnPrintGantt = document.getElementById("btn-print-gantt");
+
+    const ganttStartDate = document.getElementById("gantt-start-date");
+    const ganttEndDate = document.getElementById("gantt-end-date");
+
+    const brushPlan = document.getElementById("brush-plan");
+    const brushActual = document.getElementById("brush-actual");
+    const brushEraser = document.getElementById("brush-eraser");
+
+    // Dynamic Row Actions Helpers
+    const getActiveProj = () => {
+        const code = appState.selectedDetailProject;
+        return (code && code !== "all") ? projectsData[code] : null;
+    };
+
+    if (btnAddGanttHeader) {
+        btnAddGanttHeader.addEventListener("click", function() {
+            const proj = getActiveProj();
+            if (!proj) return showToast("กรุณาเลือกโครงการเฉพาะก่อน", "warning");
+            proj.ganttData.tasks.push({
+                id: Math.random().toString(36).substr(2, 9),
+                isHeader: true,
+                itemNum: "",
+                name: ""
+            });
+            renderSubnavPlanWork(proj);
+            showToast("เพิ่มหมวดหมู่เรียบร้อย", "info");
+        });
+    }
+
+    if (btnAddGanttMain) {
+        btnAddGanttMain.addEventListener("click", function() {
+            const proj = getActiveProj();
+            if (!proj) return showToast("กรุณาเลือกโครงการเฉพาะก่อน", "warning");
+            proj.ganttData.tasks.push({
+                id: Math.random().toString(36).substr(2, 9),
+                isHeader: false,
+                isSubtask: false,
+                itemNum: "",
+                name: "",
+                cells: {}
+            });
+            renderSubnavPlanWork(proj);
+            showToast("เพิ่มงานหลักเรียบร้อย", "info");
+        });
+    }
+
+    if (btnAddGanttSub) {
+        btnAddGanttSub.addEventListener("click", function() {
+            const proj = getActiveProj();
+            if (!proj) return showToast("กรุณาเลือกโครงการเฉพาะก่อน", "warning");
+            proj.ganttData.tasks.push({
+                id: Math.random().toString(36).substr(2, 9),
+                isHeader: false,
+                isSubtask: true,
+                itemNum: "",
+                name: "",
+                cells: {}
+            });
+            renderSubnavPlanWork(proj);
+            showToast("เพิ่มงานย่อยเรียบร้อย", "info");
+        });
+    }
+
+    // Brush Toggles
+    const updateBrushUI = (activeBrush) => {
+        currentGanttBrush = activeBrush;
+        [brushPlan, brushActual, brushEraser].forEach(btn => {
+            if (btn) btn.style.opacity = "0.6";
+        });
+        if (activeBrush === 'plan' && brushPlan) brushPlan.style.opacity = "1";
+        if (activeBrush === 'actual' && brushActual) brushActual.style.opacity = "1";
+        if (activeBrush === 'eraser' && brushEraser) brushEraser.style.opacity = "1";
+    };
+
+    if (brushPlan) brushPlan.addEventListener("click", () => updateBrushUI('plan'));
+    if (brushActual) brushActual.addEventListener("click", () => updateBrushUI('actual'));
+    if (brushEraser) brushEraser.addEventListener("click", () => updateBrushUI('eraser'));
+
+    // Date changes
+    if (ganttStartDate) {
+        ganttStartDate.addEventListener("change", function() {
+            const proj = getActiveProj();
+            if (proj) {
+                proj.ganttData.startDate = this.value;
+                renderSubnavPlanWork(proj);
+            }
+        });
+    }
+
+    if (ganttEndDate) {
+        ganttEndDate.addEventListener("change", function() {
+            const proj = getActiveProj();
+            if (proj) {
+                proj.ganttData.endDate = this.value;
+                renderSubnavPlanWork(proj);
+            }
+        });
+    }
+
+    // Save Action
+    if (btnSaveGantt) {
+        btnSaveGantt.addEventListener("click", function() {
+            const proj = getActiveProj();
+            if (!proj) return showToast("กรุณาเลือกโครงการเฉพาะก่อน", "warning");
+
+            // Read header info from DOM
+            const docDateVal = document.getElementById("gantt-doc-date").value.trim();
+            const docSubjectVal = document.getElementById("gantt-doc-subject").value.trim();
+            const docToVal = document.getElementById("gantt-doc-to").value.trim();
+            const docRefVal = document.getElementById("gantt-doc-ref").value.trim();
+
+            proj.ganttData.header.date = docDateVal;
+            proj.ganttData.header.subject = docSubjectVal;
+            proj.ganttData.header.to = docToVal;
+            proj.ganttData.header.refPo = docRefVal;
+
+            saveToLocalStorage();
+            renderSubnavPlanWork(proj);
+            showToast("บันทึกแผนการดำเนินงาน (Gantt Chart) เรียบร้อยแล้ว!", "success");
+        });
+    }
+
+    // Print Action
+    if (btnPrintGantt) {
+        btnPrintGantt.addEventListener("click", function() {
+            const proj = getActiveProj();
+            if (!proj) return showToast("กรุณาเลือกโครงการเฉพาะก่อน", "warning");
+
+            // Gather headers and dates list
+            const dateList = [];
+            if (proj.ganttData.startDate && proj.ganttData.endDate) {
+                const [sy, sm, sd] = proj.ganttData.startDate.split('-').map(Number);
+                const [ey, em, ed] = proj.ganttData.endDate.split('-').map(Number);
+                const start = new Date(sy, sm - 1, sd);
+                const end = new Date(ey, em - 1, ed);
+
+                let current = new Date(start);
+                let count = 0;
+                while (current <= end && count < 100) {
+                    dateList.push(new Date(current));
+                    current.setDate(current.getDate() + 1);
+                    count++;
+                }
+            }
+
+            if (dateList.length === 0) {
+                return showToast("กรุณากำหนดช่วงวันที่เริ่มต้นและสิ้นสุดก่อนพิมพ์", "warning");
+            }
+
+            const monthGroups = [];
+            const monthThaiNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+            dateList.forEach(d => {
+                const mIdx = d.getMonth();
+                const yTh = d.getFullYear() + 543;
+                const mName = monthThaiNames[mIdx] + " " + yTh;
+                let grp = monthGroups.find(g => g.name === mName);
+                if (!grp) {
+                    grp = { name: mName, colspan: 0 };
+                    monthGroups.push(grp);
+                }
+                grp.colspan++;
+            });
+
+            // Build print layout
+            const printWindow = window.open("", "_blank");
+            if (!printWindow) return showToast("Pop-up blocker เปิดใช้งานอยู่ กรุณาอนุญาตให้เปิดหน้าต่างใหม่", "warning");
+
+            let rowsHtml = "";
+            proj.ganttData.tasks.forEach(task => {
+                if (task.isHeader) {
+                    rowsHtml += `
+                        <tr class="header-row">
+                            <td style="text-align: center; font-weight: bold; border: 1px solid #94a3b8;">${task.itemNum || ''}</td>
+                            <td colspan="${dateList.length + 1}" style="font-weight: bold; border: 1px solid #94a3b8; text-align: left; padding: 6px;">${task.name || ''}</td>
+                        </tr>
+                    `;
+                } else {
+                    const indentStyle = task.isSubtask ? "padding-left: 20px;" : "";
+                    const prefix = task.isSubtask ? "- " : "";
+                    let gridCellsHtml = "";
+                    dateList.forEach(d => {
+                        const dStr = formatDateLocal(d);
+                        const val = task.cells ? (task.cells[dStr] || 0) : 0;
+                        let cellBg = "";
+                        if (val === 1) cellBg = "class='cell-plan'";
+                        else if (val === 2) cellBg = "class='cell-actual'";
+                        gridCellsHtml += `<td ${cellBg} style="border: 1px solid #94a3b8; width: 22px;"></td>`;
+                    });
+
+                    rowsHtml += `
+                        <tr>
+                            <td style="text-align: center; border: 1px solid #94a3b8;">${task.itemNum || ''}</td>
+                            <td class="desc-col" style="border: 1px solid #94a3b8; padding: 6px; ${indentStyle}">${prefix}${task.name || ''}</td>
+                            ${gridCellsHtml}
+                        </tr>
+                    `;
+                }
+            });
+
+            let monthsHeaderHtml = "";
+            monthGroups.forEach(grp => {
+                monthsHeaderHtml += `<th colspan="${grp.colspan}" style="border: 1px solid #94a3b8; padding: 6px;">${grp.name}</th>`;
+            });
+
+            let daysHeaderHtml = "";
+            dateList.forEach(d => {
+                daysHeaderHtml += `<th style="border: 1px solid #94a3b8; font-size: 8px; font-weight: normal; width: 22px; padding: 2px;">${d.getDate()}</th>`;
+            });
+
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>พิมพ์แผนงาน - ${proj.name}</title>
+                    <style>
+                        @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700&display=swap');
+                        body {
+                            font-family: 'Prompt', sans-serif;
+                            padding: 20px;
+                            color: #334155;
+                            background: #fff;
+                        }
+                        .company-header {
+                            display: flex;
+                            align-items: center;
+                            gap: 15px;
+                            border-bottom: 2px solid #1e3a8a;
+                            padding-bottom: 12px;
+                            margin-bottom: 15px;
+                        }
+                        .logo-box {
+                            width: 60px;
+                            height: 60px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            background: #1e3a8a;
+                            color: #fff;
+                            font-weight: bold;
+                            border-radius: 8px;
+                            font-size: 24px;
+                        }
+                        .company-info h1 {
+                            font-size: 14px;
+                            color: #1e3a8a;
+                            margin: 0 0 4px 0;
+                            font-weight: 700;
+                        }
+                        .company-info p {
+                            font-size: 9px;
+                            color: #64748b;
+                            margin: 0;
+                        }
+                        .doc-meta {
+                            display: grid;
+                            grid-template-columns: 1fr 1fr;
+                            gap: 10px;
+                            font-size: 11px;
+                            margin-bottom: 15px;
+                            border: 1px solid #cbd5e1;
+                            padding: 10px;
+                            border-radius: 6px;
+                        }
+                        .doc-meta-item {
+                            display: flex;
+                            gap: 6px;
+                        }
+                        .doc-meta-label {
+                            font-weight: 600;
+                            color: #334155;
+                            min-width: 90px;
+                        }
+                        .gantt-title {
+                            font-size: 14px;
+                            font-weight: 700;
+                            text-align: center;
+                            margin-bottom: 15px;
+                            color: #1e3a8a;
+                            text-decoration: underline;
+                        }
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            font-size: 9px;
+                        }
+                        th, td {
+                            border: 1px solid #94a3b8;
+                            padding: 4px;
+                            text-align: center;
+                        }
+                        th {
+                            background: #e2e8f0;
+                            font-weight: bold;
+                        }
+                        .header-row {
+                            background: #f1f5f9;
+                        }
+                        .desc-col {
+                            text-align: left !important;
+                        }
+                        .cell-plan {
+                            background-color: #fef08a !important;
+                            -webkit-print-color-adjust: exact;
+                            print-color-adjust: exact;
+                        }
+                        .cell-actual {
+                            background-color: #bbf7d0 !important;
+                            -webkit-print-color-adjust: exact;
+                            print-color-adjust: exact;
+                        }
+                        @media print {
+                            body { padding: 0; }
+                            @page {
+                                size: A4 landscape;
+                                margin: 10mm;
+                            }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="company-header">
+                        <div class="logo-box">TW</div>
+                        <div class="company-info">
+                            <h1>บริษัท เทคนิคอน วอเตอร์ จำกัด (TECHNICAL WATER CO., LTD.)</h1>
+                            <p>301/856 ซอยรามคำแหง 68 ถนนรามคำแหง แขวงหัวหมาก เขตบางกะปิ กรุงเทพฯ 10240</p>
+                            <p>เบอร์โทร (Tel): 02-735-3022 | E-mail: technicalwater2015@gmail.com</p>
+                        </div>
+                    </div>
+                    
+                    <div class="doc-meta">
+                        <div class="doc-meta-item"><span class="doc-meta-label">วันที่:</span> <span>${proj.ganttData.header.date || '-'}</span></div>
+                        <div class="doc-meta-item"><span class="doc-meta-label">เรียน:</span> <span>${proj.ganttData.header.to || '-'}</span></div>
+                        <div class="doc-meta-item"><span class="doc-meta-label">เรื่อง:</span> <span>${proj.ganttData.header.subject || '-'}</span></div>
+                        <div class="doc-meta-item"><span class="doc-meta-label">เอกสารอ้างอิง:</span> <span>${proj.ganttData.header.refPo || '-'}</span></div>
+                    </div>
+
+                    <div class="gantt-title">แผนงานปรับปรุงโครงการ: ${proj.name}</div>
+
+                    <table>
+                        <thead>
+                            <tr style="background: #e2e8f0;">
+                                <th rowspan="2" style="width: 50px;">Items</th>
+                                <th rowspan="2">Description</th>
+                                ${monthsHeaderHtml}
+                            </tr>
+                            <tr style="background: #f1f5f9;">
+                                ${daysHeaderHtml}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHtml}
+                        </tbody>
+                    </table>
+                    
+                    <script>
+                        window.onload = function() {
+                            setTimeout(function() {
+                                window.print();
+                            }, 500);
+                        }
+                    </script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
         });
     }
 
