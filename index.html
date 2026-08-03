@@ -4224,10 +4224,11 @@ body.public-view-mode #public-view-header {
                                                     <th style="padding: 10px 12px; width: 120px;">วันที่ไปดูงาน</th>
                                                     <th style="padding: 10px 12px; width: 140px;">เลขที่ใบเสนอราคา</th>
                                                     <th style="padding: 10px 12px;">ชื่องาน</th>
-                                                    <th style="padding: 10px 12px; width: 180px; text-align: center;">BOQ</th>
-                                                    <th style="padding: 10px 12px; width: 120px; text-align: center;">คู่เทียบ 1</th>
-                                                    <th style="padding: 10px 12px; width: 120px; text-align: center;">คู่เทียบ 2</th>
-                                                    <th style="padding: 10px 12px; width: 100px; text-align: center;">จัดการ</th>
+                                                    <th style="padding: 10px 12px; width: 125px; text-align: center;">BOQ</th>
+                                                    <th style="padding: 10px 12px; width: 95px; text-align: center;">คู่เทียบ 1</th>
+                                                    <th style="padding: 10px 12px; width: 95px; text-align: center;">คู่เทียบ 2</th>
+                                                    <th style="padding: 10px 12px; width: 180px;">หมายเหตุ</th>
+                                                    <th style="padding: 10px 12px; width: 90px; text-align: center;">จัดการ</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="quoting-storage-table-body">
@@ -4821,6 +4822,10 @@ body.public-view-mode #public-view-header {
                                 <input type="url" id="new-quoting-comparison-2" class="form-control" placeholder="https://...">
                             </div>
                         </div>
+                        <div class="form-group mt-3">
+                            <label class="form-label" for="new-quoting-remarks"><i class="fa-solid fa-comment-dots text-muted mr-1"></i> หมายเหตุ</label>
+                            <input type="text" id="new-quoting-remarks" class="form-control" placeholder="เช่น สถานะ: ติดตามผล, รอโรงพยาบาลพิจารณา">
+                        </div>
                     </div>
                     
                     <!-- Excel/CSV Import Section -->
@@ -5124,6 +5129,10 @@ body.public-view-mode #public-view-header {
                                 <label class="form-label" for="edit-quoting-comparison-2"><i class="fa-solid fa-link text-blue mr-1"></i> ลิงก์คู่เทียบ 2</label>
                                 <input type="url" id="edit-quoting-comparison-2" class="form-control" placeholder="https://...">
                             </div>
+                        </div>
+                        <div class="form-group mt-3">
+                            <label class="form-label" for="edit-quoting-remarks"><i class="fa-solid fa-comment-dots text-muted mr-1"></i> หมายเหตุ</label>
+                            <input type="text" id="edit-quoting-remarks" class="form-control" placeholder="เช่น สถานะ: ติดตามผล, รอโรงพยาบาลพิจารณา">
                         </div>
                     </div>
                     
@@ -7236,7 +7245,7 @@ function renderQuotingStorageView(project) {
     });
 
     if (quotingProjects.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center; color: var(--text-muted); padding: 24px;">ไม่พบรายการเสนอราคาในระบบ</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align:center; color: var(--text-muted); padding: 24px;">ไม่พบรายการเสนอราคาในระบบ</td></tr>`;
         return;
     }
 
@@ -7279,6 +7288,11 @@ function renderQuotingStorageView(project) {
             comp2Html = `<a href="${url}" target="_blank" class="btn btn-xs btn-outline" style="font-size: 11px; padding: 2px 6px; color: #2563eb; border-color: #93c5fd; background: #eff6ff; display: inline-flex; align-items: center; gap: 4px;" onclick="event.stopPropagation();"><i class="fa-solid fa-link"></i> ลิงก์</a>`;
         }
 
+        let remarksHtml = `<span style="color: var(--text-muted); font-size: 11.5px;">-</span>`;
+        if (p.remarks) {
+            remarksHtml = `<span style="color: var(--navy-medium); font-weight: 500;">${p.remarks}</span>`;
+        }
+
         tr.innerHTML = `
             <td style="padding: 10px 12px; text-align: center; font-weight: 700; color: var(--text-muted);">${index + 1}</td>
             <td style="padding: 10px 12px; text-align: center;">${siteVisitDateDisplay}</td>
@@ -7290,6 +7304,7 @@ function renderQuotingStorageView(project) {
             <td style="padding: 10px 12px; text-align: center;">${boqHtml}</td>
             <td style="padding: 10px 12px; text-align: center;">${comp1Html}</td>
             <td style="padding: 10px 12px; text-align: center;">${comp2Html}</td>
+            <td style="padding: 10px 12px; font-size: 11.5px; line-height: 1.4; max-width: 200px; word-wrap: break-word; white-space: normal;">${remarksHtml}</td>
             <td style="padding: 10px 12px; text-align: center;" onclick="event.stopPropagation();">
                 <button class="btn btn-sm btn-outline" style="font-size: 10.5px; padding: 2px 8px;" onclick="appState.selectedDetailProject='${p.code}'; document.getElementById('open-edit-project-btn').click();">
                     <i class="fa-solid fa-pen-to-square"></i> แก้ไข
@@ -10824,10 +10839,12 @@ document.addEventListener("DOMContentLoaded", () => {
             const boqFileEl = document.getElementById("new-quoting-boq-file");
             const comp1El = document.getElementById("new-quoting-comparison-1");
             const comp2El = document.getElementById("new-quoting-comparison-2");
+            const remarksEl = document.getElementById("new-quoting-remarks");
             if (siteVisitEl) siteVisitEl.value = "";
             if (boqFileEl) boqFileEl.value = "";
             if (comp1El) comp1El.value = "";
             if (comp2El) comp2El.value = "";
+            if (remarksEl) remarksEl.value = "";
         }
         createProjectModal.classList.add("active");
     };
@@ -11429,6 +11446,7 @@ document.addEventListener("DOMContentLoaded", () => {
             let boqFileBase64 = "";
             let comparison1 = "";
             let comparison2 = "";
+            let remarks = "";
 
             if (isQuoting) {
                 const siteVisitEl = document.getElementById("new-quoting-site-visit-date");
@@ -11448,6 +11466,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const comp2El = document.getElementById("new-quoting-comparison-2");
                 if (comp2El) comparison2 = comp2El.value.trim();
+
+                const remarksEl = document.getElementById("new-quoting-remarks");
+                if (remarksEl) remarks = remarksEl.value.trim();
             }
 
             if (projectsData[code]) {
@@ -11492,7 +11513,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 boqFileName: boqFileName,
                 boqFileBase64: boqFileBase64,
                 comparison1: comparison1,
-                comparison2: comparison2
+                comparison2: comparison2,
+                remarks: remarks
             };
             
             // Save and sync immediately
@@ -12887,6 +12909,7 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("edit-quoting-site-visit-date").value = proj.siteVisitDate || "";
             document.getElementById("edit-quoting-comparison-1").value = proj.comparison1 || "";
             document.getElementById("edit-quoting-comparison-2").value = proj.comparison2 || "";
+            document.getElementById("edit-quoting-remarks").value = proj.remarks || "";
             document.getElementById("edit-quoting-boq-file").value = ""; // Clear file selector
             
             const curFileEl = document.getElementById("edit-quoting-boq-current-file");
@@ -13008,6 +13031,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 const comp2El = document.getElementById("edit-quoting-comparison-2");
                 if (comp2El) proj.comparison2 = comp2El.value.trim();
+
+                const remarksEl = document.getElementById("edit-quoting-remarks");
+                if (remarksEl) proj.remarks = remarksEl.value.trim();
 
                 const boqFileEl = document.getElementById("edit-quoting-boq-file");
                 if (boqFileEl && boqFileEl.files && boqFileEl.files.length > 0) {
