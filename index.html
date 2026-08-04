@@ -570,7 +570,7 @@ body:not(.public-view-mode) .main-header {
    ---------------------------------------------------- */
 .view-panel {
     display: none;
-    padding: 20px;
+    padding: 20px 20px 48px 20px; /* Increased bottom padding to 48px to prevent overlap and add whitespace */
     flex-direction: column;
     gap: 20px;
     animation: fadeIn 0.3s ease;
@@ -3087,6 +3087,36 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
     width: 18px;
     height: 18px;
     cursor: pointer;
+}
+
+/* Floating Cloud Sync Status Indicator Positioning */
+.cloud-sync-status {
+    position: fixed;
+    bottom: 24px;
+    left: calc(var(--sidebar-width) + 24px);
+    z-index: 9999;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 10px 16px;
+    border-radius: 999px;
+    background: rgba(16, 185, 129, 0.95);
+    color: #ffffff;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(8px);
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(10px);
+}
+
+@media (max-width: 992px) {
+    .cloud-sync-status {
+        left: 24px;
+    }
 }
 
 #public-view-header {
@@ -15405,7 +15435,7 @@ function showDraftBadge(modalId) {
 
 </script>
 <!-- Floating Cloud Sync Status Indicator -->
-<div id="cloud-sync-status" class="cloud-sync-status" style="position: fixed; bottom: 24px; right: 24px; z-index: 9999; display: inline-flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 600; padding: 10px 16px; border-radius: 999px; background: rgba(16, 185, 129, 0.95); color: #ffffff; border: 1px solid rgba(16, 185, 129, 0.2); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); backdrop-filter: blur(8px); opacity: 0; pointer-events: none; transform: translateY(10px);">
+<div id="cloud-sync-status" class="cloud-sync-status">
     <i class="fa-solid fa-circle-check" id="cloud-sync-icon" style="font-size: 14px; color: #ffffff;"></i>
     <span id="cloud-sync-text">บันทึกข้อมูลคลาวด์สำเร็จ</span>
 </div>
