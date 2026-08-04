@@ -3051,6 +3051,44 @@ body.role-customer .show-customer {
     display: flex !important;
 }
 
+/* Photo Gallery Multi-Select & Red Buttons */
+.btn-red {
+    background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+    color: #ffffff !important;
+    border: none !important;
+}
+.btn-red:hover {
+    opacity: 0.9 !important;
+}
+.btn-outline-red {
+    background-color: #ffffff !important;
+    border: 1px solid #fca5a5 !important;
+    color: #dc2626 !important;
+}
+.btn-outline-red:hover {
+    background-color: #fef2f2 !important;
+    color: #b91c1c !important;
+}
+.gallery-select-cb-wrapper {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    z-index: 10;
+    display: none;
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 4px;
+    padding: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+}
+body.gallery-select-mode .gallery-select-cb-wrapper {
+    display: block;
+}
+.gallery-select-cb {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
 #public-view-header {
     display: none;
     background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%);
@@ -5374,6 +5412,19 @@ async function loadFromSupabase() {
             renderOverallDashboard();
             renderSubnavProjectWorkspace();
             console.log("Loaded data from Supabase successfully!");
+
+            // One-off cleanup for PO 22026005032 media images
+            if (projectsData["PO 22026005032"] && projectsData["PO 22026005032"].media && projectsData["PO 22026005032"].media.length > 0) {
+                console.log("Cleaning up PO 22026005032 media...");
+                projectsData["PO 22026005032"].media = [];
+                localStorage.setItem("technical_water_projects_data_v2", JSON.stringify(projectsData));
+                syncProjectToSupabase("PO 22026005032");
+                supabaseClient.from('projects').delete().ilike('code', 'FILE:PO 22026005032:MEDIA:%')
+                    .then(({ error }) => {
+                        if (error) console.error("Error deleting remote files for PO 22026005032:", error);
+                        else console.log("Successfully deleted remote files for PO 22026005032");
+                    });
+            }
         } else {
             console.log("Supabase is empty. Resetting local cache to empty...");
             projectsData = {};
@@ -7850,33 +7901,138 @@ function renderSubnavPhotosFiles(project) {
         const folderLabel = formatSortKeyToThai(selectedKey);
         const folderItems = groups[selectedKey] || [];
         
+        const canEdit = appState.currentRole === "pm" && appState.selectedDetailProject !== "all";
+
         // 1. Back button header
         const header = document.createElement("div");
         header.style.cssText = "grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; border-bottom: 1px solid #f1f5f9; padding-bottom: 12px;";
-        header.innerHTML = `
-            <button class="btn btn-sm btn-outline" id="gallery-back-to-folders" style="display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 4px 10px; cursor: pointer; background: #fff; border: 1px solid var(--border-color); border-radius: 4px;">
-                <i class="fa-solid fa-chevron-left"></i> ย้อนกลับไปโฟลเดอร์
-            </button>
+        
+        let headerHtml = `
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <button class="btn btn-sm btn-outline" id="gallery-back-to-folders" style="display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 4px 10px; cursor: pointer; background: #fff; border: 1px solid var(--border-color); border-radius: 4px;">
+                    <i class="fa-solid fa-chevron-left"></i> ย้อนกลับไปโฟลเดอร์
+                </button>
+        `;
+        
+        if (canEdit && folderItems.length > 0) {
+            headerHtml += `
+                <button class="btn btn-sm btn-outline-red" id="gallery-toggle-select" style="display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 4px 10px; cursor: pointer; border-radius: 4px;">
+                    <i class="fa-solid fa-square-check"></i> เลือกรูปภาพเพื่อลบ
+                </button>
+                <div id="gallery-delete-actions" style="display: none; align-items: center; gap: 10px;">
+                    <button class="btn btn-sm btn-red" id="gallery-bulk-delete" style="display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 4px 10px; cursor: pointer; border-radius: 4px;" disabled>
+                        <i class="fa-solid fa-trash-can"></i> ลบรูปภาพที่เลือก (<span id="delete-selected-count">0</span>)
+                    </button>
+                    <button class="btn btn-sm btn-outline" id="gallery-cancel-select" style="display: flex; align-items: center; gap: 6px; font-size: 12px; padding: 4px 10px; cursor: pointer; background: #fff; border: 1px solid var(--border-color); border-radius: 4px;">
+                        ยกเลิก
+                    </button>
+                </div>
+            `;
+        }
+
+        headerHtml += `
+            </div>
             <span style="font-weight: 600; font-size: 15px; color: var(--navy-dark);">โฟลเดอร์: ${folderLabel}</span>
         `;
+        header.innerHTML = headerHtml;
         grid.appendChild(header);
         
         header.querySelector("#gallery-back-to-folders").addEventListener("click", () => {
+            document.body.classList.remove("gallery-select-mode");
             appState.selectedGalleryFolder = null;
             renderSubnavPhotosFiles(project);
         });
+        
+        const updateBulkDeleteCount = () => {
+            const checkedCount = grid.querySelectorAll(".gallery-select-cb:checked").length;
+            const countEl = document.getElementById("delete-selected-count");
+            if (countEl) countEl.textContent = checkedCount;
+            
+            const deleteBtn = document.getElementById("gallery-bulk-delete");
+            if (deleteBtn) {
+                deleteBtn.disabled = checkedCount === 0;
+                deleteBtn.style.opacity = checkedCount === 0 ? "0.6" : "1";
+            }
+        };
+
+        if (canEdit && folderItems.length > 0) {
+            const toggleSelectBtn = header.querySelector("#gallery-toggle-select");
+            const cancelSelectBtn = header.querySelector("#gallery-cancel-select");
+            const deleteActions = header.querySelector("#gallery-delete-actions");
+            const bulkDeleteBtn = header.querySelector("#gallery-bulk-delete");
+            
+            toggleSelectBtn.addEventListener("click", () => {
+                document.body.classList.add("gallery-select-mode");
+                toggleSelectBtn.style.display = "none";
+                deleteActions.style.display = "flex";
+                updateBulkDeleteCount();
+            });
+            
+            cancelSelectBtn.addEventListener("click", () => {
+                document.body.classList.remove("gallery-select-mode");
+                toggleSelectBtn.style.display = "flex";
+                deleteActions.style.display = "none";
+                grid.querySelectorAll(".gallery-select-cb").forEach(cb => cb.checked = false);
+                updateBulkDeleteCount();
+            });
+            
+            bulkDeleteBtn.addEventListener("click", async () => {
+                const checkedCbs = grid.querySelectorAll(".gallery-select-cb:checked");
+                if (checkedCbs.length === 0) return;
+                
+                if (!confirm(`⚠️ คุณแน่ใจหรือไม่ว่าต้องการลบรูปภาพที่เลือกทั้งหมด ${checkedCbs.length} รูปออกจากระบบถาวร?\nข้อมูลรูปภาพที่ลบจะไม่สามารถกู้คืนได้!`)) {
+                    return;
+                }
+                
+                showToast(`กำลังลบรูปภาพ ${checkedCbs.length} รูปออกจากเซิร์ฟเวอร์...`, "info");
+                
+                const keysToDelete = [];
+                checkedCbs.forEach(cb => {
+                    const key = cb.getAttribute("data-img-key");
+                    if (key) keysToDelete.push(key);
+                });
+                
+                project.media = project.media.filter(item => !keysToDelete.includes(item.img));
+                saveToLocalStorage();
+                
+                if (typeof supabaseClient !== "undefined") {
+                    try {
+                        const { error } = await supabaseClient.from('projects').delete().in('code', keysToDelete);
+                        if (error) throw error;
+                        showToast(`✅ ลบรูปภาพสำเร็จทั้งหมด ${checkedCbs.length} รูปเรียบร้อยแล้ว!`, "success");
+                    } catch (err) {
+                        console.error("Failed to delete batch images from Supabase:", err);
+                        showToast(`ลบไฟล์บางส่วนล้มเหลว: ${err.message || err}`, "warning");
+                    }
+                } else {
+                    showToast(`✅ ลบรูปภาพสำเร็จเฉพาะในเครื่อง ${checkedCbs.length} รูป`, "success");
+                }
+                
+                document.body.classList.remove("gallery-select-mode");
+                renderSubnavPhotosFiles(project);
+            });
+        }
         
         // 2. Render image cards
         folderItems.forEach(item => {
             const card = document.createElement("div");
             card.className = "gallery-photo-card";
+            card.style.position = "relative";
             card.innerHTML = `
+                <div class="gallery-select-cb-wrapper">
+                    <input type="checkbox" class="gallery-select-cb" data-img-key="${item.img}">
+                </div>
                 <img src="data:image/svg+xml;charset=utf-8,%3Csvg xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg' viewBox%3D'0 0 250 150'%2F%3E" alt="รูปภาพ" class="gallery-img" style="background:#f1f5f9; object-fit:cover; height: 160px; width: 100%; border-top-left-radius: inherit; border-top-right-radius: inherit;" onerror="this.src='https://images.unsplash.com/photo-1531403009284-440f080d1e12?auto=format&fit=crop&w=250&q=80'">
                 <div class="photo-info" style="padding: 10px; display: flex; justify-content: center; align-items: center; background: #fff;">
                     <span class="date" style="font-size: 12px; color: var(--text-dark); font-weight: 500;">อัปเดต ${item.date}</span>
                 </div>
             `;
             grid.appendChild(card);
+            
+            const cb = card.querySelector(".gallery-select-cb");
+            if (cb) {
+                cb.addEventListener("change", updateBulkDeleteCount);
+            }
             
             const imgEl = card.querySelector(".gallery-img");
             if (item.img && item.img.startsWith("FILE:")) {
@@ -7895,17 +8051,25 @@ function renderSubnavPhotosFiles(project) {
                 imgEl.src = item.img;
             }
             
-            // Add zoom preview event listener to gallery image
+            // Add zoom preview / selection click listener to gallery image
             imgEl.style.cursor = "zoom-in";
             imgEl.addEventListener("click", () => {
-                const overlay = document.createElement("div");
-                overlay.style.cssText = "position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.85); display: flex; align-items: center; justify-content: center; z-index: 12000; cursor: zoom-out; backdrop-filter: blur(4px);";
-                const largeImg = document.createElement("img");
-                largeImg.src = imgEl.src;
-                largeImg.style.cssText = "max-width: 90vw; max-height: 90vh; border-radius: 8px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);";
-                overlay.appendChild(largeImg);
-                overlay.addEventListener("click", () => overlay.remove());
-                document.body.appendChild(overlay);
+                if (document.body.classList.contains("gallery-select-mode")) {
+                    const cb = card.querySelector(".gallery-select-cb");
+                    if (cb) {
+                        cb.checked = !cb.checked;
+                        updateBulkDeleteCount();
+                    }
+                } else {
+                    const overlay = document.createElement("div");
+                    overlay.style.cssText = "position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.85); display: flex; align-items: center; justify-content: center; z-index: 12000; cursor: zoom-out; backdrop-filter: blur(4px);";
+                    const largeImg = document.createElement("img");
+                    largeImg.src = imgEl.src;
+                    largeImg.style.cssText = "max-width: 90vw; max-height: 90vh; border-radius: 8px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);";
+                    overlay.appendChild(largeImg);
+                    overlay.addEventListener("click", () => overlay.remove());
+                    document.body.appendChild(overlay);
+                }
             });
         });
     }
@@ -10888,7 +11052,29 @@ document.addEventListener("DOMContentLoaded", () => {
             
             if (fileInput && fileInput.files && fileInput.files.length > 0) {
                 const files = fileInput.files;
-                showToast(`กำลังเริ่มอัปโหลดรูปภาพ ${files.length} รูป...`, "info");
+                const totalFiles = files.length;
+                
+                // Create blocking progress overlay
+                const uploadOverlay = document.createElement("div");
+                uploadOverlay.id = "upload-progress-overlay";
+                uploadOverlay.style.cssText = "position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.85); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 99999; color: #fff; font-family: 'Prompt', sans-serif; backdrop-filter: blur(4px);";
+                uploadOverlay.innerHTML = `
+                    <div style="background: #ffffff; color: var(--navy-dark); padding: 32px; border-radius: var(--radius-lg); width: 90%; max-width: 420px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.25); text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;">
+                        <div id="upload-status-icon" style="position: relative; width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px;">
+                            <i class="fa-solid fa-spinner fa-spin" style="font-size: 48px; color: var(--primary-blue);"></i>
+                        </div>
+                        <h3 id="upload-status-title" style="margin: 0; font-size: 18px; font-weight: 700;">กำลังอัปโหลดรูปภาพ...</h3>
+                        <p id="upload-status-desc" style="margin: 0; font-size: 13px; color: var(--text-muted); line-height: 1.5;">กำลังเริ่มอัปโหลดรูปภาพ กรุณาอย่าปิดหน้าต่างนี้</p>
+                        
+                        <div style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin-top: 8px; position: relative;">
+                            <div id="upload-progress-bar" style="width: 0%; height: 100%; background: linear-gradient(135deg, #3b82f6, #1d4ed8); transition: width 0.2s ease;"></div>
+                        </div>
+                        <div id="upload-progress-percent" style="font-size: 12.5px; font-weight: 700; color: var(--primary-blue);">0%</div>
+                        
+                        <button id="upload-success-btn" class="btn btn-primary" style="display: none; width: 100%; justify-content: center; padding: 10px; font-size: 13px; font-weight: 700; border-radius: 8px; margin-top: 8px; cursor: pointer;">ตกลง</button>
+                    </div>
+                `;
+                document.body.appendChild(uploadOverlay);
                 
                 if (!project.media) project.media = [];
                 
@@ -10898,13 +11084,21 @@ document.addEventListener("DOMContentLoaded", () => {
                 let successCount = 0;
                 let failCount = 0;
                 
-                for (let i = 0; i < files.length; i++) {
+                const progressBar = document.getElementById("upload-progress-bar");
+                const progressPercent = document.getElementById("upload-progress-percent");
+                const statusDesc = document.getElementById("upload-status-desc");
+                
+                for (let i = 0; i < totalFiles; i++) {
                     const fileObj = files[i];
+                    
+                    if (statusDesc) {
+                        statusDesc.textContent = `กำลังอัปโหลด รูปที่ ${i + 1} จากทั้งหมด ${totalFiles} รูป...`;
+                    }
+                    
                     try {
                         const result = await readFileAsBase64(fileObj);
                         
                         const projectCode = appState.selectedDetailProject;
-                        // Use timestamp + loop index to make sure fileKey is unique
                         const fileKey = `FILE:${projectCode}:MEDIA:${Date.now()}_${i}:${fileObj.name}`;
                         
                         const { error: fileErr } = await supabaseClient.from('projects').upsert({
@@ -10916,33 +11110,68 @@ document.addEventListener("DOMContentLoaded", () => {
                         if (fileErr) {
                             console.error("Upload error for file:", fileObj.name, fileErr);
                             failCount++;
-                            continue;
+                        } else {
+                            project.media.unshift({
+                                title: "",
+                                date: formattedDate,
+                                img: fileKey
+                            });
+                            successCount++;
                         }
-                        
-                        project.media.unshift({
-                            title: "",
-                            date: formattedDate,
-                            img: fileKey
-                        });
-                        
-                        successCount++;
                     } catch (err) {
                         console.error("Processing error for file:", fileObj.name, err);
                         failCount++;
                     }
+                    
+                    // Update progress
+                    const percent = Math.round(((i + 1) / totalFiles) * 100);
+                    if (progressBar) progressBar.style.width = `${percent}%`;
+                    if (progressPercent) progressPercent.textContent = `${percent}%`;
                 }
                 
                 // Save and sync immediately
                 saveToLocalStorage();
                 
+                // Show completion status
+                const statusIcon = document.getElementById("upload-status-icon");
+                const statusTitle = document.getElementById("upload-status-title");
+                const successBtn = document.getElementById("upload-success-btn");
+                
+                if (progressBar) progressBar.style.width = "100%";
+                if (progressPercent) progressPercent.textContent = "100%";
+                
                 if (successCount > 0) {
-                    showToast(`อัปโหลดรูปภาพสำเร็จ ${successCount} รูป!${failCount > 0 ? ` (ล้มเหลว ${failCount} รูป)` : ''}`, "success");
+                    if (statusIcon) {
+                        statusIcon.innerHTML = `<i class="fa-solid fa-circle-check" style="font-size: 56px; color: #10b981; animation: scaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);"></i>`;
+                    }
+                    if (statusTitle) {
+                        statusTitle.textContent = "อัปโหลดเสร็จเรียบร้อย!";
+                        statusTitle.style.color = "#10b981";
+                    }
+                    if (statusDesc) {
+                        statusDesc.innerHTML = `อัปโหลดรูปภาพสำเร็จ <strong style="font-size: 15px; color: var(--navy-dark);">${successCount} รูป</strong>${failCount > 0 ? `<br><span style="color: var(--color-delayed); font-size: 12px;">ล้มเหลว ${failCount} รูป</span>` : ''}`;
+                    }
                 } else {
-                    showToast("อัปโหลดรูปภาพล้มเหลวทั้งหมด", "error");
+                    if (statusIcon) {
+                        statusIcon.innerHTML = `<i class="fa-solid fa-circle-xmark" style="font-size: 56px; color: #ef4444;"></i>`;
+                    }
+                    if (statusTitle) {
+                        statusTitle.textContent = "อัปโหลดล้มเหลว";
+                        statusTitle.style.color = "#ef4444";
+                    }
+                    if (statusDesc) {
+                        statusDesc.textContent = "ไม่สามารถอัปโหลดรูปภาพได้ กรุณาลองใหม่อีกครั้ง";
+                    }
                 }
                 
-                closeMediaModal();
-                renderSubnavProjectWorkspace();
+                if (successBtn) {
+                    successBtn.style.display = "flex";
+                    successBtn.addEventListener("click", () => {
+                        uploadOverlay.remove();
+                        closeMediaModal();
+                        renderSubnavProjectWorkspace();
+                    });
+                }
             } else {
                 showToast("กรุณาเลือกรูปภาพอย่างน้อย 1 รูป", "warning");
             }
