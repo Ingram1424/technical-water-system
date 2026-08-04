@@ -13043,6 +13043,9 @@ document.addEventListener("DOMContentLoaded", () => {
         showToast("กำลังจัดเตรียมข้อมูลและรูปภาพสำหรับเอกสาร PDF...", "info");
 
         const isCustomer = appState.currentRole === "customer";
+        const scurveCanvas = document.getElementById("scurve-chart-canvas");
+        const scurveChartImg = scurveCanvas ? scurveCanvas.toDataURL("image/png") : null;
+
         const now = new Date();
         const dateStr = now.toLocaleDateString("th-TH", { day: '2-digit', month: '2-digit', year: 'numeric' });
         const timeStr = now.toLocaleTimeString("th-TH", { hour: '2-digit', minute: '2-digit' });
@@ -13096,100 +13099,135 @@ document.addEventListener("DOMContentLoaded", () => {
             for (let idx = 0; idx < projectsToExport.length; idx++) {
                 const proj = projectsToExport[idx];
 
-                // Build S-Curve (Plan Work)
-                let scurvePlanHTML = "";
-                if (proj.scurveData && proj.scurveData.length > 0 && proj.scurveMonths) {
-                    let totalWeight = proj.scurveData.reduce((sum, item) => sum + (item.isSubtask ? 0 : parseFloat(item.weight) || 0), 0);
-                    let headerCols = proj.scurveMonths.map(month => `
-                        <th colspan="4" style="border-left: 1px solid #cbd5e1; text-align: center; padding: 6px;">${month}</th>
-                    `).join("");
-                    let weekCols = proj.scurveMonths.map(() => `
-                        <th style="border-left: 1px solid #cbd5e1; font-weight: normal; font-size: 10px; padding: 4px;">1</th>
-                        <th style="font-weight: normal; font-size: 10px; padding: 4px;">2</th>
-                        <th style="font-weight: normal; font-size: 10px; padding: 4px;">3</th>
-                        <th style="font-weight: normal; font-size: 10px; padding: 4px;">4</th>
-                    `).join("");
-                    
-                    let rows = proj.scurveData.map(item => {
-                        const isSub = item.isSubtask;
-                        let cells = (item.plan || []).map((val, i) => `
-                            <td style="border-left: ${i%4===0 ? '1px solid #cbd5e1' : 'none'}; text-align: center; font-size: 10.5px; padding: 4px;">${val || '-'}</td>
-                        `).join("");
-                        return `
-                            <tr>
-                                <td style="text-align: center;">${isSub ? '' : (item.item || '')}</td>
-                                <td style="padding-left: ${isSub ? '20px' : '8px'}; font-weight: ${isSub ? 'normal' : '600'};">${isSub ? '- ' : ''}${item.name || ''}</td>
-                                ${isCustomer ? '' : `<td style="text-align: center;">${isSub ? '' : formatNumber(item.budget || 0)}</td>`}
-                                <td style="text-align: center;">${isSub ? '' : (item.weight || 0) + '%'}</td>
-                                <td style="text-align: center; font-weight: bold;">${isSub ? '' : (item.plan ? item.plan.reduce((a,b)=>a+(parseFloat(b)||0), 0) : 0) + '%'}</td>
-                                ${cells}
-                            </tr>
-                        `;
-                    }).join("");
-                    
-                    // Calc weekly sums for plan
-                    let weeklyPlanSums = new Array(proj.scurveMonths.length * 4).fill(0);
-                    let currentParentWeightVal = 0;
-                    proj.scurveData.forEach(item => {
-                        if (!item.isSubtask) {
-                            currentParentWeightVal = parseFloat(item.weight) || 0;
-                        }
-                        for (let i = 0; i < weeklyPlanSums.length; i++) {
-                            let pVal = parseFloat(item.plan ? item.plan[i] : 0) || 0;
-                            weeklyPlanSums[i] += (currentParentWeightVal * pVal / 100);
-                        }
-                    });
-                    
-                    let weeklySumsCells = weeklyPlanSums.map((val, i) => `
-                        <td style="border-left: ${i%4===0 ? '1px solid #cbd5e1' : 'none'}; text-align: center; font-size: 10px; font-weight: bold;">${val === 0 ? '0.0%' : val.toFixed(1) + '%'}</td>
-                    `).join("");
-                    
-                    let planCum = 0;
-                    let weeklyCumCells = weeklyPlanSums.map((val, i) => {
-                        planCum += val;
-                        return `<td style="border-left: ${i%4===0 ? '1px solid #cbd5e1' : 'none'}; text-align: center; font-size: 10px; font-weight: bold; color: #1d4ed8;">${planCum === 0 ? '0.0%' : planCum.toFixed(1) + '%'}</td>`;
-                    }).join("");
+                // Build Gantt Chart HTML for Plan Work (Gantt Chart Scheduler style - like Screenshot 1)
+                let ganttChartHTML = "";
+                if (proj.ganttData && proj.ganttData.tasks && proj.ganttData.tasks.length > 0 && proj.ganttData.startDate && proj.ganttData.endDate) {
+                    const dateList = [];
+                    const [sy, sm, sd] = proj.ganttData.startDate.split('-').map(Number);
+                    const [ey, em, ed] = proj.ganttData.endDate.split('-').map(Number);
+                    const start = new Date(sy, sm - 1, sd);
+                    const end = new Date(ey, em - 1, ed);
 
-                    scurvePlanHTML = `
-                        <div class="section-title"><i class="fa-solid fa-calendar-check"></i> แผนงานการดำเนินงานโครงการ (Plan Work Schedule)</div>
-                        <table class="data-table scurve-table" style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
-                            <thead>
-                                <tr style="background: #e0e7ff; text-align: center;">
-                                    <th rowspan="2" style="width: 50px;">Items</th>
-                                    <th rowspan="2">Description</th>
-                                    ${isCustomer ? '' : '<th rowspan="2" style="width: 80px;">Budget</th>'}
-                                    <th rowspan="2" style="width: 60px;">%</th>
-                                    <th rowspan="2" style="width: 60px;">% (รวม)</th>
-                                    ${headerCols}
-                                </tr>
-                                <tr style="background: #f1f5f9; text-align: center;">
-                                    ${weekCols}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${rows}
-                                <tr style="background: #f8fafc; font-weight: bold; border-top: 2px solid #cbd5e1;">
-                                    <td colspan="2" style="text-align: right; padding: 6px 10px;">รวม</td>
-                                    ${isCustomer ? '' : `<td style="text-align: center;">${formatNumber(proj.scurveData.reduce((sum, item)=>sum+(item.isSubtask?0:item.budget||0),0))}</td>`}
-                                    <td style="text-align: center;">${totalWeight.toFixed(1)}%</td>
-                                    <td></td>
-                                    ${new Array(proj.scurveMonths.length * 4).fill('<td style="border-left: 1px solid #cbd5e1;"></td>').map((td, i) => i%4===0 ? td : '<td></td>').join("")}
-                                </tr>
-                                <tr style="background: #fff; font-weight: bold; border-top: 1px solid #cbd5e1;">
-                                    <td colspan="${isCustomer ? 4 : 5}" style="text-align: right; padding: 6px 10px; font-size: 11px;">ปริมาณงานต่อสัปดาห์ (%)</td>
-                                    ${weeklySumsCells}
-                                </tr>
-                                <tr style="background: #f1f5f9; font-weight: bold; border-top: 1px solid #cbd5e1;">
-                                    <td colspan="${isCustomer ? 4 : 5}" style="text-align: right; padding: 6px 10px; font-size: 11px;">สะสมปริมาณงาน (%)</td>
-                                    ${weeklyCumCells}
-                                </tr>
-                            </tbody>
-                        </table>
+                    let current = new Date(start);
+                    let count = 0;
+                    while (current <= end && count < 100) {
+                        dateList.push(new Date(current));
+                        current.setDate(current.getDate() + 1);
+                        count++;
+                    }
+
+                    if (dateList.length > 0) {
+                        const monthGroups = [];
+                        const monthThaiNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+                        dateList.forEach(d => {
+                            const mIdx = d.getMonth();
+                            const yTh = d.getFullYear() + 543;
+                            const mName = monthThaiNames[mIdx] + " " + yTh;
+                            let grp = monthGroups.find(g => g.name === mName);
+                            if (!grp) {
+                                grp = { name: mName, colspan: 0 };
+                                monthGroups.push(grp);
+                            }
+                            grp.colspan++;
+                        });
+
+                        let rowsHtml = "";
+                        proj.ganttData.tasks.forEach(task => {
+                            if (!task.rowType) {
+                                task.rowType = task.isHeader ? 'phase' : 'task';
+                            }
+
+                            if (task.rowType === 'phase') {
+                                rowsHtml += `
+                                    <tr style="background: #e2e8f0; font-weight: bold;">
+                                        <td style="text-align: center; border: 1px solid #cbd5e1; font-size: 10px;">${task.itemNum || ''}</td>
+                                        <td colspan="${dateList.length + 1}" style="font-weight: bold; border: 1px solid #cbd5e1; text-align: left; padding: 4px; font-size: 10px;">${task.name || ''}</td>
+                                    </tr>
+                                `;
+                            } else if (task.rowType === 'type') {
+                                rowsHtml += `
+                                    <tr style="background: #eff6ff; font-weight: bold; color: #1e40af;">
+                                        <td style="text-align: center; border: 1px solid #cbd5e1; font-size: 10px; color: #1e40af;">${task.itemNum || ''}</td>
+                                        <td colspan="${dateList.length + 1}" style="font-weight: bold; border: 1px solid #cbd5e1; text-align: left; padding: 4px; font-size: 10px; color: #1e40af;">${task.name || ''}</td>
+                                    </tr>
+                                `;
+                            } else if (task.rowType === 'category') {
+                                rowsHtml += `
+                                    <tr style="background: #ffffff; font-weight: bold;">
+                                        <td style="text-align: center; border: 1px solid #cbd5e1; font-size: 10px;">${task.itemNum || ''}</td>
+                                        <td colspan="${dateList.length + 1}" style="font-weight: bold; border: 1px solid #cbd5e1; text-align: left; padding: 4px; font-size: 10px; text-decoration: underline;">${task.name || ''}</td>
+                                    </tr>
+                                `;
+                            } else {
+                                const indentStyle = task.isSubtask ? "padding-left: 15px;" : "";
+                                const prefix = task.isSubtask ? "- " : "";
+                                let gridCellsHtml = "";
+                                dateList.forEach(d => {
+                                    const dStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+                                    const val = task.cells ? (task.cells[dStr] || 0) : 0;
+                                    let cellBg = "";
+                                    if (val === 1) cellBg = "background-color: #fef08a !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;";
+                                    else if (val === 2) cellBg = "background-color: #bbf7d0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;";
+                                    else if (val === 3) cellBg = "background-color: #fca5a5 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;";
+                                    gridCellsHtml += `<td style="border: 1px solid #cbd5e1; width: 18px; ${cellBg}"></td>`;
+                                });
+
+                                rowsHtml += `
+                                    <tr>
+                                        <td style="text-align: center; border: 1px solid #cbd5e1; font-size: 9.5px;">${task.itemNum || ''}</td>
+                                        <td style="border: 1px solid #cbd5e1; padding: 4px; text-align: left; font-size: 9.5px; ${indentStyle}">${prefix}${task.name || ''}</td>
+                                        ${gridCellsHtml}
+                                    </tr>
+                                `;
+                            }
+                        });
+
+                        let monthsHeaderHtml = "";
+                        monthGroups.forEach(grp => {
+                            monthsHeaderHtml += `<th colspan="${grp.colspan}" style="border: 1px solid #cbd5e1; padding: 5px; font-size: 9.5px; background: #e2e8f0; font-weight: bold;">${grp.name}</th>`;
+                        });
+
+                        let daysHeaderHtml = "";
+                        dateList.forEach(d => {
+                            daysHeaderHtml += `<th style="border: 1px solid #cbd5e1; font-size: 8px; font-weight: normal; width: 18px; padding: 2px; background: #f1f5f9;">${d.getDate()}</th>`;
+                        });
+
+                        ganttChartHTML = `
+                            <div class="section-title"><i class="fa-solid fa-calendar-days"></i> แผนงานการดำเนินงานโครงการ (Plan Work Schedule - Gantt Chart)</div>
+                            <div style="overflow-x: auto; max-width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; margin-bottom: 24px;">
+                                <table style="width: 100%; border-collapse: collapse; min-width: 600px;">
+                                    <thead>
+                                        <tr>
+                                            <th rowspan="2" style="width: 50px; border: 1px solid #cbd5e1; background: #e2e8f0; font-size: 9.5px; padding: 5px;">Items</th>
+                                            <th rowspan="2" style="border: 1px solid #cbd5e1; background: #e2e8f0; font-size: 9.5px; padding: 5px; text-align: left;">Description</th>
+                                            ${monthsHeaderHtml}
+                                        </tr>
+                                        <tr>
+                                            ${daysHeaderHtml}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${rowsHtml}
+                                    </tbody>
+                                </table>
+                            </div>
+                        `;
+                    }
+                }
+
+                // Build S-Curve (Actual Progress - S-Curve chart image + S-curve progress table - like Screenshot 2)
+                let scurveActualHTML = "";
+                let scurveChartHTML = "";
+
+                if (scurveChartImg) {
+                    scurveChartHTML = `
+                        <div class="section-title"><i class="fa-solid fa-chart-line"></i> กราฟความคืบหน้าโครงการสะสม (S-Curve Chart)</div>
+                        <div style="text-align: center; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 16px; margin-bottom: 24px; display: flex; justify-content: center; align-items: center;">
+                            <img src="${scurveChartImg}" style="max-width: 100%; max-height: 280px; object-fit: contain;">
+                        </div>
                     `;
                 }
 
-                // Build S-Curve (Actual Progress)
-                let scurveActualHTML = "";
                 if (proj.scurveData && proj.scurveData.length > 0 && proj.scurveMonths) {
                     let totalWeight = proj.scurveData.reduce((sum, item) => sum + (item.isSubtask ? 0 : parseFloat(item.weight) || 0), 0);
                     let headerCols = proj.scurveMonths.map(month => `
@@ -13532,7 +13570,8 @@ document.addEventListener("DOMContentLoaded", () => {
                             </div>
                         </div>
 
-                        ${scurvePlanHTML}
+                        ${ganttChartHTML}
+                        ${scurveChartHTML}
                         ${scurveActualHTML}
                         ${finHTML}
                         ${descHTML}
