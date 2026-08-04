@@ -85,6 +85,10 @@ body {
     overflow-x: hidden;
 }
 
+body:not(.public-view-mode) {
+    overflow: hidden;
+}
+
 /* App Container Layout */
 .app-container {
     display: flex;
@@ -235,6 +239,16 @@ body {
     min-width: 0;
     display: flex;
     flex-direction: column;
+}
+
+body:not(.public-view-mode) .main-content {
+    height: 100vh;
+    overflow: hidden;
+}
+
+body:not(.public-view-mode) .main-header {
+    position: relative;
+    top: auto;
 }
 
 /* HEADER BAR */
@@ -560,6 +574,12 @@ body {
     flex-direction: column;
     gap: 20px;
     animation: fadeIn 0.3s ease;
+}
+
+body:not(.public-view-mode) .view-panel {
+    flex-grow: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 .view-panel.active {
@@ -3007,6 +3027,7 @@ body.public-view-mode .main-content {
 body.public-view-mode #detail-info-manager {
     display: none !important;
 }
+body.public-view-mode .detail-split-grid {
     grid-template-columns: 1fr !important;
 }
 
