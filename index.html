@@ -570,7 +570,7 @@ body:not(.public-view-mode) .main-header {
    ---------------------------------------------------- */
 .view-panel {
     display: none;
-    padding: 20px 20px 48px 20px; /* Increased bottom padding to 48px to prevent overlap and add whitespace */
+    padding: 20px 20px 100px 20px; /* Increased bottom padding to 100px to allow buttons to scroll above floating elements */
     flex-direction: column;
     gap: 20px;
     animation: fadeIn 0.3s ease;
@@ -3093,7 +3093,7 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
 .cloud-sync-status {
     position: fixed;
     bottom: 24px;
-    left: calc(var(--sidebar-width) + 24px);
+    right: 24px; /* Back to bottom-right positioning */
     z-index: 9999;
     display: inline-flex;
     align-items: center;
@@ -3111,12 +3111,6 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
     opacity: 0;
     pointer-events: none;
     transform: translateY(10px);
-}
-
-@media (max-width: 992px) {
-    .cloud-sync-status {
-        left: 24px;
-    }
 }
 
 #public-view-header {
