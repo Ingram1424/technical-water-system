@@ -8912,62 +8912,146 @@ function renderSubnavDailyReports(project) {
     }
     
     const isPM = appState.currentRole === "pm";
+    const isCustomer = appState.currentRole === "customer";
     reports.forEach((rep, idx) => {
         const card = document.createElement("div");
         card.className = "feed-item";
-        card.style = "position: relative; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; margin-bottom: 16px; background: #fff; box-shadow: var(--card-shadow);";
         
-        const actionsHTML = isPM 
-            ? `
-               <button class="btn btn-xs btn-outline-blue btn-edit-daily-report" 
-                   data-idx="${idx}"
-                   style="font-size: 10.5px; padding: 3px 8px; display: flex; align-items: center; gap: 4px; background: none; border: 1px solid #1d4ed8; color: #1d4ed8; border-radius: 4px; cursor: pointer;">
-                   <i class="fa-solid fa-pen"></i> แก้ไข
-               </button>
-               <button class="btn btn-xs btn-outline-red btn-delete-daily-report" 
-                   data-idx="${idx}"
-                   style="font-size: 10.5px; padding: 3px 8px; display: flex; align-items: center; gap: 4px; background: none; border: 1px solid #ef4444; color: #ef4444; border-radius: 4px; cursor: pointer;">
-                   <i class="fa-solid fa-trash-can"></i> ลบ
-               </button>
-              ` 
-            : ``;
-
-        card.innerHTML = `
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
-                <div style="display: flex; align-items: center; gap: 8px; color: var(--navy-dark); font-weight: 600;">
-                    <i class="fa-solid fa-clock text-blue"></i>
-                    <span>วันที่ ${rep.date}</span>
+        if (isCustomer) {
+            card.style = "position: relative; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 30px; margin-bottom: 24px; background: #fff; box-shadow: 0 4px 15px rgba(0,0,0,0.06); font-family: 'Prompt', sans-serif; display: flex; flex-direction: column; gap: 20px;";
+            
+            card.innerHTML = `
+                <!-- 1. Header: Logo on the left, Company address on the right -->
+                <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #334155; padding-bottom: 12px; gap: 20px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <img src="logo.png" style="height: 55px; width: auto; object-fit: contain;" alt="TW Logo">
+                        <div style="display: flex; flex-direction: column; text-align: left;">
+                            <span style="font-size: 14px; font-weight: 800; color: #1e3a8a; letter-spacing: -0.4px;">TECHNICAL WATER CO., LTD.</span>
+                            <span style="font-size: 11px; font-weight: 700; color: #334155;">บริษัท เทคนิคอล วอเตอร์ จำกัด</span>
+                        </div>
+                    </div>
+                    <div style="text-align: right; font-size: 9.5px; color: #475569; line-height: 1.4; max-width: 400px;">
+                        <div>301/856 ซอยรามคำแหง 68 ถนนรามคำแหง แขวงหัวหมาก เขตบางกะปิ กรุงเทพฯ 10240</div>
+                        <div>เบอร์โทร (Tel.) 02-735-3022 | E-mail: technicalwater2015@gmail.com</div>
+                    </div>
                 </div>
-                <div style="display: flex; align-items: center; gap: 8px;">
-                    <span class="badge-status completed" style="background-color: #eff6ff; color: #1d4ed8; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600;">เสร็จสิ้นวันนี้</span>
-                    
+
+                <!-- 2. Document Title -->
+                <div style="text-align: center; margin: 8px 0;">
+                    <h3 style="font-size: 18px; font-weight: 700; color: #1e293b; text-decoration: underline; margin: 0;">รายงานการปฏิบัติงานรายวัน (Daily Report)</h3>
+                </div>
+
+                <!-- 3. Details (วันที่, เลข PO, ชื่องาน, สถานที่) -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 16px;">
+                    <div style="display: flex; gap: 8px; font-size: 12.5px;">
+                        <span style="color: #64748b; font-weight: 600; min-width: 60px;">วันที่:</span>
+                        <strong style="color: #1e293b;">${rep.date}</strong>
+                    </div>
+                    <div style="display: flex; gap: 8px; font-size: 12.5px;">
+                        <span style="color: #64748b; font-weight: 600; min-width: 60px;">เลข PO:</span>
+                        <strong style="color: #1e293b;">${project.code}</strong>
+                    </div>
+                    <div style="display: flex; gap: 8px; font-size: 12.5px; grid-column: span 2;">
+                        <span style="color: #64748b; font-weight: 600; min-width: 60px;">ชื่องาน:</span>
+                        <strong style="color: #1e293b;">${project.name}</strong>
+                    </div>
+                    <div style="display: flex; gap: 8px; font-size: 12.5px; grid-column: span 2;">
+                        <span style="color: #64748b; font-weight: 600; min-width: 60px;">สถานที่:</span>
+                        <strong style="color: #1e293b;">${project.customer}</strong>
+                    </div>
+                </div>
+
+                <!-- 4. Description / Work Details -->
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <span style="font-size: 12px; font-weight: 700; color: #0f172a; border-left: 3px solid #1e3a8a; padding-left: 8px;">รายละเอียดการปฏิบัติงานประจำวัน</span>
+                    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 14px; font-size: 12.5px; color: #334155; line-height: 1.6; white-space: pre-wrap; min-height: 80px;">${rep.desc}</div>
+                </div>
+
+                <!-- 5. Photo Gallery Grid -->
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <span style="font-size: 12px; font-weight: 700; color: #0f172a; border-left: 3px solid #1e3a8a; padding-left: 8px;">รูปภาพการปฏิบัติงาน</span>
+                    <div class="daily-photo-gallery" style="display: flex; gap: 10px; flex-wrap: wrap; background: #fafafa; border: 1px dashed #cbd5e1; padding: 12px; border-radius: 6px; min-height: 40px;"></div>
+                </div>
+
+                <!-- 6. Signatures Grid -->
+                <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px; border-top: 1px dashed #cbd5e1; padding-top: 16px;">
+                    <span style="font-size: 12px; font-weight: 700; color: #0f172a; border-left: 3px solid #1e3a8a; padding-left: 8px;">ผู้รับรองการปฏิบัติงาน</span>
+                    <div class="daily-signatures-list" style="display: flex; gap: 24px; flex-wrap: wrap; justify-content: center; margin-top: 6px;"></div>
+                </div>
+
+                <!-- Action buttons floats or footer action row -->
+                <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid #e2e8f0; padding-top: 12px; margin-top: 10px;">
                     <button class="btn btn-xs btn-outline-green daily-report-export-pdf" 
                         data-idx="${idx}"
-                        style="font-size: 10.5px; padding: 3px 8px; display: flex; align-items: center; gap: 4px; background: none; border: 1px solid #10b981; color: #10b981; border-radius: 4px; cursor: pointer;">
+                        style="font-size: 11px; padding: 4px 12px; display: flex; align-items: center; gap: 6px; background: #f0fdf4; border: 1px solid #10b981; color: #16a34a; border-radius: 4px; cursor: pointer; font-weight: 600;">
                         <i class="fa-solid fa-file-pdf"></i> ส่งออก PDF
                     </button>
-                    
                     ${rep.file ? `
                         <button class="btn btn-xs btn-outline-blue daily-report-view-pdf" 
                             data-file="${rep.file}" 
                             data-url="${rep.fileUrl || ''}" 
                             data-title="รายงานประจำวัน ${rep.date}"
-                            style="font-size: 10.5px; padding: 3px 8px; display: flex; align-items: center; gap: 4px; background: none; border: 1px solid #1d4ed8; color: #1d4ed8; border-radius: 4px; cursor: pointer;">
+                            style="font-size: 11px; padding: 4px 12px; display: flex; align-items: center; gap: 6px; background: #eff6ff; border: 1px solid #1d4ed8; color: #1d4ed8; border-radius: 4px; cursor: pointer; font-weight: 600;">
                             <i class="fa-solid fa-eye"></i> ดู PDF แนบ
                         </button>
                     ` : ''}
-                    ${actionsHTML}
                 </div>
-            </div>
+            `;
+        } else {
+            card.style = "position: relative; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; margin-bottom: 16px; background: #fff; box-shadow: var(--card-shadow);";
             
-            <div style="font-size: 12px; color: var(--text-dark); line-height: 1.6; white-space: pre-wrap; font-family: 'Prompt', sans-serif; margin-bottom: 12px;">${rep.desc}</div>
-            
-            <!-- Photo Grid inside feed item -->
-            <div class="daily-photo-gallery" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; margin-bottom: 12px;"></div>
-            
-            <!-- Signatures list inside feed item -->
-            <div class="daily-signatures-list" style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; padding-top: 10px; border-top: 1px dashed #e2e8f0;"></div>
-        `;
+            const actionsHTML = isPM 
+                ? `
+                   <button class="btn btn-xs btn-outline-blue btn-edit-daily-report" 
+                       data-idx="${idx}"
+                       style="font-size: 10.5px; padding: 3px 8px; display: flex; align-items: center; gap: 4px; background: none; border: 1px solid #1d4ed8; color: #1d4ed8; border-radius: 4px; cursor: pointer;">
+                       <i class="fa-solid fa-pen"></i> แก้ไข
+                   </button>
+                   <button class="btn btn-xs btn-outline-red btn-delete-daily-report" 
+                       data-idx="${idx}"
+                       style="font-size: 10.5px; padding: 3px 8px; display: flex; align-items: center; gap: 4px; background: none; border: 1px solid #ef4444; color: #ef4444; border-radius: 4px; cursor: pointer;">
+                       <i class="fa-solid fa-trash-can"></i> ลบ
+                   </button>
+                  ` 
+                : ``;
+
+            card.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px; color: var(--navy-dark); font-weight: 600;">
+                        <i class="fa-solid fa-clock text-blue"></i>
+                        <span>วันที่ ${rep.date}</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span class="badge-status completed" style="background-color: #eff6ff; color: #1d4ed8; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600;">เสร็จสิ้นวันนี้</span>
+                        
+                        <button class="btn btn-xs btn-outline-green daily-report-export-pdf" 
+                            data-idx="${idx}"
+                            style="font-size: 10.5px; padding: 3px 8px; display: flex; align-items: center; gap: 4px; background: none; border: 1px solid #10b981; color: #10b981; border-radius: 4px; cursor: pointer;">
+                            <i class="fa-solid fa-file-pdf"></i> ส่งออก PDF
+                        </button>
+                        
+                        ${rep.file ? `
+                            <button class="btn btn-xs btn-outline-blue daily-report-view-pdf" 
+                                data-file="${rep.file}" 
+                                data-url="${rep.fileUrl || ''}" 
+                                data-title="รายงานประจำวัน ${rep.date}"
+                                style="font-size: 10.5px; padding: 3px 8px; display: flex; align-items: center; gap: 4px; background: none; border: 1px solid #1d4ed8; color: #1d4ed8; border-radius: 4px; cursor: pointer;">
+                                <i class="fa-solid fa-eye"></i> ดู PDF แนบ
+                            </button>
+                        ` : ''}
+                        ${actionsHTML}
+                    </div>
+                </div>
+                
+                <div style="font-size: 12px; color: var(--text-dark); line-height: 1.6; white-space: pre-wrap; font-family: 'Prompt', sans-serif; margin-bottom: 12px;">${rep.desc}</div>
+                
+                <!-- Photo Grid inside feed item -->
+                <div class="daily-photo-gallery" style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; margin-bottom: 12px;"></div>
+                
+                <!-- Signatures list inside feed item -->
+                <div class="daily-signatures-list" style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 12px; padding-top: 10px; border-top: 1px dashed #e2e8f0;"></div>
+            `;
+        }
         
         container.appendChild(card);
         
