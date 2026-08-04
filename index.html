@@ -3034,6 +3034,23 @@ body.public-view-mode .detail-split-grid {
     grid-template-columns: 1fr !important;
 }
 
+body.public-view-mode .profile-trigger {
+    pointer-events: none !important;
+    cursor: default !important;
+}
+
+body.public-view-mode .profile-trigger .caret {
+    display: none !important;
+}
+
+body.public-view-mode #btn-back-to-portal-inline {
+    display: none !important;
+}
+
+body.role-customer .show-customer {
+    display: flex !important;
+}
+
 #public-view-header {
     display: none;
     background: linear-gradient(135deg, #1e3a8a 0%, #1d4ed8 100%);
@@ -14278,14 +14295,31 @@ function showLoginError(msg) {
 
 // ---- Public View Mode Init ----
 function initPublicView(projectCode) {
-    document.body.classList.add("public-view-mode");
+    document.body.className = "role-customer public-view-mode";
     // Hide login overlay unconditionally
     const overlay = document.getElementById("login-overlay");
     if (overlay) overlay.style.display = "none";
 
-    // Set default role to pm so all project detail tabs render correctly
-    appState.currentRole = "pm";
-    document.body.classList.add("role-pm");
+    // Set role to customer for public view mode
+    appState.currentRole = "customer";
+
+    // Update active role badge and user displays for Guest/Viewer
+    const activeRoleBadge = document.getElementById("active-role-badge");
+    if (activeRoleBadge) {
+        activeRoleBadge.innerHTML = `<i class="fa-solid fa-eye"></i> Guest`;
+    }
+    const usernameDisplay = document.getElementById("username-display");
+    if (usernameDisplay) {
+        usernameDisplay.textContent = "Guest";
+    }
+    const roleDisplay = document.getElementById("user-role-display");
+    if (roleDisplay) {
+        roleDisplay.textContent = "Viewer";
+    }
+    const avatarImg = document.querySelector(".profile-trigger .avatar");
+    if (avatarImg) {
+        avatarImg.src = "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=100";
+    }
 
     appState.selectedDetailProject = projectCode;
     // Allow specifying a subtab via URL parameter, e.g., ?project=XYZ&tab=plan-work
