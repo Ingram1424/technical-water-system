@@ -8942,21 +8942,21 @@ function renderSubnavDailyReports(project) {
                 </div>
 
                 <!-- 3. Details (วันที่, สถานที่, เลข PO, ชื่องาน) -->
-                <div style="display: flex; flex-direction: column; gap: 8px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 16px;">
-                    <div style="display: flex; gap: 8px; font-size: 13.5px; font-family: 'Prompt', sans-serif;">
-                        <span style="color: #475569; font-weight: 600; min-width: 80px;">วันที่:</span>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 16px;">
+                    <div style="display: flex; gap: 8px; font-size: 13px; font-family: 'Prompt', sans-serif;">
+                        <span style="color: #475569; font-weight: 600; min-width: 60px;">วันที่:</span>
                         <span style="color: #0f172a; font-weight: 500;">${rep.date}</span>
                     </div>
-                    <div style="display: flex; gap: 8px; font-size: 13.5px; font-family: 'Prompt', sans-serif;">
-                        <span style="color: #475569; font-weight: 600; min-width: 80px;">สถานที่:</span>
+                    <div style="display: flex; gap: 8px; font-size: 13px; font-family: 'Prompt', sans-serif;">
+                        <span style="color: #475569; font-weight: 600; min-width: 60px;">สถานที่:</span>
                         <span style="color: #0f172a; font-weight: 500;">${project.customer}</span>
                     </div>
-                    <div style="display: flex; gap: 8px; font-size: 13.5px; font-family: 'Prompt', sans-serif;">
-                        <span style="color: #475569; font-weight: 600; min-width: 80px;">เลข PO:</span>
+                    <div style="display: flex; gap: 8px; font-size: 13px; font-family: 'Prompt', sans-serif;">
+                        <span style="color: #475569; font-weight: 600; min-width: 60px;">เลข PO:</span>
                         <span style="color: #0f172a; font-weight: 500;">${project.code}</span>
                     </div>
-                    <div style="display: flex; gap: 8px; font-size: 13.5px; font-family: 'Prompt', sans-serif;">
-                        <span style="color: #475569; font-weight: 600; min-width: 80px;">ชื่องาน:</span>
+                    <div style="display: flex; gap: 8px; font-size: 13px; font-family: 'Prompt', sans-serif;">
+                        <span style="color: #475569; font-weight: 600; min-width: 60px;">ชื่องาน:</span>
                         <span style="color: #0f172a; font-weight: 500;">${project.name}</span>
                     </div>
                 </div>
