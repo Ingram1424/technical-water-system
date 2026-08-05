@@ -14881,10 +14881,45 @@ function renderPermissionsManagement() {
         });
 
         Object.keys(grouped).forEach(hosp => {
+            const projectCodesUnderHosp = grouped[hosp].map(p => p.code);
+            const allChecked = projectCodesUnderHosp.every(code => currentAllowedProjects.has(code));
+            const someChecked = projectCodesUnderHosp.some(code => currentAllowedProjects.has(code)) && !allChecked;
+
+            const headerId = `perm-hosp-header-${hosp.replace(/\s+/g, "-")}`;
             const groupHeader = document.createElement("div");
-            groupHeader.style.cssText = "font-size: 10px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: var(--primary-blue); margin-top: 8px; margin-bottom: 4px; padding-bottom: 2px; border-bottom: 1px dashed var(--border-color);";
-            groupHeader.textContent = hosp.replace("โรงพยาบาล", "รพ.");
+            groupHeader.style.cssText = "display: flex; align-items: center; gap: 8px; font-size: 11px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: var(--primary-blue); margin-top: 12px; margin-bottom: 6px; padding-bottom: 4px; border-bottom: 1px dashed var(--border-color);";
+            groupHeader.innerHTML = `
+                <input type="checkbox" id="${headerId}" style="width: 14px; height: 14px; accent-color: var(--primary-blue); cursor: pointer;" ${allChecked ? "checked" : ""}>
+                <label for="${headerId}" style="cursor: pointer; font-family: 'Prompt', sans-serif; display: inline-flex; align-items: center; gap: 4px; margin: 0; user-select: none;">
+                    ${hosp.replace("โรงพยาบาล", "รพ.")} <span style="font-size: 9px; font-weight: 500; color: var(--text-muted); text-transform: none;">(เลือกทั้งหมดใน รพ. นี้)</span>
+                </label>
+            `;
             pList.appendChild(groupHeader);
+
+            const headerCb = groupHeader.querySelector(`#${headerId}`);
+            if (headerCb) {
+                headerCb.indeterminate = someChecked;
+                headerCb.addEventListener("change", () => {
+                    const isChecked = headerCb.checked;
+                    grouped[hosp].forEach(proj => {
+                        if (isChecked) {
+                            currentAllowedProjects.add(proj.code);
+                        } else {
+                            currentAllowedProjects.delete(proj.code);
+                        }
+                        
+                        const projCb = document.getElementById(`perm-p-${proj.code.replace(/\s+/g, "-")}`);
+                        if (projCb) {
+                            projCb.checked = isChecked;
+                            const projWrapper = projCb.parentElement;
+                            if (projWrapper) {
+                                projWrapper.style.borderColor = isChecked ? "#bfdbfe" : "var(--border-color)";
+                                projWrapper.style.background = isChecked ? "#eff6ff" : "transparent";
+                            }
+                        }
+                    });
+                });
+            }
 
             grouped[hosp].forEach(p => {
                 const isChecked = currentAllowedProjects.has(p.code);
@@ -14907,6 +14942,12 @@ function renderPermissionsManagement() {
                     }
                     wrapper.style.borderColor = cb.checked ? "#bfdbfe" : "var(--border-color)";
                     wrapper.style.background = cb.checked ? "#eff6ff" : "transparent";
+
+                    if (headerCb) {
+                        const allCheckedNow = projectCodesUnderHosp.every(code => currentAllowedProjects.has(code));
+                        headerCb.checked = allCheckedNow;
+                        headerCb.indeterminate = !allCheckedNow && projectCodesUnderHosp.some(code => currentAllowedProjects.has(code));
+                    }
                 });
                 pList.appendChild(wrapper);
             });
@@ -14982,21 +15023,21 @@ function renderPermissionsManagement() {
     const toggleAllProjectsBtn = document.getElementById("btn-toggle-all-projects");
     if (toggleAllProjectsBtn) {
         toggleAllProjectsBtn.onclick = function() {
-            const checkboxes = document.querySelectorAll("#perm-projects-checkbox-list input[type='checkbox']");
+            const checkboxes = document.querySelectorAll("#perm-projects-checkbox-list input[type='checkbox'][data-project]");
             if (checkboxes.length === 0) return;
             const allChecked = [...checkboxes].every(cb => cb.checked);
             checkboxes.forEach(cb => {
-                cb.checked = !allChecked;
                 const projCode = cb.getAttribute("data-project");
-                if (cb.checked) {
-                    currentAllowedProjects.add(projCode);
-                } else {
-                    currentAllowedProjects.delete(projCode);
+                if (projCode) {
+                    if (!allChecked) {
+                        currentAllowedProjects.add(projCode);
+                    } else {
+                        currentAllowedProjects.delete(projCode);
+                    }
                 }
-                cb.parentElement.style.borderColor = cb.checked ? "#bfdbfe" : "var(--border-color)";
-                cb.parentElement.style.background = cb.checked ? "#eff6ff" : "transparent";
             });
             toggleAllProjectsBtn.textContent = allChecked ? "เลือกทั้งหมด" : "ยกเลิกทั้งหมด";
+            renderProjectsList();
         };
     }
 
