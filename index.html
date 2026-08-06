@@ -9328,8 +9328,8 @@ window.openDailyReportPreviewModal = async function(rep, project) {
                 <button onclick="document.getElementById('daily-report-preview-modal').remove()" style="background: none; border: none; color: #94a3b8; font-size: 20px; cursor: pointer; line-height: 1;">&times;</button>
             </div>
             <!-- Modal Body (A4 Style Paper Container) -->
-            <div style="padding: 24px; overflow-y: auto; flex: 1; display: flex; justify-content: center; background: #64748b;">
-                <div style="width: 100%; max-width: 700px; background: #fff; border: 1px solid #d1d5db; border-radius: 6px; padding: 40px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); font-family: 'Prompt', sans-serif; display: flex; flex-direction: column; gap: 20px; min-height: 800px; text-align: left;">
+            <div style="padding: 24px; overflow-y: auto; flex: 1; background: #64748b; display: block;">
+                <div style="width: 100%; max-width: 700px; background: #fff; border: 1px solid #d1d5db; border-radius: 6px; padding: 40px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); font-family: 'Prompt', sans-serif; display: flex; flex-direction: column; gap: 20px; min-height: 800px; text-align: left; margin: 0 auto;">
                     
                     <!-- 1. Letterhead -->
                     <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #334155; padding-bottom: 12px; gap: 20px;">
@@ -14025,8 +14025,6 @@ document.addEventListener("DOMContentLoaded", () => {
                             body {
                                 padding-top: 70px !important;
                                 background: #64748b;
-                                display: flex;
-                                justify-content: center;
                             }
                             .paper-container {
                                 width: 100%;
@@ -14036,6 +14034,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                 border-radius: 6px;
                                 padding: 40px;
                                 box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+                                margin: 0 auto;
                             }
                         }
                     </style>
