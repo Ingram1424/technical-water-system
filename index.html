@@ -9490,16 +9490,6 @@ function renderSubnavDailyReports(project) {
               ` 
             : ``;
 
-        const viewFullBtnHTML = isCustomer 
-            ? `
-               <button class="btn btn-xs btn-outline-blue btn-view-full-daily-report" 
-                   data-idx="${idx}"
-                   style="font-size: 10.5px; padding: 3px 8px; display: flex; align-items: center; gap: 4px; background: none; border: 1px solid #1d4ed8; color: #1d4ed8; border-radius: 4px; cursor: pointer; font-weight: 600;">
-                   <i class="fa-solid fa-file-invoice"></i> ดูเต็มรูปแบบ
-               </button>
-              ` 
-            : ``;
-
         card.style = "position: relative; border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 16px; margin-bottom: 16px; background: #fff; box-shadow: var(--card-shadow);";
         
         card.innerHTML = `
@@ -9516,8 +9506,6 @@ function renderSubnavDailyReports(project) {
                         style="font-size: 10.5px; padding: 3px 8px; display: flex; align-items: center; gap: 4px; background: none; border: 1px solid #1d4ed8; color: #1d4ed8; border-radius: 4px; cursor: pointer;">
                         <i class="fa-solid fa-signature"></i> ลูกค้าเซ็นรับรอง
                     </button>
-
-                    ${viewFullBtnHTML}
                     
                     <button class="btn btn-xs btn-outline-green daily-report-export-pdf" 
                         data-idx="${idx}"
