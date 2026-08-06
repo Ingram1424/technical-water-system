@@ -4473,7 +4473,7 @@ body.public-view-mode #public-view-header {
                                         <div style="display: flex; gap: 8px;">
                                             <button id="brush-red" class="btn btn-sm active" style="font-size: 10px; padding: 4px 10px; background: #f87171; color: #991b1b; border: 1px solid #ef4444; font-weight: 600; cursor: pointer; border-radius: 4px; border-style: solid;">เสียงดังมาก (สีแดง)</button>
                                             <button id="brush-yellow" class="btn btn-sm" style="font-size: 10px; padding: 4px 10px; background: #fcd34d; color: #854d0e; border: 1px solid #eab308; font-weight: 600; cursor: pointer; border-radius: 4px; opacity: 0.6; border-style: solid;">เสียงดังปานกลาง (สีเหลือง)</button>
-                                            <button id="brush-green" class="btn btn-sm" style="font-size: 10px; padding: 4px 10px; background: #86efac; color: #166534; border: 1px solid #22c55e; font-weight: 600; cursor: pointer; border-radius: 4px; opacity: 0.6; border-style: solid;">เสียงดังน้อย (สีเขียว)</button>
+                                            <button id="brush-green" class="btn btn-sm" style="font-size: 10px; padding: 4px 10px; background: #22c55e; color: #ffffff; border: 1px solid #16a34a; font-weight: 600; cursor: pointer; border-radius: 4px; opacity: 0.6; border-style: solid;">เสียงดังน้อย (สีเขียว)</button>
                                             <button id="brush-eraser" class="btn btn-sm" style="font-size: 10px; padding: 4px 10px; background: #ffffff; color: #64748b; border: 1px solid #cbd5e1; font-weight: 600; cursor: pointer; border-radius: 4px; opacity: 0.6; border-style: solid;">ยางลบ</button>
                                         </div>
                                     </div>
@@ -9044,7 +9044,7 @@ function renderSubnavPlanWork(project) {
                             const val = task.cells ? (task.cells[dStr] || 0) : 0;
                             let cellBg = "";
                             if (val === 1) cellBg = "background-color: #fcd34d;"; // Yellow (เสียงดังปานกลาง)
-                            else if (val === 2) cellBg = "background-color: #86efac;"; // Green (เสียงดังน้อย)
+                            else if (val === 2) cellBg = "background-color: #22c55e;"; // Green (เสียงดังน้อย)
                             else if (val === 3) cellBg = "background-color: #f87171;"; // Red (เสียงดังมาก)
                             
                             rowHtml += `
@@ -9141,7 +9141,7 @@ function renderSubnavPlanWork(project) {
                             cell.style.backgroundColor = "#fcd34d";
                         } else if (currentGanttBrush === 'green') {
                             task.cells[dStr] = 2;
-                            cell.style.backgroundColor = "#86efac";
+                            cell.style.backgroundColor = "#22c55e";
                         } else {
                             // Eraser
                             delete task.cells[dStr];
@@ -13210,7 +13210,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             print-color-adjust: exact;
                         }
                         .cell-green {
-                            background-color: #86efac !important;
+                            background-color: #22c55e !important;
                             -webkit-print-color-adjust: exact;
                             print-color-adjust: exact;
                         }
@@ -14254,7 +14254,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                     const val = task.cells ? (task.cells[dStr] || 0) : 0;
                                     let cellBg = "";
                                     if (val === 1) cellBg = "background-color: #fcd34d !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;";
-                                    else if (val === 2) cellBg = "background-color: #86efac !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;";
+                                    else if (val === 2) cellBg = "background-color: #22c55e !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;";
                                     else if (val === 3) cellBg = "background-color: #f87171 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;";
                                     gridCellsHtml += `<td style="border: 1px solid #cbd5e1; width: 18px; ${cellBg}"></td>`;
                                 });
