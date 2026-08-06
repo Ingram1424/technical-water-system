@@ -5408,8 +5408,9 @@ body.public-view-mode #public-view-header {
 
                 <!-- 4. Search Filter Input Box -->
                 <div style="margin-bottom: 20px; background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid var(--border-color);">
-                    <div style="font-size: 12.5px; font-weight: 700; color: var(--navy-dark); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-                        <i class="fa-solid fa-magnifying-glass text-blue"></i> 🔍 พิมพ์ค้นหาโครงการ หรือโรงพยาบาล :
+                    <div style="font-size: 12.5px; font-weight: 700; color: var(--navy-dark); margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
+                        <span><i class="fa-solid fa-magnifying-glass text-blue"></i> 🔍 พิมพ์ค้นหาโครงการ หรือโรงพยาบาล :</span>
+                        <button type="button" id="btn-clear-share-search" style="background: none; border: none; font-size: 11.5px; color: #ef4444; cursor: pointer; padding: 0; display: none; font-family: 'Prompt'; font-weight: 700;"><i class="fa-solid fa-circle-xmark"></i> ล้างการกรอง</button>
                     </div>
                     <input type="text" id="share-modal-project-search" class="form-control" placeholder="พิมพ์เพื่อค้นหาด้วย รหัส PO, ชื่องาน, หรือชื่อโรงพยาบาล..." style="font-size: 12.5px; padding: 8px 12px; height: 38px; border-radius: 6px;">
                 </div>
@@ -12081,10 +12082,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 
                 const div = document.createElement("div");
                 div.className = "share-hospital-item";
-                div.style.cssText = "display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-family: 'Prompt', sans-serif;";
+                div.style.cssText = "display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12.5px; font-family: 'Prompt', sans-serif; padding: 4px 0;";
                 div.innerHTML = `
-                    <input type="checkbox" class="share-hospital-check" value="${hosp}" id="chk-share-h-${hosp}" style="width: 15px; height: 15px; cursor: pointer;">
-                    <label for="chk-share-h-${hosp}" style="cursor: pointer; font-weight: 600; color: var(--navy-dark);">${hosp} <span style="font-size: 10.5px; color: var(--text-muted); font-weight: 500;">(${projCount} โครงการ)</span></label>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <input type="checkbox" class="share-hospital-check" value="${hosp}" id="chk-share-h-${hosp}" style="width: 15px; height: 15px; cursor: pointer;">
+                        <label for="chk-share-h-${hosp}" style="cursor: pointer; font-weight: 600; color: var(--navy-dark);">${hosp} <span style="font-size: 10.5px; color: var(--text-muted); font-weight: 500;">(${projCount} โครงการ)</span></label>
+                    </div>
+                    <span class="btn-filter-hosp" data-hosp="${hosp}" style="color: #0284c7; cursor: pointer; font-size: 11px; padding: 2px 8px; background: #e0f2fe; border-radius: 4px; font-weight: 600; display: flex; align-items: center; gap: 4px; transition: all 0.2s;">
+                        <i class="fa-solid fa-filter"></i> กรองโครงการ
+                    </span>
                 `;
                 hospContainer.appendChild(div);
             });
@@ -12216,6 +12222,12 @@ document.addEventListener("DOMContentLoaded", () => {
         searchInputEl.addEventListener("input", function() {
             const query = this.value.trim().toLowerCase();
             
+            // Toggle clear search button
+            const clearSearchBtn = document.getElementById("btn-clear-share-search");
+            if (clearSearchBtn) {
+                clearSearchBtn.style.display = query ? "inline-block" : "none";
+            }
+            
             // Filter projects
             document.querySelectorAll("#share-projects-checkboxes > .share-project-item").forEach(item => {
                 const text = item.textContent.toLowerCase();
@@ -12237,6 +12249,33 @@ document.addEventListener("DOMContentLoaded", () => {
             });
         });
     }
+
+    // Clear search filter action
+    const clearSearchBtn = document.getElementById("btn-clear-share-search");
+    if (clearSearchBtn) {
+        clearSearchBtn.addEventListener("click", () => {
+            const searchInput = document.getElementById("share-modal-project-search");
+            if (searchInput) {
+                searchInput.value = "";
+                searchInput.dispatchEvent(new Event("input"));
+            }
+        });
+    }
+
+    // Filter hospital projects click event listener
+    document.addEventListener("click", function(e) {
+        const filterBtn = e.target.closest(".btn-filter-hosp");
+        if (filterBtn) {
+            const hospName = filterBtn.getAttribute("data-hosp");
+            // Remove "โรงพยาบาล" prefix to search effectively (e.g. "พญาไท 2")
+            const searchKey = hospName.replace("โรงพยาบาล", "").trim();
+            const searchInput = document.getElementById("share-modal-project-search");
+            if (searchInput) {
+                searchInput.value = searchKey;
+                searchInput.dispatchEvent(new Event("input"));
+            }
+        }
+    });
 
     // Copy link result action
     if (btnCopyShareResultUrl) {
