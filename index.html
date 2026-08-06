@@ -4596,6 +4596,18 @@ body.public-view-mode #public-view-header {
                                         <i class="fa-solid fa-file-signature"></i> อัปโหลดรายงานรายวัน
                                     </button>
                                 </div>
+                                <!-- Filter Sub-tabs for Daily Report -->
+                                <div class="daily-report-filter-tabs" style="display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+                                    <button class="dr-filter-btn active" data-filter="all" style="padding: 6px 14px; border: 1px solid var(--primary-blue); border-radius: var(--radius-sm); font-family: 'Prompt'; font-size: 11.5px; font-weight: 700; cursor: pointer; background: var(--primary-blue); color: #ffffff; display: flex; align-items: center; gap: 6px; transition: all 0.2s ease; border-color: var(--primary-blue);">
+                                        <i class="fa-solid fa-list"></i> ทั้งหมด (<span id="dr-count-all">0</span>)
+                                    </button>
+                                    <button class="dr-filter-btn" data-filter="signed" style="padding: 6px 14px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-family: 'Prompt'; font-size: 11.5px; font-weight: 600; cursor: pointer; background: #ffffff; color: var(--navy-dark); display: flex; align-items: center; gap: 6px; transition: all 0.2s ease;">
+                                        <i class="fa-solid fa-file-signature" style="color: #10b981;"></i> ลูกค้าเซ็นแล้ว (<span id="dr-count-signed">0</span>)
+                                    </button>
+                                    <button class="dr-filter-btn" data-filter="unsigned" style="padding: 6px 14px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-family: 'Prompt'; font-size: 11.5px; font-weight: 600; cursor: pointer; background: #ffffff; color: var(--navy-dark); display: flex; align-items: center; gap: 6px; transition: all 0.2s ease;">
+                                        <i class="fa-solid fa-file-circle-exclamation" style="color: #f59e0b;"></i> ยังไม่เซ็น (<span id="dr-count-unsigned">0</span>)
+                                    </button>
+                                </div>
                                 <div class="daily-report-feed" id="project-daily-reports-container">
                                     <!-- Populated dynamically in app.js -->
                                 </div>
@@ -6322,6 +6334,7 @@ const appState = {
     selectedYearFilterB: "2026",
     selectedCostYearFilter: "all",
     projectCostCurrentPage: 1,
+    activeDailyReportFilter: "all",
     currentCustomerUser: localStorage.getItem("technical_water_current_customer_user") || "user1",
     userPermissions: null, // Loaded below
     customerAccounts: null, // Loaded below
@@ -9254,14 +9267,64 @@ function renderSubnavDailyReports(project) {
     container.innerHTML = "";
     
     const reports = project.dailyReports || [];
+    
+    // Compute badge counts
+    const allCount = reports.length;
+    const signedCount = reports.filter(rep => rep.signatures && rep.signatures.some(sig => sig.image && sig.image.includes(":customer:"))).length;
+    const unsignedCount = allCount - signedCount;
+    
+    const countAllEl = document.getElementById("dr-count-all");
+    const countSignedEl = document.getElementById("dr-count-signed");
+    const countUnsignedEl = document.getElementById("dr-count-unsigned");
+    
+    if (countAllEl) countAllEl.textContent = allCount;
+    if (countSignedEl) countSignedEl.textContent = signedCount;
+    if (countUnsignedEl) countUnsignedEl.textContent = unsignedCount;
+    
+    // Sync active class on filter buttons to match appState.activeDailyReportFilter
+    const activeFilter = appState.activeDailyReportFilter || "all";
+    const filterTabsContainer = document.querySelector(".daily-report-filter-tabs");
+    if (filterTabsContainer) {
+        filterTabsContainer.querySelectorAll(".dr-filter-btn").forEach(btn => {
+            if (btn.getAttribute("data-filter") === activeFilter) {
+                btn.classList.add("active");
+                btn.style.background = "var(--primary-blue)";
+                btn.style.color = "#ffffff";
+                btn.style.borderColor = "var(--primary-blue)";
+                btn.style.fontWeight = "700";
+            } else {
+                btn.classList.remove("active");
+                btn.style.background = "#ffffff";
+                btn.style.color = "var(--navy-dark)";
+                btn.style.borderColor = "var(--border-color)";
+                btn.style.fontWeight = "600";
+            }
+        });
+    }
+
     if (reports.length === 0) {
         container.innerHTML = `<div class="text-center text-muted py-4">ไม่มีรายงานการปฏิบัติงานรายวันสำหรับโครงการนี้</div>`;
+        return;
+    }
+
+    // Filter reports list based on active filter
+    let filteredReports = reports;
+    if (activeFilter === "signed") {
+        filteredReports = reports.filter(rep => rep.signatures && rep.signatures.some(sig => sig.image && sig.image.includes(":customer:")));
+    } else if (activeFilter === "unsigned") {
+        filteredReports = reports.filter(rep => !(rep.signatures && rep.signatures.some(sig => sig.image && sig.image.includes(":customer:"))));
+    }
+    
+    if (filteredReports.length === 0) {
+        container.innerHTML = `<div class="text-center text-muted py-4">ไม่มีรายงานการปฏิบัติงานรายวันสำหรับเงื่อนไขนี้</div>`;
         return;
     }
     
     const isPM = (appState.currentRole === "pm" || appState.currentRole === "admin");
     const isCustomer = appState.currentRole === "customer";
-    reports.forEach((rep, idx) => {
+    
+    filteredReports.forEach((rep) => {
+        const idx = reports.indexOf(rep);
         const card = document.createElement("div");
         card.className = "feed-item";
         
@@ -10384,6 +10447,21 @@ document.addEventListener("DOMContentLoaded", () => {
                 panel.style.display = "none";
             }
         });
+    });
+
+    // 1.3 Daily Report Filter Tabs Listener
+    document.addEventListener("click", function(e) {
+        const btn = e.target.closest(".dr-filter-btn");
+        if (!btn) return;
+        
+        const filterVal = btn.getAttribute("data-filter");
+        appState.activeDailyReportFilter = filterVal;
+        
+        // Re-render the daily reports to apply the filter
+        const project = projectsData[appState.selectedDetailProject];
+        if (project) {
+            renderSubnavDailyReports(project);
+        }
     });
 
     // 2. Profile Dropdown Toggle
