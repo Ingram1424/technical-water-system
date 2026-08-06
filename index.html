@@ -4115,10 +4115,16 @@ body.public-view-mode #public-view-header {
                             </h2>
                             <p style="font-size: 13px; color: var(--text-muted); margin: 4px 0 0 0;">กรุณาเลือกปีโครงการ โรงพยาบาล หรือพิมพ์ค้นหาโครงการด้านล่าง เพื่อเข้าหน้าทำงานและระบายสีแผนงาน</p>
                         </div>
-                        <button class="btn btn-sm btn-outline hide-customer" id="btn-show-cumulative-dashboard" style="font-size: 12px; font-weight: 600; padding: 8px 16px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; background: #ffffff; border: 1px solid var(--border-color);">
-                            <i class="fa-solid fa-chart-column" style="color: var(--primary-blue);"></i>
-                            <span>ดูภาพรวมสะสมทุกโครงการ</span>
-                        </button>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <button class="btn btn-sm btn-outline hide-customer" id="btn-portal-share-projects" style="font-size: 12px; font-weight: 600; padding: 8px 16px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; background: #ffffff; border: 1px solid var(--border-color); color: #1e3a8a;">
+                                <i class="fa-solid fa-share-nodes"></i>
+                                <span>สร้างลิงก์แชร์โครงการ</span>
+                            </button>
+                            <button class="btn btn-sm btn-outline hide-customer" id="btn-show-cumulative-dashboard" style="font-size: 12px; font-weight: 600; padding: 8px 16px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; background: #ffffff; border: 1px solid var(--border-color);">
+                                <i class="fa-solid fa-chart-column" style="color: var(--primary-blue);"></i>
+                                <span>ดูภาพรวมสะสมทุกโครงการ</span>
+                            </button>
+                        </div>
                     </div>
                     
                     <!-- Grid filters & Search panel -->
@@ -5375,6 +5381,63 @@ body.public-view-mode #public-view-header {
                     <button type="submit" class="btn btn-primary" id="btn-submit-create-customer"><i class="fa-solid fa-check-circle"></i> สร้างบัญชีผู้ใช้</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Project Share Modal -->
+    <div class="modal-overlay" id="portal-share-modal" style="z-index: 12000; display: none;">
+        <div class="modal-card" style="max-width: 540px;">
+            <div class="modal-header">
+                <h3 class="modal-title"><i class="fa-solid fa-share-nodes text-blue"></i> สร้างลิงก์แชร์โครงการภายนอก</h3>
+                <button class="modal-close-btn" id="close-portal-share-modal">&times;</button>
+            </div>
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                <p style="font-size: 12.5px; color: var(--text-muted); margin: 0 0 16px 0;">คุณสามารถเลือกโครงการย่อยหรือโรงพยาบาลหลายๆ รายการเข้าไว้ด้วยกันในลิงก์เดียว เมื่อส่งลิงก์นี้ให้ผู้อื่นจะเข้าถึงเฉพาะโครงการที่เลือกโดยไม่ต้องล็อกอิน</p>
+                
+                <div style="border-bottom: 2px solid var(--border-color); padding-bottom: 8px; margin-bottom: 16px; display: flex; gap: 16px;">
+                    <span style="font-weight: 700; font-size: 13.5px; color: var(--navy-dark); border-bottom: 2px solid var(--primary-blue); padding-bottom: 8px; margin-bottom: -10px;">รายการแชร์ทั้งหมด</span>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                    <!-- 1. Hospital share list -->
+                    <div>
+                        <label class="form-label" style="font-size: 12px; font-weight: 700; color: var(--navy-dark); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                            <span>🏥 เลือกตามโรงพยาบาล (จะรวมทุกโครงการภายใต้ รพ.)</span>
+                            <button type="button" id="btn-share-clear-hospitals" style="background: none; border: none; font-size: 11px; color: #ef4444; cursor: pointer; padding: 0; font-family: 'Prompt';">ล้างการเลือก</button>
+                        </label>
+                        <div id="share-hospitals-checkboxes" style="display: grid; grid-template-columns: 1fr; gap: 8px; max-height: 150px; overflow-y: auto; border: 1px solid var(--border-color); padding: 10px; border-radius: 6px; background: #fafafa;">
+                            <!-- Populated dynamically with checkboxes -->
+                        </div>
+                    </div>
+
+                    <!-- 2. Project share list -->
+                    <div>
+                        <label class="form-label" style="font-size: 12px; font-weight: 700; color: var(--navy-dark); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                            <span>📁 เลือกเฉพาะบางโครงการย่อย</span>
+                            <button type="button" id="btn-share-clear-projects" style="background: none; border: none; font-size: 11px; color: #ef4444; cursor: pointer; padding: 0; font-family: 'Prompt';">ล้างการเลือก</button>
+                        </label>
+                        <div id="share-projects-checkboxes" style="display: grid; grid-template-columns: 1fr; gap: 8px; max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); padding: 10px; border-radius: 6px; background: #fafafa;">
+                            <!-- Populated dynamically with checkboxes -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Link Output Container -->
+                <div id="share-link-output-container" style="display: none; margin-top: 20px; padding: 16px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;">
+                    <div style="font-size: 12.5px; font-weight: 700; color: #15803d; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-circle-check"></i> สร้างลิงก์แชร์ใหม่สำเร็จ!
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center; margin-top: 8px;">
+                        <input type="text" id="share-link-result-url" class="form-control" readonly style="font-size: 12px; font-family: monospace; background: #ffffff; font-weight: 600;">
+                        <button type="button" class="btn btn-outline-green" id="btn-copy-share-result-url" style="white-space: nowrap; font-size: 12px; padding: 8px 14px;"><i class="fa-solid fa-copy"></i> คัดลอกลิงก์</button>
+                    </div>
+                    <span style="font-size: 10.5px; color: #166534; display: block; margin-top: 8px; font-style: italic;">* ลิงก์แชร์ถูกสร้างขึ้นใหม่เป็นรหัสอ้างอิงเฉพาะตัว (ทุกครั้งที่กด จะเป็นการสร้างใหม่เสมอ)</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline" id="cancel-portal-share-btn">ยกเลิก/ปิด</button>
+                <button type="button" class="btn btn-primary" id="btn-generate-share-link"><i class="fa-solid fa-link"></i> สร้างลิงก์แชร์ใหม่</button>
+            </div>
         </div>
     </div>
 
@@ -11962,6 +12025,167 @@ document.addEventListener("DOMContentLoaded", () => {
         initSignaturePad(customerSigCanvas);
     }
 
+    // ============================================================
+    // PROJECT & HOSPITAL MULTI-SHARE SYSTEM
+    // ============================================================
+    const portalShareModal = document.getElementById("portal-share-modal");
+    const btnPortalShareProjects = document.getElementById("btn-portal-share-projects");
+    const closePortalShareModal = document.getElementById("close-portal-share-modal");
+    const cancelPortalShareBtn = document.getElementById("cancel-portal-share-btn");
+    const btnGenerateShareLink = document.getElementById("btn-generate-share-link");
+    const btnCopyShareResultUrl = document.getElementById("btn-copy-share-result-url");
+
+    window.openPortalShareModal = function() {
+        if (!portalShareModal) return;
+
+        // Reset output container
+        document.getElementById("share-link-output-container").style.display = "none";
+        document.getElementById("share-link-result-url").value = "";
+
+        // Populate dynamic hospitals
+        const hospContainer = document.getElementById("share-hospitals-checkboxes");
+        if (hospContainer) {
+            hospContainer.innerHTML = "";
+            const allHospitals = [
+                "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
+                "โรงพยาบาลพญาไท บ่อวิน", "โรงพยาบาลพญาไท พหลโยธิน", "โรงพยาบาลพญาไท ศรีราชา", "โรงพยาบาลเปาโล พระประแดง",
+                "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4"
+            ];
+            
+            allHospitals.forEach(hosp => {
+                const projCount = Object.values(projectsData).filter(p => p.customer === hosp).length;
+                if (projCount === 0) return;
+                
+                const div = document.createElement("div");
+                div.style.cssText = "display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-family: 'Prompt', sans-serif;";
+                div.innerHTML = `
+                    <input type="checkbox" class="share-hospital-check" value="${hosp}" id="chk-share-h-${hosp}" style="width: 15px; height: 15px; cursor: pointer;">
+                    <label for="chk-share-h-${hosp}" style="cursor: pointer; font-weight: 600; color: var(--navy-dark);">${hosp} <span style="font-size: 10.5px; color: var(--text-muted); font-weight: 500;">(${projCount} โครงการ)</span></label>
+                `;
+                hospContainer.appendChild(div);
+            });
+
+            if (hospContainer.children.length === 0) {
+                hospContainer.innerHTML = `<span style="font-size: 12px; color: var(--text-muted); font-style: italic;">ไม่มีโรงพยาบาลที่มีโครงการในระบบ</span>`;
+            }
+        }
+
+        // Populate dynamic projects
+        const projContainer = document.getElementById("share-projects-checkboxes");
+        if (projContainer) {
+            projContainer.innerHTML = "";
+            const sortedProjects = Object.values(projectsData).sort((a, b) => b.year - a.year || a.code.localeCompare(b.code));
+            
+            sortedProjects.forEach(p => {
+                const isQuotingStatus = (p.status === "งานที่กำลังเสนอราคา" || p.status === "กำลังเสนอราคา" || p.status === "งานที่รอเสนอราคา");
+                const statusType = isQuotingStatus ? "เสนอราคา" : "งานในมือ";
+                const div = document.createElement("div");
+                div.style.cssText = "display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-family: 'Prompt', sans-serif;";
+                div.innerHTML = `
+                    <input type="checkbox" class="share-project-check" value="${p.code}" id="chk-share-p-${p.code}" style="width: 15px; height: 15px; cursor: pointer;">
+                    <label for="chk-share-p-${p.code}" style="cursor: pointer; font-weight: 600; color: var(--navy-dark);">${p.code} : ${p.name.replace(/ \(\d{4}\)$/, '')} <span style="font-size: 10.5px; color: var(--text-muted); font-weight: 500;">(${p.customer.replace('โรงพยาบาล', 'รพ.')} - ${statusType})</span></label>
+                `;
+                projContainer.appendChild(div);
+            });
+
+            if (projContainer.children.length === 0) {
+                projContainer.innerHTML = `<span style="font-size: 12px; color: var(--text-muted); font-style: italic;">ไม่มีโครงการในระบบ</span>`;
+            }
+        }
+
+        portalShareModal.style.display = "flex";
+    };
+
+    const closePortalShareModalFn = () => {
+        if (portalShareModal) portalShareModal.style.display = "none";
+    };
+
+    if (btnPortalShareProjects) btnPortalShareProjects.addEventListener("click", window.openPortalShareModal);
+    if (closePortalShareModal) closePortalShareModal.addEventListener("click", closePortalShareModalFn);
+    if (cancelPortalShareBtn) cancelPortalShareBtn.addEventListener("click", closePortalShareModalFn);
+
+    // Clear checks listeners
+    const clearHospBtn = document.getElementById("btn-share-clear-hospitals");
+    if (clearHospBtn) {
+        clearHospBtn.addEventListener("click", () => {
+            document.querySelectorAll(".share-hospital-check").forEach(chk => chk.checked = false);
+        });
+    }
+
+    const clearProjBtn = document.getElementById("btn-share-clear-projects");
+    if (clearProjBtn) {
+        clearProjBtn.addEventListener("click", () => {
+            document.querySelectorAll(".share-project-check").forEach(chk => chk.checked = false);
+        });
+    }
+
+    // Generate Share Link action
+    if (btnGenerateShareLink) {
+        btnGenerateShareLink.addEventListener("click", async () => {
+            const selectedHospitals = Array.from(document.querySelectorAll(".share-hospital-check:checked")).map(chk => chk.value);
+            const selectedProjectCodes = Array.from(document.querySelectorAll(".share-project-check:checked")).map(chk => chk.value);
+            
+            if (selectedHospitals.length === 0 && selectedProjectCodes.length === 0) {
+                showToast("กรุณาเลือกโรงพยาบาลหรือโครงการย่อยอย่างน้อย 1 รายการเพื่อแชร์", "warning");
+                return;
+            }
+            
+            // ALWAYS generate a brand new link ID
+            const randomPart = Math.random().toString(36).substring(2, 9);
+            const timestampPart = Date.now().toString(36);
+            const linkId = `sh_${randomPart}_${timestampPart}`;
+            
+            const shareData = {
+                type: "mixed_share",
+                projectCodes: selectedProjectCodes,
+                hospitals: selectedHospitals,
+                createdAt: new Date().toISOString()
+            };
+            
+            showToast("กำลังสร้างลิงก์แชร์และบันทึกประวัติ...", "info");
+            
+            try {
+                const { error } = await supabaseClient.from('projects').upsert({
+                    code: `SHARE:${linkId}`,
+                    data: shareData,
+                    updated_at: new Date().toISOString()
+                });
+                
+                if (error) throw error;
+                
+                const origin = window.location.origin || 'https://technical-water-system.vercel.app';
+                const pathname = window.location.pathname || '/';
+                const fullShareUrl = `${origin}${pathname}?share=${linkId}`;
+                
+                document.getElementById("share-link-result-url").value = fullShareUrl;
+                document.getElementById("share-link-output-container").style.display = "block";
+                
+                showToast("สร้างลิงก์แชร์โครงการสำเร็จ!", "success");
+            } catch (err) {
+                console.error("Failed to generate share link:", err);
+                showToast("เกิดข้อผิดพลาดในการสร้างลิงก์: " + err.message, "error");
+            }
+        });
+    }
+
+    // Copy link result action
+    if (btnCopyShareResultUrl) {
+        btnCopyShareResultUrl.addEventListener("click", () => {
+            const urlInput = document.getElementById("share-link-result-url");
+            if (!urlInput || !urlInput.value) return;
+            
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(urlInput.value).then(() => {
+                    showToast("📋 คัดลอกลิงก์แชร์เรียบร้อยแล้ว!", "success");
+                });
+            } else {
+                urlInput.select();
+                document.execCommand("copy");
+                showToast("📋 คัดลอกลิงก์แชร์เรียบร้อยแล้ว!", "success");
+            }
+        });
+    }
+
     if (customerSignForm) {
         customerSignForm.addEventListener("submit", async function(e) {
             e.preventDefault();
@@ -14826,6 +15050,96 @@ function showLoginError(msg) {
     errEl.textContent = msg;
 }
 
+// ---- Shared Multi-Project/Hospital View Mode Init ----
+window.initSharedView = async function(linkId) {
+    document.body.className = "role-customer public-view-mode";
+    const overlay = document.getElementById("login-overlay");
+    if (overlay) overlay.style.display = "none";
+    appState.currentRole = "customer";
+
+    // Update active role badge and user displays for Guest
+    const activeRoleBadge = document.getElementById("active-role-badge");
+    if (activeRoleBadge) {
+        activeRoleBadge.innerHTML = `<i class="fa-solid fa-share-nodes"></i> Shared Guest`;
+    }
+    const usernameDisplay = document.getElementById("username-display");
+    if (usernameDisplay) {
+        usernameDisplay.textContent = "Guest (Shared)";
+    }
+    const roleDisplay = document.getElementById("user-role-display");
+    if (roleDisplay) {
+        roleDisplay.textContent = "Viewer";
+    }
+
+    showToast("กำลังโหลดรายละเอียดจากลิงก์แชร์...", "info");
+    
+    try {
+        const { data, error } = await supabaseClient.from('projects').select('data').eq('code', `SHARE:${linkId}`).single();
+        if (error || !data || !data.data) {
+            showToast("ลิงก์แชร์นี้หมดอายุหรือไม่ถูกต้อง กรุณาเข้าสู่ระบบ", "error");
+            if (overlay) overlay.style.display = "flex";
+            return;
+        }
+
+        const shareConfig = data.data;
+        appState.activeShareConfig = shareConfig;
+        
+        // Wait for Supabase projects data load
+        const waitAndRenderShared = () => {
+            if (Object.keys(projectsData).length > 0) {
+                const allowedCodes = new Set();
+                
+                // 1. Explicit project codes
+                if (shareConfig.projectCodes) {
+                    shareConfig.projectCodes.forEach(code => allowedCodes.add(code));
+                }
+                // 2. Hospital projects
+                if (shareConfig.hospitals) {
+                    Object.values(projectsData).forEach(p => {
+                        if (shareConfig.hospitals.includes(p.customer)) {
+                            allowedCodes.add(p.code);
+                        }
+                    });
+                }
+                
+                appState.allowedShareProjects = Array.from(allowedCodes);
+                
+                if (appState.allowedShareProjects.length === 0) {
+                    showToast("ไม่มีโครงการย่อยที่เปิดแชร์ในลิงก์นี้", "warning");
+                    if (overlay) overlay.style.display = "flex";
+                    return;
+                }
+                
+                // Override allowed project check for security
+                window.isProjectAllowedForCustomer = function(p, perms) {
+                    return appState.allowedShareProjects.includes(p.code);
+                };
+                
+                if (appState.allowedShareProjects.length === 1) {
+                    // Open single project
+                    appState.selectedDetailProject = appState.allowedShareProjects[0];
+                    switchView("projects-list");
+                    renderSubnavProjectWorkspace();
+                } else {
+                    // Open list portal filtered
+                    appState.selectedDetailProject = "all";
+                    switchView("projects-list");
+                    if (typeof window.renderProjectSelectionPortal === "function") {
+                        window.renderProjectSelectionPortal();
+                    }
+                }
+            } else {
+                setTimeout(waitAndRenderShared, 300);
+            }
+        };
+        waitAndRenderShared();
+        
+    } catch (err) {
+        console.error("Shared view loading error:", err);
+        showToast("โหลดลิงก์แชร์ล้มเหลว", "error");
+    }
+};
+
 // ---- Public View Mode Init ----
 function initPublicView(projectCode) {
     document.body.className = "role-customer public-view-mode";
@@ -14882,7 +15196,16 @@ function initPublicView(projectCode) {
 // ---- On Page Load ----
 (function initAuth() {
     const urlParams = new URLSearchParams(window.location.search);
+    const shareId = urlParams.get("share");
     const sharedCode = urlParams.get("project");
+
+    if (shareId) {
+        // Multi-project/hospital shared link - bypass login
+        if (window.initSharedView) {
+            window.initSharedView(shareId);
+        }
+        return;
+    }
 
     if (sharedCode) {
         // Public share link - bypass login
