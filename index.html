@@ -3813,7 +3813,7 @@ body.public-view-mode #public-view-header {
                     </div>
 
                     <!-- Subtabs Navigation for Cost Management -->
-                    <div class="cost-nav-tabs hide-customer" style="display: flex; gap: 8px; margin-top: 16px; margin-bottom: 16px; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; flex-wrap: wrap;">
+                    <div id="cost-details-section" class="cost-nav-tabs hide-customer" style="display: flex; gap: 8px; margin-top: 16px; margin-bottom: 16px; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; flex-wrap: wrap;">
                         <button class="cost-tab-btn active" data-cost-tab="all-costs" style="padding: 8px 18px; border: 1px solid var(--primary-blue); border-radius: var(--radius-sm); font-family: 'Prompt'; font-size: 12.5px; font-weight: 700; cursor: pointer; background: var(--primary-blue); color: #ffffff; display: flex; align-items: center; gap: 6px; transition: all 0.2s ease;">
                             <i class="fa-solid fa-receipt"></i> รายการค่าใช้จ่ายโครงการ
                         </button>
@@ -9815,8 +9815,11 @@ function renderProjectCostSummaryTable() {
                 const event = new Event('change');
                 costProjSel.dispatchEvent(event);
             }
-            // Scroll down smoothly to the detail header
-            document.getElementById("cost-project-selector").scrollIntoView({ behavior: 'smooth', block: 'center' });
+            // Scroll down smoothly to the details section below
+            const detailsSection = document.getElementById("cost-details-section");
+            if (detailsSection) {
+                detailsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         };
 
         const val = p.value || 0;
