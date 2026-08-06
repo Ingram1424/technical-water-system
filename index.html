@@ -12053,10 +12053,125 @@ document.addEventListener("DOMContentLoaded", () => {
     const btnGenerateShareLink = document.getElementById("btn-generate-share-link");
     const btnCopyShareResultUrl = document.getElementById("btn-copy-share-result-url");
 
+    // Share modal state tracking
+    const currentShareSelectedHospitals = new Set();
+    const currentShareSelectedProjects = new Set();
+
+    // Helper to render projects based on checked hospitals on the left
+    function renderShareProjectsChecklist() {
+        const projContainer = document.getElementById("share-projects-checkboxes");
+        if (!projContainer) return;
+        projContainer.innerHTML = "";
+
+        if (currentShareSelectedHospitals.size === 0) {
+            projContainer.innerHTML = `
+                <div style="text-align: center; color: var(--text-muted); font-size: 12px; padding: 60px 16px; font-style: italic; width: 100%;">
+                    <i class="fa-solid fa-hospital text-blue" style="font-size: 28px; display: block; margin-bottom: 8px; opacity: 0.5;"></i>
+                    กรุณาเลือกติ๊กโรงพยาบาลด้านซ้าย เพื่อดูและเลือกโครงการย่อย
+                </div>
+            `;
+            return;
+        }
+
+        const sortedProjects = Object.values(projectsData)
+            .filter(p => currentShareSelectedHospitals.has(p.customer))
+            .sort((a, b) => b.year - a.year || a.code.localeCompare(b.code));
+
+        if (sortedProjects.length === 0) {
+            projContainer.innerHTML = `<span style="font-size: 12px; color: var(--text-muted); font-style: italic; padding: 16px;">ไม่มีโครงการสำหรับโรงพยาบาลที่เลือก</span>`;
+            return;
+        }
+
+        // Group by hospital to match the permission system style
+        const grouped = {};
+        sortedProjects.forEach(p => {
+            if (!grouped[p.customer]) grouped[p.customer] = [];
+            grouped[p.customer].push(p);
+        });
+
+        Object.keys(grouped).forEach(hosp => {
+            const projectCodesUnderHosp = grouped[hosp].map(p => p.code);
+            const allChecked = projectCodesUnderHosp.every(code => currentShareSelectedProjects.has(code));
+            const someChecked = projectCodesUnderHosp.some(code => currentShareSelectedProjects.has(code)) && !allChecked;
+
+            const headerId = `share-hosp-header-${hosp.replace(/\s+/g, "-")}`;
+            const groupHeader = document.createElement("div");
+            groupHeader.className = "share-project-item-group-header";
+            groupHeader.style.cssText = "display: flex; align-items: center; gap: 8px; font-size: 11.5px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; color: var(--primary-blue); margin-top: 14px; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 1px dashed var(--border-color); width: 100%;";
+            groupHeader.innerHTML = `
+                <input type="checkbox" id="${headerId}" style="width: 14px; height: 14px; accent-color: var(--primary-blue); cursor: pointer;" ${allChecked ? "checked" : ""}>
+                <label for="${headerId}" style="cursor: pointer; font-family: 'Prompt', sans-serif; display: inline-flex; align-items: center; gap: 4px; margin: 0; user-select: none;">
+                    ${hosp.replace("โรงพยาบาล", "รพ.")} <span style="font-size: 9.5px; font-weight: 500; color: var(--text-muted); text-transform: none;">(เลือกทั้งหมดใน รพ. นี้)</span>
+                </label>
+            `;
+            projContainer.appendChild(groupHeader);
+
+            const headerCb = groupHeader.querySelector(`#${headerId}`);
+            if (headerCb) {
+                headerCb.indeterminate = someChecked;
+                headerCb.addEventListener("change", () => {
+                    const isChecked = headerCb.checked;
+                    grouped[hosp].forEach(proj => {
+                        if (isChecked) {
+                            currentShareSelectedProjects.add(proj.code);
+                        } else {
+                            currentShareSelectedProjects.delete(proj.code);
+                        }
+                        
+                        const projCb = document.getElementById(`chk-share-p-${proj.code}`);
+                        if (projCb) {
+                            projCb.checked = isChecked;
+                        }
+                    });
+                });
+            }
+
+            grouped[hosp].forEach(p => {
+                const isChecked = currentShareSelectedProjects.has(p.code);
+                const isQuotingStatus = (p.status === "งานที่กำลังเสนอราคา" || p.status === "กำลังเสนอราคา" || p.status === "งานที่รอเสนอราคา");
+                const statusType = isQuotingStatus ? "เสนอราคา" : "งานในมือ";
+                const div = document.createElement("div");
+                div.className = "share-project-item";
+                div.style.cssText = "display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-family: 'Prompt', sans-serif; padding: 4px 0;";
+                div.innerHTML = `
+                    <input type="checkbox" class="share-project-check" value="${p.code}" id="chk-share-p-${p.code}" style="width: 15px; height: 15px; cursor: pointer;" ${isChecked ? "checked" : ""}>
+                    <label for="chk-share-p-${p.code}" style="cursor: pointer; font-weight: 600; color: var(--navy-dark);">${p.code} : ${p.name.replace(/ \(\d{4}\)$/, '')} <span style="font-size: 10.5px; color: var(--text-muted); font-weight: 500;">(${statusType})</span></label>
+                `;
+                projContainer.appendChild(div);
+
+                const projCb = div.querySelector(`.share-project-check`);
+                if (projCb) {
+                    projCb.addEventListener("change", () => {
+                        if (projCb.checked) {
+                            currentShareSelectedProjects.add(p.code);
+                        } else {
+                            currentShareSelectedProjects.delete(p.code);
+                        }
+                        
+                        // Recalculate group header checkbox state
+                        const anyCheckedNow = projectCodesUnderHosp.some(code => currentShareSelectedProjects.has(code));
+                        const allCheckedNow = projectCodesUnderHosp.every(code => currentShareSelectedProjects.has(code));
+                        headerCb.checked = allCheckedNow;
+                        headerCb.indeterminate = anyCheckedNow && !allCheckedNow;
+                    });
+                }
+            });
+        });
+
+        // Trigger search filter if there is query text active
+        const searchInput = document.getElementById("share-modal-project-search");
+        if (searchInput && searchInput.value.trim()) {
+            searchInput.dispatchEvent(new Event("input"));
+        }
+    }
+
     window.openPortalShareModal = function() {
         if (!portalShareModal) return;
 
-        // Reset output container
+        // Clear old selections
+        currentShareSelectedHospitals.clear();
+        currentShareSelectedProjects.clear();
+
         document.getElementById("share-link-output-container").style.display = "none";
         document.getElementById("share-link-result-url").value = "";
 
@@ -12082,17 +12197,24 @@ document.addEventListener("DOMContentLoaded", () => {
                 
                 const div = document.createElement("div");
                 div.className = "share-hospital-item";
-                div.style.cssText = "display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12.5px; font-family: 'Prompt', sans-serif; padding: 4px 0;";
+                div.style.cssText = "display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-family: 'Prompt', sans-serif; padding: 4px 0;";
                 div.innerHTML = `
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <input type="checkbox" class="share-hospital-check" value="${hosp}" id="chk-share-h-${hosp}" style="width: 15px; height: 15px; cursor: pointer;">
-                        <label for="chk-share-h-${hosp}" style="cursor: pointer; font-weight: 600; color: var(--navy-dark);">${hosp} <span style="font-size: 10.5px; color: var(--text-muted); font-weight: 500;">(${projCount} โครงการ)</span></label>
-                    </div>
-                    <span class="btn-filter-hosp" data-hosp="${hosp}" style="color: #0284c7; cursor: pointer; font-size: 11px; padding: 2px 8px; background: #e0f2fe; border-radius: 4px; font-weight: 600; display: flex; align-items: center; gap: 4px; transition: all 0.2s;">
-                        <i class="fa-solid fa-filter"></i> กรองโครงการ
-                    </span>
+                    <input type="checkbox" class="share-hospital-check" value="${hosp}" id="chk-share-h-${hosp}" style="width: 15px; height: 15px; cursor: pointer;">
+                    <label for="chk-share-h-${hosp}" style="cursor: pointer; font-weight: 600; color: var(--navy-dark);">${hosp} <span style="font-size: 10.5px; color: var(--text-muted); font-weight: 500;">(${projCount} โครงการ)</span></label>
                 `;
                 hospContainer.appendChild(div);
+
+                const hospCb = div.querySelector(".share-hospital-check");
+                if (hospCb) {
+                    hospCb.addEventListener("change", () => {
+                        if (hospCb.checked) {
+                            currentShareSelectedHospitals.add(hosp);
+                        } else {
+                            currentShareSelectedHospitals.delete(hosp);
+                        }
+                        renderShareProjectsChecklist();
+                    });
+                }
             });
 
             if (hospContainer.children.length === 0) {
@@ -12100,29 +12222,8 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
 
-        // Populate dynamic projects
-        const projContainer = document.getElementById("share-projects-checkboxes");
-        if (projContainer) {
-            projContainer.innerHTML = "";
-            const sortedProjects = Object.values(projectsData).sort((a, b) => b.year - a.year || a.code.localeCompare(b.code));
-            
-            sortedProjects.forEach(p => {
-                const isQuotingStatus = (p.status === "งานที่กำลังเสนอราคา" || p.status === "กำลังเสนอราคา" || p.status === "งานที่รอเสนอราคา");
-                const statusType = isQuotingStatus ? "เสนอราคา" : "งานในมือ";
-                const div = document.createElement("div");
-                div.className = "share-project-item";
-                div.style.cssText = "display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-family: 'Prompt', sans-serif;";
-                div.innerHTML = `
-                    <input type="checkbox" class="share-project-check" value="${p.code}" id="chk-share-p-${p.code}" style="width: 15px; height: 15px; cursor: pointer;">
-                    <label for="chk-share-p-${p.code}" style="cursor: pointer; font-weight: 600; color: var(--navy-dark);">${p.code} : ${p.name.replace(/ \(\d{4}\)$/, '')} <span style="font-size: 10.5px; color: var(--text-muted); font-weight: 500;">(${p.customer.replace('โรงพยาบาล', 'รพ.')} - ${statusType})</span></label>
-                `;
-                projContainer.appendChild(div);
-            });
-
-            if (projContainer.children.length === 0) {
-                projContainer.innerHTML = `<span style="font-size: 12px; color: var(--text-muted); font-style: italic;">ไม่มีโครงการในระบบ</span>`;
-            }
-        }
+        // Render projects placeholder
+        renderShareProjectsChecklist();
 
         portalShareModal.style.display = "flex";
     };
@@ -12139,22 +12240,25 @@ document.addEventListener("DOMContentLoaded", () => {
     const clearHospBtn = document.getElementById("btn-share-clear-hospitals");
     if (clearHospBtn) {
         clearHospBtn.addEventListener("click", () => {
+            currentShareSelectedHospitals.clear();
             document.querySelectorAll(".share-hospital-check").forEach(chk => chk.checked = false);
+            renderShareProjectsChecklist();
         });
     }
 
     const clearProjBtn = document.getElementById("btn-share-clear-projects");
     if (clearProjBtn) {
         clearProjBtn.addEventListener("click", () => {
-            document.querySelectorAll(".share-project-check").forEach(chk => chk.checked = false);
+            currentShareSelectedProjects.clear();
+            renderShareProjectsChecklist();
         });
     }
 
     // Generate Share Link action
     if (btnGenerateShareLink) {
         btnGenerateShareLink.addEventListener("click", async () => {
-            const selectedHospitals = Array.from(document.querySelectorAll(".share-hospital-check:checked")).map(chk => chk.value);
-            const selectedProjectCodes = Array.from(document.querySelectorAll(".share-project-check:checked")).map(chk => chk.value);
+            const selectedHospitals = Array.from(currentShareSelectedHospitals);
+            const selectedProjectCodes = Array.from(currentShareSelectedProjects);
             
             if (selectedHospitals.length === 0 && selectedProjectCodes.length === 0) {
                 showToast("กรุณาเลือกโรงพยาบาลหรือโครงการย่อยอย่างน้อย 1 รายการเพื่อแชร์", "warning");
@@ -12237,6 +12341,20 @@ document.addEventListener("DOMContentLoaded", () => {
                     item.style.display = "none";
                 }
             });
+
+            // Show/hide group headers based on if there are visible projects under them
+            document.querySelectorAll("#share-projects-checkboxes > .share-project-item-group-header").forEach(header => {
+                let sibling = header.nextElementSibling;
+                let hasVisibleSibling = false;
+                while (sibling && !sibling.classList.contains("share-project-item-group-header")) {
+                    if (sibling.classList.contains("share-project-item") && sibling.style.display !== "none") {
+                        hasVisibleSibling = true;
+                        break;
+                    }
+                    sibling = sibling.nextElementSibling;
+                }
+                header.style.display = hasVisibleSibling ? "flex" : "none";
+            });
             
             // Filter hospitals
             document.querySelectorAll("#share-hospitals-checkboxes > .share-hospital-item").forEach(item => {
@@ -12261,21 +12379,6 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         });
     }
-
-    // Filter hospital projects click event listener
-    document.addEventListener("click", function(e) {
-        const filterBtn = e.target.closest(".btn-filter-hosp");
-        if (filterBtn) {
-            const hospName = filterBtn.getAttribute("data-hosp");
-            // Remove "โรงพยาบาล" prefix to search effectively (e.g. "พญาไท 2")
-            const searchKey = hospName.replace("โรงพยาบาล", "").trim();
-            const searchInput = document.getElementById("share-modal-project-search");
-            if (searchInput) {
-                searchInput.value = searchKey;
-                searchInput.dispatchEvent(new Event("input"));
-            }
-        }
-    });
 
     // Copy link result action
     if (btnCopyShareResultUrl) {
