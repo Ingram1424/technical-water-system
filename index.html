@@ -5513,7 +5513,13 @@ let projectsData = {};
 try {
     const savedData = localStorage.getItem("technical_water_projects_data_v2");
     if (savedData) {
-        projectsData = JSON.parse(savedData);
+        const parsed = JSON.parse(savedData);
+        projectsData = {};
+        Object.keys(parsed).forEach(k => {
+            if (!k.startsWith("SHARE:") && !k.startsWith("FILE:")) {
+                projectsData[k] = parsed[k];
+            }
+        });
     } else {
         projectsData = defaultProjectsData;
         localStorage.setItem("technical_water_projects_data_v2", JSON.stringify(projectsData));
@@ -5526,13 +5532,15 @@ try {
 // Background sync from Supabase
 async function loadFromSupabase() {
     try {
-        const { data, error } = await supabaseClient.from('projects').select('*').not('code', 'ilike', 'FILE:%');
+        const { data, error } = await supabaseClient.from('projects').select('*').not('code', 'ilike', 'FILE:%').not('code', 'ilike', 'SHARE:%');
         if (error) throw error;
         
         if (data && data.length > 0) {
             const remoteData = {};
             data.forEach(row => {
-                remoteData[row.code] = row.data;
+                if (!row.code.startsWith("SHARE:") && !row.code.startsWith("FILE:")) {
+                    remoteData[row.code] = row.data;
+                }
             });
             projectsData = remoteData;
             localStorage.setItem("technical_water_projects_data_v2", JSON.stringify(projectsData));
