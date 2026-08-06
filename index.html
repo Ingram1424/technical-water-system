@@ -5378,6 +5378,46 @@ body.public-view-mode #public-view-header {
         </div>
     </div>
 
+    <!-- Customer Daily Report Sign-off Modal -->
+    <div class="modal-overlay" id="customer-sign-modal" style="z-index: 12000; display: none;">
+        <div class="modal-card" style="max-width: 480px;">
+            <div class="modal-header">
+                <h3 class="modal-title"><i class="fa-solid fa-signature text-blue"></i> ลงนามรับรองรายงานปฏิบัติงานประจำวัน</h3>
+                <button class="modal-close-btn" id="close-customer-sign-modal">&times;</button>
+            </div>
+            <form id="customer-sign-form">
+                <div class="modal-body">
+                    <input type="hidden" id="customer-sign-report-idx">
+                    <div class="form-group">
+                        <label class="form-label" for="customer-sign-name">ชื่อ-นามสกุลผู้ลงนามรับรอง <span class="required">*</span></label>
+                        <input type="text" id="customer-sign-name" class="form-control" list="signer-names-datalist" placeholder="เช่น นายสมชาย ใจดี" required autocomplete="off">
+                    </div>
+                    <div class="form-group mt-3">
+                        <label class="form-label" for="customer-sign-role">ตำแหน่ง / บทบาทผู้ลงนาม <span class="required">*</span></label>
+                        <div style="display: flex; gap: 8px;">
+                            <select id="customer-sign-role" class="form-control signer-role-select" required style="font-family: 'Prompt'; font-weight: 600; border-radius: 6px; padding: 6px 10px; height: 38px;">
+                                <!-- Filled dynamically -->
+                            </select>
+                            <button type="button" class="btn btn-outline" id="btn-add-custom-customer-role" style="font-size: 12px; white-space: nowrap;"><i class="fa-solid fa-plus"></i> เพิ่มตำแหน่ง</button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group mt-3">
+                        <label class="form-label" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                            <span>วาดลายเซ็นลงบนพื้นที่ด้านล่าง <span class="required">*</span></span>
+                            <button type="button" class="btn-clear-customer-sig" style="background: none; border: none; font-size: 11px; color: #3b82f6; cursor: pointer; text-decoration: underline; padding: 0; font-family: 'Prompt';">ล้างหน้าจอเขียน</button>
+                        </label>
+                        <canvas id="customer-signature-canvas" width="400" height="120" style="border: 1px dashed var(--border-color); border-radius: 6px; background: #ffffff; cursor: crosshair; display: block; touch-action: none; width: 100%; height: 120px;"></canvas>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline" id="cancel-customer-sign-btn">ยกเลิก</button>
+                    <button type="submit" class="btn btn-primary" id="btn-submit-customer-sign"><i class="fa-solid fa-check-circle"></i> ยืนยันการลงนามรับรอง</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Global Hospitals Autocomplete Datalist -->
     <datalist id="all-hospitals-datalist">
         <option value="โรงพยาบาลพญาไท 1"></option>
@@ -9208,6 +9248,11 @@ function renderSubnavDailyReports(project) {
 
                 <!-- Action buttons floats or footer action row -->
                 <div style="display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid #e2e8f0; padding-top: 12px; margin-top: 10px;">
+                    <button class="btn btn-xs btn-outline-blue btn-customer-sign-report" 
+                        data-idx="${idx}"
+                        style="font-size: 11px; padding: 4px 12px; display: inline-flex; align-items: center; gap: 6px; background: #eff6ff; border: 1px solid #1d4ed8; color: #1d4ed8; border-radius: 4px; cursor: pointer; font-weight: 600;">
+                        <i class="fa-solid fa-signature"></i> ลูกค้าเซ็นรับรอง
+                    </button>
                     <button class="btn btn-xs btn-outline-green daily-report-export-pdf" 
                         data-idx="${idx}"
                         style="font-size: 11px; padding: 4px 12px; display: flex; align-items: center; gap: 6px; background: #f0fdf4; border: 1px solid #10b981; color: #16a34a; border-radius: 4px; cursor: pointer; font-weight: 600;">
@@ -9250,6 +9295,12 @@ function renderSubnavDailyReports(project) {
                     </div>
                     <div style="display: flex; align-items: center; gap: 8px;">
                         <span class="badge-status completed" style="background-color: #eff6ff; color: #1d4ed8; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600;">เสร็จสิ้นวันนี้</span>
+                        
+                        <button class="btn btn-xs btn-outline-blue btn-customer-sign-report" 
+                            data-idx="${idx}"
+                            style="font-size: 10.5px; padding: 3px 8px; display: flex; align-items: center; gap: 4px; background: none; border: 1px solid #1d4ed8; color: #1d4ed8; border-radius: 4px; cursor: pointer;">
+                            <i class="fa-solid fa-signature"></i> ลูกค้าเซ็นรับรอง
+                        </button>
                         
                         <button class="btn btn-xs btn-outline-green daily-report-export-pdf" 
                             data-idx="${idx}"
@@ -9398,6 +9449,16 @@ function renderSubnavDailyReports(project) {
             const repObj = reports[rIdx];
             if (repObj && window.exportDailyReportPDF) {
                 window.exportDailyReportPDF(repObj.date, repObj.desc, repObj.images, repObj.signatures);
+            }
+        });
+    });
+
+    // Hook Customer Sign-off handler
+    container.querySelectorAll(".btn-customer-sign-report").forEach(btn => {
+        btn.addEventListener("click", function() {
+            const rIdx = parseInt(this.getAttribute("data-idx"));
+            if (window.openCustomerSignModal) {
+                window.openCustomerSignModal(rIdx);
             }
         });
     });
@@ -11830,6 +11891,153 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Re-render
             renderPermissionsManagement();
+        });
+    }
+
+    // ============================================================
+    // CUSTOMER DAILY REPORT SIGN-OFF SYSTEM
+    // ============================================================
+    const customerSignModal = document.getElementById("customer-sign-modal");
+    const closeCustomerSignBtn = document.getElementById("close-customer-sign-modal");
+    const cancelCustomerSignBtn = document.getElementById("cancel-customer-sign-btn");
+    const customerSignForm = document.getElementById("customer-sign-form");
+    const customerSigCanvas = document.getElementById("customer-signature-canvas");
+
+    window.openCustomerSignModal = function(reportIdx) {
+        if (!customerSignModal) return;
+        
+        const project = projectsData[appState.selectedDetailProject];
+        if (!project || !project.dailyReports || !project.dailyReports[reportIdx]) return;
+        
+        const report = project.dailyReports[reportIdx];
+        
+        // Reset form
+        if (customerSignForm) customerSignForm.reset();
+        document.getElementById("customer-sign-report-idx").value = reportIdx;
+        
+        // Populate signature role dropdown
+        const roleSelect = document.getElementById("customer-sign-role");
+        if (roleSelect) {
+            window.initSignerRoleDropdown(roleSelect, "");
+        }
+        
+        // Clear signature canvas
+        if (customerSigCanvas && customerSigCanvas.clear) {
+            customerSigCanvas.clear();
+        }
+        
+        // Display modal
+        customerSignModal.style.display = "flex";
+    };
+
+    const closeCustomerSignModal = () => {
+        if (customerSignModal) customerSignModal.style.display = "none";
+    };
+
+    if (closeCustomerSignBtn) closeCustomerSignBtn.addEventListener("click", closeCustomerSignModal);
+    if (cancelCustomerSignBtn) cancelCustomerSignBtn.addEventListener("click", closeCustomerSignModal);
+    
+    // Clear button listener
+    const clearCustomerSigBtn = document.querySelector(".btn-clear-customer-sig");
+    if (clearCustomerSigBtn && customerSigCanvas) {
+        clearCustomerSigBtn.addEventListener("click", () => {
+            if (customerSigCanvas.clear) customerSigCanvas.clear();
+        });
+    }
+
+    // Add custom role button trigger
+    const addCustomRoleBtn = document.getElementById("btn-add-custom-customer-role");
+    if (addCustomRoleBtn) {
+        addCustomRoleBtn.addEventListener("click", () => {
+            const roleSelect = document.getElementById("customer-sign-role");
+            if (roleSelect) {
+                roleSelect.value = "__ADD_NEW_ROLE__";
+                roleSelect.dispatchEvent(new Event("change"));
+            }
+        });
+    }
+
+    // Initialize signature pad drawing handlers
+    if (customerSigCanvas) {
+        initSignaturePad(customerSigCanvas);
+    }
+
+    if (customerSignForm) {
+        customerSignForm.addEventListener("submit", async function(e) {
+            e.preventDefault();
+            
+            const reportIdx = parseInt(document.getElementById("customer-sign-report-idx").value);
+            const name = document.getElementById("customer-sign-name").value.trim();
+            const role = document.getElementById("customer-sign-role").value;
+            
+            if (!name || !role) {
+                showToast("กรุณากรอกข้อมูลผู้รับรองให้ครบถ้วน", "warning");
+                return;
+            }
+            
+            if (!customerSigCanvas || customerSigCanvas.isEmpty()) {
+                showToast("กรุณาวาดลายเซ็นของคุณลงบนกระดานด้านล่าง", "warning");
+                return;
+            }
+            
+            const projectCode = appState.selectedDetailProject;
+            const project = projectsData[projectCode];
+            if (!project || !project.dailyReports || !project.dailyReports[reportIdx]) return;
+            
+            const report = project.dailyReports[reportIdx];
+            const dateVal = report.date.replace(/\//g, "-");
+            
+            // Get base64 Data URL from canvas
+            const sigDataUrl = customerSigCanvas.toDataURL("image/png");
+            
+            // Generate Supabase storage key
+            const sigKey = `FILE:${projectCode}:DAILY_SIG:${dateVal}:${Date.now()}:customer:${name}`;
+            
+            showToast("กำลังส่งลายเซ็นรับรองขึ้นระบบคลาวด์...", "info");
+            
+            try {
+                // 1. Upload signature image to Supabase
+                const { error: sigErr } = await supabaseClient.from('projects').upsert({
+                    code: sigKey,
+                    data: { fileUrl: sigDataUrl },
+                    updated_at: new Date().toISOString()
+                });
+                
+                if (sigErr) throw sigErr;
+                
+                // 2. Append signature metadata to report
+                if (!report.signatures) report.signatures = [];
+                report.signatures.push({
+                    name: name,
+                    role: role,
+                    image: sigKey
+                });
+                
+                // 3. Collect signer names/roles to autocomplete history
+                if (!appState.signerNamesHistory.includes(name)) {
+                    appState.signerNamesHistory.push(name);
+                    localStorage.setItem("technical_water_signer_names_history", JSON.stringify(appState.signerNamesHistory));
+                    if (typeof window.updateSignerNamesDatalist === "function") window.updateSignerNamesDatalist();
+                }
+                
+                // Sync name history to database
+                await supabaseClient.from('projects').upsert({
+                    code: 'FILE:SIGNER_NAMES_HISTORY',
+                    data: { history: appState.signerNamesHistory }
+                });
+                
+                // 4. Save project locally and sync to Supabase
+                saveToLocalStorage();
+                
+                showToast("🎉 เซ็นรับรองรายงานการปฏิบัติงานเรียบร้อยแล้ว!", "success");
+                closeCustomerSignModal();
+                
+                // 5. Re-render feed
+                renderSubnavDailyReports(project);
+            } catch (err) {
+                console.error("Failed to sign off report:", err);
+                showToast("ลงนามรับรองล้มเหลว: " + err.message, "error");
+            }
         });
     }
 
