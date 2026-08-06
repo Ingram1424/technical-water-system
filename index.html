@@ -12454,7 +12454,22 @@ document.addEventListener("DOMContentLoaded", () => {
             const selectedHospitals = Array.from(currentShareSelectedHospitals);
             const selectedProjectCodes = Array.from(currentShareSelectedProjects);
             
-            if (selectedHospitals.length === 0 && selectedProjectCodes.length === 0) {
+            // Filter out hospitals if the user explicitly selected specific projects under them
+            const finalHospitals = [];
+            selectedHospitals.forEach(hosp => {
+                const projectsUnderHosp = Object.values(projectsData).filter(p => p.customer === hosp);
+                const projectCodesUnderHosp = projectsUnderHosp.map(p => p.code);
+                const selectedUnderHosp = projectCodesUnderHosp.filter(code => currentShareSelectedProjects.has(code));
+                
+                // If no specific projects under this hospital were selected on the right,
+                // it means the user intends to share the whole hospital.
+                // Otherwise, we only share the explicitly selected projects and exclude the hospital-wide permission.
+                if (selectedUnderHosp.length === 0) {
+                    finalHospitals.push(hosp);
+                }
+            });
+            
+            if (finalHospitals.length === 0 && selectedProjectCodes.length === 0) {
                 showToast("กรุณาเลือกโรงพยาบาลหรือโครงการย่อยอย่างน้อย 1 รายการเพื่อแชร์", "warning");
                 return;
             }
@@ -12467,7 +12482,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const shareData = {
                 type: "mixed_share",
                 projectCodes: selectedProjectCodes,
-                hospitals: selectedHospitals,
+                hospitals: finalHospitals,
                 createdAt: new Date().toISOString()
             };
             
