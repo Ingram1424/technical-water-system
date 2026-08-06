@@ -3628,7 +3628,7 @@ body.public-view-mode #public-view-header {
                                                 <span class="fin-val text-navy" id="fin-cost-summary">0</span>
                                                 <span class="fin-unit">บาท</span>
                                             </div>
-                                            <div class="fin-box" style="padding: 10px;">
+                                            <div class="fin-box hide-pm" style="padding: 10px;">
                                                 <span class="fin-lbl">กำไร</span>
                                                 <span class="fin-val text-green" id="fin-profit-summary">0</span>
                                                 <span class="fin-unit">บาท</span>
@@ -3640,7 +3640,7 @@ body.public-view-mode #public-view-header {
                                                 <span class="fin-val text-muted" id="fin-loss-summary">-</span>
                                                 <span class="fin-unit">บาท</span>
                                             </div>
-                                            <div class="fin-box highlighted-profit" style="padding: 10px;">
+                                            <div class="fin-box highlighted-profit hide-pm" style="padding: 10px;">
                                                 <span class="fin-lbl">กำไรสุทธิ</span>
                                                 <span class="fin-val text-orange" id="fin-netprofit-summary">0</span>
                                                 <span class="fin-unit">บาท</span>
@@ -3715,7 +3715,7 @@ body.public-view-mode #public-view-header {
                                 </div>
                                 <span class="unit">บาท</span>
                             </div>
-                            <div class="mini-kpi-card green">
+                            <div class="mini-kpi-card green hide-pm">
                                 <div class="mini-icon"><i class="fa-solid fa-hand-holding-dollar"></i></div>
                                 <div class="mini-lbl-val">
                                     <span class="lbl">กำไรสุทธิรวม</span>
@@ -3723,7 +3723,7 @@ body.public-view-mode #public-view-header {
                                 </div>
                                 <span class="unit">บาท</span>
                             </div>
-                            <div class="mini-kpi-card purple">
+                            <div class="mini-kpi-card purple hide-pm">
                                 <div class="mini-icon"><i class="fa-solid fa-percent"></i></div>
                                 <div class="mini-lbl-val">
                                     <span class="lbl">อัตรากำไรเฉลี่ย</span>
@@ -3797,8 +3797,8 @@ body.public-view-mode #public-view-header {
                                         <th style="padding: 10px 12px; text-align: left; color: #ffffff !important; background-color: var(--navy-dark) !important; font-size: 11.5px; font-weight: 600;">ชื่อโครงการ / โรงพยาบาล</th>
                                         <th style="padding: 10px 12px; text-align: right; color: #ffffff !important; background-color: var(--navy-dark) !important; font-size: 11.5px; font-weight: 600; width: 140px;">มูลค่าสัญญา (Value)</th>
                                         <th style="padding: 10px 12px; text-align: right; color: #ffffff !important; background-color: var(--navy-dark) !important; font-size: 11.5px; font-weight: 600; width: 140px;">ค่าใช้จ่ายจริง (Cost)</th>
-                                        <th style="padding: 10px 12px; text-align: right; color: #ffffff !important; background-color: var(--navy-dark) !important; font-size: 11.5px; font-weight: 600; width: 130px;">กำไรสุทธิ (Profit)</th>
-                                        <th style="padding: 10px 12px; text-align: center; color: #ffffff !important; background-color: var(--navy-dark) !important; font-size: 11.5px; font-weight: 600; width: 90px;">% กำไร</th>
+                                        <th class="hide-pm" style="padding: 10px 12px; text-align: right; color: #ffffff !important; background-color: var(--navy-dark) !important; font-size: 11.5px; font-weight: 600; width: 130px;">กำไรสุทธิ (Profit)</th>
+                                        <th class="hide-pm" style="padding: 10px 12px; text-align: center; color: #ffffff !important; background-color: var(--navy-dark) !important; font-size: 11.5px; font-weight: 600; width: 90px;">% กำไร</th>
                                         <th style="padding: 10px 12px; text-align: left; color: #ffffff !important; background-color: var(--navy-dark) !important; font-size: 11.5px; font-weight: 600; width: 150px;">ผู้รับผิดชอบ (PM)</th>
                                         <th style="padding: 10px 12px; text-align: center; color: #ffffff !important; background-color: var(--navy-dark) !important; font-size: 11.5px; font-weight: 600; width: 110px;">สถานะ</th>
                                     </tr>
@@ -3846,7 +3846,7 @@ body.public-view-mode #public-view-header {
                                             <span class="unit">บาท</span>
                                         </div>
                                     </div>
-                                    <div class="cost-metric-row">
+                                    <div class="cost-metric-row hide-pm">
                                         <span class="lbl">กำไร</span>
                                         <div class="val-group text-green">
                                             <span class="val" id="cost-v-profit">2,350,000</span>
@@ -3860,7 +3860,7 @@ body.public-view-mode #public-view-header {
                                             <span class="unit">บาท</span>
                                         </div>
                                     </div>
-                                    <div class="cost-metric-row highlight-net">
+                                    <div class="cost-metric-row highlight-net hide-pm">
                                         <span class="lbl font-bold">กำไรสุทธิ</span>
                                         <div class="val-group text-orange">
                                             <span class="val font-bold" id="cost-v-net">2,350,000</span>
@@ -4318,7 +4318,7 @@ body.public-view-mode #public-view-header {
                                                     <span class="fin-val text-navy" id="detail-fin-cost">0</span>
                                                     <span class="fin-unit">บาท</span>
                                                 </div>
-                                                <div class="fin-box">
+                                                <div class="fin-box hide-pm">
                                                     <span class="fin-lbl">กำไร</span>
                                                     <span class="fin-val text-green" id="detail-fin-profit">0</span>
                                                     <span class="fin-unit">บาท</span>
@@ -4330,7 +4330,7 @@ body.public-view-mode #public-view-header {
                                                     <span class="fin-val text-muted" id="detail-fin-loss">-</span>
                                                     <span class="fin-unit">บาท</span>
                                                 </div>
-                                                <div class="fin-box highlighted-profit">
+                                                <div class="fin-box highlighted-profit hide-pm">
                                                     <span class="fin-lbl">กำไรสุทธิ</span>
                                                     <span class="fin-val text-orange" id="detail-fin-netprofit">0</span>
                                                     <span class="fin-unit">บาท</span>
@@ -4638,7 +4638,7 @@ body.public-view-mode #public-view-header {
                                                 <span class="unit">บาท</span>
                                             </div>
                                         </div>
-                                        <div class="cost-metric-row">
+                                        <div class="cost-metric-row hide-pm">
                                             <span class="lbl">กำไร</span>
                                             <div class="val-group">
                                                 <span class="val text-green" id="subtab-cost-v-profit">0</span>
@@ -7034,7 +7034,7 @@ function renderHospitalsGrid(activeProjects) {
                 totalProfit += (p.value || 0) - (p.cost || 0);
             });
             
-            const hideCost = (appState.currentRole === "customer" || (appState.currentRole === "pm" || appState.currentRole === "admin"));
+            const hideCost = (appState.currentRole === "customer");
             
             const financialsHTML = hideCost 
                 ? `<div style="font-size: 11px; color: var(--text-muted); font-style: italic; margin-top: 12px; padding: 10px; background: var(--bg-light); border-radius: var(--radius-sm); text-align: center; border: 1px solid var(--border-color);">
@@ -7049,7 +7049,7 @@ function renderHospitalsGrid(activeProjects) {
                          <span style="color: var(--text-muted); font-weight: 600;">ต้นทุนโครงการรวม</span>
                          <span style="color: var(--navy-dark); font-weight: 700;">${formatNumber(totalCost)} บาท</span>
                      </div>
-                     <div style="display: flex; justify-content: space-between; font-size: 11px; border-top: 1px dashed var(--border-color); padding-top: 6px;">
+                     <div class="hide-pm" style="display: flex; justify-content: space-between; font-size: 11px; border-top: 1px dashed var(--border-color); padding-top: 6px;">
                          <span style="color: var(--navy-medium); font-weight: 700;">กำไรรวมประมาณการ</span>
                          <span style="color: var(--color-inprogress); font-weight: 700;">${formatNumber(totalProfit)} บาท</span>
                      </div>
@@ -7074,7 +7074,7 @@ function renderHospitalsGrid(activeProjects) {
                     : `<div style="display: flex; gap: 16px; font-size: 11px; background: rgba(255,255,255,0.7); padding: 6px 12px; border-radius: var(--radius-sm); border: 1px solid #cbd5e1;">
                          <div><span style="color: var(--text-muted); font-size: 10px;">มูลค่า:</span> <strong style="color: var(--navy-dark);">${formatNumber(p.value)}</strong></div>
                          <div><span style="color: var(--text-muted); font-size: 10px;">ต้นทุน:</span> <strong style="color: var(--navy-dark);">${formatNumber(p.cost)}</strong></div>
-                         <div><span style="color: var(--text-muted); font-size: 10px;">กำไร:</span> <strong style="color: ${projectProfit >= 0 ? 'var(--color-inprogress)' : '#ef4444'};">${formatNumber(projectProfit)}</strong></div>
+                         <div class="hide-pm"><span style="color: var(--text-muted); font-size: 10px;">กำไร:</span> <strong style="color: ${projectProfit >= 0 ? 'var(--color-inprogress)' : '#ef4444'};">${formatNumber(projectProfit)}</strong></div>
                        </div>`;
                 
                 const poDateStr = p.poDate || p.start || '15/01/2026';
@@ -9651,12 +9651,12 @@ function renderCostOverallBarChart(projectsList) {
                         backgroundColor: '#f59e0b', // Amber/Orange
                         borderRadius: 4
                     },
-                    {
+                    ...(appState.currentRole !== 'pm' ? [{
                         label: 'กำไร (Profit)',
                         data: profits,
                         backgroundColor: '#10b981', // Green
                         borderRadius: 4
-                    }
+                    }] : [])
                 ]
             },
             options: {
@@ -9841,8 +9841,8 @@ function renderProjectCostSummaryTable() {
             </td>
             <td style="padding: 10px 12px; text-align: right; font-weight: 600; color: var(--navy-dark);">${formatNumber(val)}</td>
             <td style="padding: 10px 12px; text-align: right; font-weight: 600; color: #c2410c;">${formatNumber(cost)}</td>
-            <td style="padding: 10px 12px; text-align: right; font-weight: 600; color: ${profit >= 0 ? '#15803d' : '#dc2626'};">${formatNumber(profit)}</td>
-            <td style="padding: 10px 12px; text-align: center;">
+            <td class="hide-pm" style="padding: 10px 12px; text-align: right; font-weight: 600; color: ${profit >= 0 ? '#15803d' : '#dc2626'};">${formatNumber(profit)}</td>
+            <td class="hide-pm" style="padding: 10px 12px; text-align: center;">
                 <span class="badge-percent" style="font-size: 11px; padding: 2px 6px; background: ${profit >= 0 ? '#dcfce7; color: #15803d' : '#fee2e2; color: #dc2626'}; border-radius: 4px; font-weight: 600;">${pct}%</span>
             </td>
             <td style="padding: 10px 12px; font-size: 11.5px; color: var(--text-dark);">${p.manager || "-"}</td>
