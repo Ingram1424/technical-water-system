@@ -3311,7 +3311,7 @@ body.public-view-mode #public-view-header {
                         <a href="#" class="subnav-tab-item" data-subtab="photos-files">
                             <i class="fa-solid fa-images"></i> รูปภาพ / ไฟล์
                         </a>
-                        <a href="#" class="subnav-tab-item hide-customer" data-subtab="cost-tab">
+                        <a href="#" class="subnav-tab-item hide-customer hide-pm" data-subtab="cost-tab">
                             <i class="fa-solid fa-hand-holding-dollar"></i> ค่าใช้จ่ายโครงการ
                         </a>
                         <a href="#" class="subnav-tab-item" data-subtab="documents-tab">
@@ -3320,14 +3320,14 @@ body.public-view-mode #public-view-header {
                     </nav>
                 </div>
                 
-                <a href="#" class="nav-item hide-customer" data-view="cost">
+                <a href="#" class="nav-item hide-customer hide-pm" data-view="cost">
                     <i class="fa-solid fa-hand-holding-dollar"></i>
                     <div class="nav-label">
                         <span class="main-label">Cost Management</span>
                         <span class="sub-label">ค่าใช้จ่ายโครงการ</span>
                     </div>
                 </a>
-                <a href="#" class="nav-item hide-accounting hide-customer" data-view="permissions-mgmt">
+                <a href="#" class="nav-item hide-accounting hide-customer hide-pm" data-view="permissions-mgmt">
                     <i class="fa-solid fa-user-shield"></i>
                     <div class="nav-label">
                         <span class="main-label">Permissions</span>
@@ -5357,8 +5357,17 @@ body.public-view-mode #public-view-header {
                             <button type="button" class="btn btn-outline" id="btn-auto-gen-password" style="font-size: 11px; white-space: nowrap;"><i class="fa-solid fa-dice"></i> สุ่มรหัสผ่าน</button>
                         </div>
                     </div>
+                    <div class="form-group mt-3">
+                        <label class="form-label" for="new-cust-role">ประเภทบัญชีผู้ใช้ (Role) <span class="required">*</span></label>
+                        <select id="new-cust-role" class="form-control" style="font-family: 'Prompt'; font-weight: 600; border-radius: 6px; padding: 6px 10px;">
+                            <option value="customer" selected>Customer View (ลูกค้า - สิทธิ์ดูเฉพาะโครงการที่ระบุ)</option>
+                            <option value="pm">Project Manager (PM - จัดการงาน/แผนงาน/รายงานประจำวัน)</option>
+                            <option value="accounting">Accounting (AC - ฝ่ายบัญชี/บันทึกค่าใช้จ่ายโครงการ)</option>
+                            <option value="admin">Admin (ผู้ดูแลระบบสูงสุด - จัดการข้อมูล/บัญชีผู้ใช้งานได้ทุกส่วน)</option>
+                        </select>
+                    </div>
                     <div class="form-group mt-3" style="background: var(--bg-light); border: 1px solid var(--border-color); padding: 12px; border-radius: var(--radius-sm);">
-                        <span style="font-size: 11px; color: var(--text-muted); display: block;"><i class="fa-solid fa-circle-info text-blue mr-1"></i> เมื่อสร้างบัญชีเสร็จแล้ว สามารถเลือกกำหนดสิทธิ์การเข้าถึงโรงพยาบาลและโครงการย่อยต่อได้ทันที</span>
+                        <span style="font-size: 11px; color: var(--text-muted); display: block;"><i class="fa-solid fa-circle-info text-blue mr-1"></i> หากเลือกบทบาท PM/AC/Admin บัญชีนั้นจะสามารถเข้าถึงได้ทุกงานโดยไม่ต้องระบุสิทธิ์โครงการย่อยเพิ่ม</span>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -6548,6 +6557,14 @@ function switchView(viewName) {
         showToast("สิทธิ์ลูกค้าเข้าดูได้เฉพาะหน้าโครงการของตนเองเท่านั้น", "info");
         viewName = "projects-list";
     }
+    if (appState.currentRole === "pm" && (viewName === "cost" || viewName === "permissions-mgmt")) {
+        showToast("คุณไม่มีสิทธิ์เข้าถึงหน้านี้ (จำกัดเฉพาะ Admin และ Accounting)", "warning");
+        viewName = "projects-list";
+    }
+    if (appState.currentRole === "accounting" && viewName === "permissions-mgmt") {
+        showToast("คุณไม่มีสิทธิ์เข้าถึงหน้านี้ (จำกัดเฉพาะ Admin เท่านั้น)", "warning");
+        viewName = "projects-list";
+    }
     
     appState.currentView = viewName;
 
@@ -6656,11 +6673,16 @@ function switchRole(roleName) {
     const roleDisplay = document.getElementById("user-role-display");
     const usernameDisplay = document.getElementById("username-display");
     
-    if (roleName === "pm") {
+    if (roleName === "admin") {
+        roleBadge.innerHTML = `<i class="fa-solid fa-shield-halved"></i> AD (Admin Manager)`;
+        roleDisplay.textContent = "Admin Manager";
+        usernameDisplay.textContent = "Super Admin";
+        showToast("สลับบทบาทเป็น: Admin (ผู้ดูแลระบบ) จัดการระบบทั้งหมด", "success");
+    } else if (roleName === "pm") {
         roleBadge.innerHTML = `<i class="fa-solid fa-user-lock"></i> PM (Project Manager)`;
         roleDisplay.textContent = "Project Manager";
         usernameDisplay.textContent = "Admin Project";
-        showToast("สลับบทบาทเป็น: Project Manager (ทีมโครงการ) เข้าถึงได้ทุกฟังก์ชัน", "success");
+        showToast("สลับบทบาทเป็น: Project Manager (ทีมโครงการ) เข้าใช้งานระบบ", "success");
     } else if (roleName === "accounting") {
         roleBadge.innerHTML = `<i class="fa-solid fa-file-invoice-dollar"></i> AC (Accounting)`;
         roleDisplay.textContent = "Accountant";
@@ -6891,7 +6913,7 @@ function renderHospitalsGrid(activeProjects) {
                 totalProfit += (p.value || 0) - (p.cost || 0);
             });
             
-            const hideCost = appState.currentRole === "customer";
+            const hideCost = (appState.currentRole === "customer" || (appState.currentRole === "pm" || appState.currentRole === "admin"));
             
             const financialsHTML = hideCost 
                 ? `<div style="font-size: 11px; color: var(--text-muted); font-style: italic; margin-top: 12px; padding: 10px; background: var(--bg-light); border-radius: var(--radius-sm); text-align: center; border: 1px solid var(--border-color);">
@@ -7925,7 +7947,7 @@ function renderSubnavPhotosFiles(project) {
         const folderLabel = formatSortKeyToThai(selectedKey);
         const folderItems = groups[selectedKey] || [];
         
-        const canEdit = appState.currentRole === "pm" && appState.selectedDetailProject !== "all";
+        const canEdit = (appState.currentRole === "pm" || appState.currentRole === "admin") && appState.selectedDetailProject !== "all";
 
         // 1. Back button header
         const header = document.createElement("div");
@@ -8107,7 +8129,7 @@ function renderSubnavActualProgress(project) {
     const body = document.getElementById("scurve-table-body");
     if (!head || !body) return;
 
-    const canEdit = appState.currentRole === "pm" && appState.selectedDetailProject !== "all";
+    const canEdit = (appState.currentRole === "pm" || appState.currentRole === "admin") && appState.selectedDetailProject !== "all";
 
     // Build Headers
     const isCustomer = appState.currentRole === "customer";
@@ -8529,7 +8551,7 @@ function renderSubnavCostTab(project) {
     const tableBody = document.getElementById("subtab-expenses-table-body");
     if (tableBody) {
         tableBody.innerHTML = "";
-        const isPM = appState.currentRole === "pm";
+        const isPM = (appState.currentRole === "pm" || appState.currentRole === "admin");
         const colCount = isPM ? 5 : 4;
         if (!project.expenses || project.expenses.length === 0) {
             tableBody.innerHTML = `<tr><td colspan="${colCount}" class="text-center text-muted py-4">ไม่มีข้อมูลธุรกรรมรายจ่าย</td></tr>`;
@@ -8602,7 +8624,7 @@ function renderSubnavDocumentsTab(project) {
     filteredDocs.forEach((d, idx) => {
         const tr = document.createElement("tr");
         
-        const canDelete = appState.currentRole === "pm";
+        const canDelete = (appState.currentRole === "pm" || appState.currentRole === "admin");
         const deleteButtonHTML = canDelete 
             ? `<button class="btn-delete-row" data-idx="${idx}" title="ลบเอกสาร" style="background:none; border:none; color:#e63946; cursor:pointer; padding: 4px; font-size:14px;"><i class="fa-solid fa-trash-can"></i></button>`
             : `<button class="btn-delete-row" disabled style="opacity:0.3; cursor:not-allowed;" title="ไม่มีสิทธิ์ลบข้อมูล" style="background:none; border:none; color:#cbd5e1; cursor:not-allowed; padding: 4px; font-size:14px;"><i class="fa-solid fa-trash-can"></i></button>`;
@@ -8705,7 +8727,7 @@ function renderSubnavPlanWork(project) {
     const docToInput = document.getElementById("gantt-doc-to");
     const docRefInput = document.getElementById("gantt-doc-ref");
 
-    const canEdit = appState.currentRole === "pm" && appState.selectedDetailProject !== "all";
+    const canEdit = (appState.currentRole === "pm" || appState.currentRole === "admin") && appState.selectedDetailProject !== "all";
 
     if (startDateInput) {
         startDateInput.value = project.ganttData.startDate;
@@ -9052,7 +9074,7 @@ function renderSubnavPlanWork(project) {
                 else if (ext === "xlsx" || ext === "xls") { iconClass = "fa-solid fa-file-excel"; iconColor = "#2a9d8f"; fileTypeLabel = "Excel Plan"; }
                 else if (["png","jpg","jpeg"].includes(ext)) { iconClass = "fa-solid fa-file-image"; iconColor = "#457b9d"; fileTypeLabel = "รูปภาพแผน"; }
                 
-                const canDel = appState.currentRole === "pm" && appState.selectedDetailProject !== "all";
+                const canDel = (appState.currentRole === "pm" || appState.currentRole === "admin") && appState.selectedDetailProject !== "all";
                 const deleteBtn = canDel ? `<button class="btn-delete-plan-doc" data-idx="${idx}" title="ลบไฟล์" style="background:none;border:none;color:#e63946;cursor:pointer;padding:4px;font-size:14px;"><i class="fa-solid fa-trash-can"></i></button>` : '';
                 
                 const card = document.createElement("div");
@@ -9116,7 +9138,7 @@ function renderSubnavDailyReports(project) {
         return;
     }
     
-    const isPM = appState.currentRole === "pm";
+    const isPM = (appState.currentRole === "pm" || appState.currentRole === "admin");
     const isCustomer = appState.currentRole === "customer";
     reports.forEach((rep, idx) => {
         const card = document.createElement("div");
@@ -9842,7 +9864,7 @@ function renderCostManagement() {
             const parts = exp.date.split("-");
             const formattedDate = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : exp.date;
             
-            const canDelete = appState.currentRole === "pm" && activeCode !== "all";
+            const canDelete = (appState.currentRole === "pm" || appState.currentRole === "admin") && activeCode !== "all";
             const deleteButtonHTML = canDelete 
                 ? `<button class="btn-delete-row" data-idx="${idx}" title="ลบรายการ"><i class="fa-solid fa-trash-can"></i></button>`
                 : `<button class="btn-delete-row" disabled style="opacity:0.3; cursor:not-allowed;" title="${activeCode === 'all' ? 'ไม่สามารถลบข้อมูลจากมุมมองภาพรวมได้' : 'ไม่มีสิทธิ์ลบข้อมูล'}"><i class="fa-solid fa-trash-can"></i></button>`;
@@ -10584,7 +10606,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 displayStatus = "งานที่รอเสนอราคา";
             }
 
-            const isPM = appState.currentRole === "pm";
+            const isPM = (appState.currentRole === "pm" || appState.currentRole === "admin");
             const infoText = isPM ? `มูลค่าโครงการ: <strong style="color: var(--navy-dark);">${p.value.toLocaleString()} บาท</strong>` : `รหัส PO: <strong>${p.code}</strong>`;
 
             card.innerHTML = `
@@ -11785,10 +11807,12 @@ document.addEventListener("DOMContentLoaded", () => {
             // Generate new userKey
             const newKey = "user_" + Date.now();
             if (!appState.customerAccounts) appState.customerAccounts = {};
+            const r = document.getElementById("new-cust-role") ? document.getElementById("new-cust-role").value : "customer";
             appState.customerAccounts[newKey] = {
                 name: name,
                 username: username,
                 password: password,
+                role: r,
                 userKey: newKey
             };
 
@@ -14478,6 +14502,7 @@ document.addEventListener("DOMContentLoaded", () => {
 // ============================================================
 
 const USERS = {
+    "admin":      { password: "1234", role: "admin",      displayName: "Super Admin",      roleLabel: "Admin Manager" },
     "pm":         { password: "1234", role: "pm",         displayName: "Admin Project",    roleLabel: "Project Manager" },
     "pm2":        { password: "1234", role: "pm",         displayName: "Project Manager 2", roleLabel: "Project Manager" },
     "accounting": { password: "1234", role: "accounting", displayName: "Account System",   roleLabel: "Accountant" }
@@ -14518,12 +14543,17 @@ window.getUserDetails = function(username) {
     if (appState && appState.customerAccounts) {
         const found = Object.values(appState.customerAccounts).find(acc => (acc.username || "").toLowerCase() === lowerUser);
         if (found) {
+            const r = found.role || "customer";
+            let lbl = "Customer View";
+            if (r === "admin") lbl = "Admin Manager";
+            else if (r === "pm") lbl = "Project Manager";
+            else if (r === "accounting") lbl = "Accountant";
             return {
                 username: lowerUser,
                 password: found.password,
-                role: "customer",
+                role: r,
                 displayName: found.name,
-                roleLabel: "Customer View",
+                roleLabel: lbl,
                 userKey: found.userKey,
                 isStatic: false
             };
@@ -14555,7 +14585,9 @@ function applyLoginSuccess(username, role, userKey = null) {
         
         const activeRoleBadge = document.getElementById("active-role-badge");
         if (activeRoleBadge) {
-            if (role === "pm") {
+            if (role === "admin") {
+                activeRoleBadge.innerHTML = `<i class="fa-solid fa-shield-halved"></i> AD (Admin Manager)`;
+            } else if (role === "pm") {
                 activeRoleBadge.innerHTML = `<i class="fa-solid fa-user-lock"></i> PM (Project Manager)`;
             } else if (role === "accounting") {
                 activeRoleBadge.innerHTML = `<i class="fa-solid fa-file-invoice-dollar"></i> AC (Accounting)`;
@@ -14845,6 +14877,23 @@ function renderPermissionsManagement() {
             const perms = (appState.userPermissions || {})[key] || { hospitals: [], projects: [] };
             const hCount = (perms.hospitals || []).length;
             const pCount = (perms.projects || []).length;
+            const role = acc.role || "customer";
+
+            let roleBadgeHTML = "";
+            let permBtnHTML = "";
+            if (role === "admin") {
+                roleBadgeHTML = `<span style="font-size: 10.5px; font-weight: 700; padding: 2.5px 8px; border-radius: 12px; background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-shield-halved"></i> Admin</span>`;
+                permBtnHTML = `<button type="button" class="btn btn-xs btn-outline" style="font-size: 10.5px; padding: 4px 8px; opacity: 0.5; cursor: not-allowed;" disabled><i class="fa-solid fa-sliders"></i> จัดการสิทธิ์ไม่ได้</button>`;
+            } else if (role === "pm") {
+                roleBadgeHTML = `<span style="font-size: 10.5px; font-weight: 700; padding: 2.5px 8px; border-radius: 12px; background: #dcfce7; color: #15803d; border: 1px solid #86efac; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-user-lock"></i> PM (Project)</span>`;
+                permBtnHTML = `<button type="button" class="btn btn-xs btn-outline" style="font-size: 10.5px; padding: 4px 8px; opacity: 0.5; cursor: not-allowed;" disabled><i class="fa-solid fa-sliders"></i> จัดการสิทธิ์ไม่ได้</button>`;
+            } else if (role === "accounting") {
+                roleBadgeHTML = `<span style="font-size: 10.5px; font-weight: 700; padding: 2.5px 8px; border-radius: 12px; background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-file-invoice-dollar"></i> AC (Account)</span>`;
+                permBtnHTML = `<button type="button" class="btn btn-xs btn-outline" style="font-size: 10.5px; padding: 4px 8px; opacity: 0.5; cursor: not-allowed;" disabled><i class="fa-solid fa-sliders"></i> จัดการสิทธิ์ไม่ได้</button>`;
+            } else {
+                roleBadgeHTML = `<span style="font-size: 10.5px; font-weight: 700; padding: 2.5px 8px; border-radius: 12px; background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-user-tie"></i> Customer (${hCount} รพ. / ${pCount} งาน)</span>`;
+                permBtnHTML = `<button type="button" class="btn btn-xs btn-outline" onclick="window.selectUserForPermission('${key}')" title="เลือกบัญชีนี้เพื่อปรับสิทธิ์" style="font-size: 10.5px; padding: 4px 8px;"><i class="fa-solid fa-sliders"></i> จัดการสิทธิ์</button>`;
+            }
 
             const tr = document.createElement("tr");
             tr.innerHTML = `
@@ -14858,18 +14907,14 @@ function renderPermissionsManagement() {
                     </div>
                 </td>
                 <td style="text-align: center;">
-                    <span style="font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 12px; background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1;">
-                        ${hCount} โรงพยาบาล / ${pCount} โครงการ
-                    </span>
+                    ${roleBadgeHTML}
                 </td>
                 <td style="text-align: center;">
                     <div style="display: flex; gap: 4px; justify-content: center;">
                         <button type="button" class="btn btn-xs btn-outline-blue" onclick="window.copyCustomerLogin('${key}')" title="คัดลอกข้อมูลล็อกอินส่งให้ลูกค้า" style="font-size: 10.5px; padding: 4px 8px;">
                             <i class="fa-solid fa-copy"></i> คัดลอก
                         </button>
-                        <button type="button" class="btn btn-xs btn-outline" onclick="window.selectUserForPermission('${key}')" title="เลือกบัญชีนี้เพื่อปรับสิทธิ์" style="font-size: 10.5px; padding: 4px 8px;">
-                            <i class="fa-solid fa-sliders"></i> สิทธิ์
-                        </button>
+                        ${permBtnHTML}
                         <button type="button" class="btn btn-xs btn-outline-red" onclick="window.deleteCustomerAccount('${key}')" title="ลบบัญชีนี้" style="font-size: 10.5px; padding: 4px 6px;">
                             <i class="fa-solid fa-trash-can"></i>
                         </button>
