@@ -7873,6 +7873,7 @@ function renderSCurveChart(project) {
         let actualWeeklySums = new Array(project.scurveMonths.length * 4).fill(0);
         
         let currentParentWeight = 0;
+        let lastActualIndex = -1;
         project.scurveData.forEach(item => {
             if (!item.isSubtask) {
                 currentParentWeight = parseFloat(item.weight) || 0;
@@ -7882,6 +7883,10 @@ function renderSCurveChart(project) {
                 let aVal = parseFloat(item.actual ? item.actual[i] : 0) || 0;
                 planWeeklySums[i] += (currentParentWeight * pVal / 100);
                 actualWeeklySums[i] += (currentParentWeight * aVal / 100);
+
+                if (aVal > 0 && i > lastActualIndex) {
+                    lastActualIndex = i;
+                }
             }
         });
         
@@ -7890,9 +7895,14 @@ function renderSCurveChart(project) {
         let cp = 0, ca = 0;
         for (let i = 0; i < planWeeklySums.length; i++) {
             cp += planWeeklySums[i];
-            ca += actualWeeklySums[i];
             cumPlan.push(parseFloat(cp.toFixed(2)));
-            cumActual.push(parseFloat(ca.toFixed(2)));
+
+            if (i <= lastActualIndex) {
+                ca += actualWeeklySums[i];
+                cumActual.push(parseFloat(ca.toFixed(2)));
+            } else {
+                cumActual.push(null);
+            }
         }
         
         const labels = ["เริ่มต้น"];
