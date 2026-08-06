@@ -7853,6 +7853,7 @@ function updateScurveTotals(project) {
 
 function renderSCurveChart(project) {
     if (typeof Chart === "undefined") return;
+    syncScurveMonthsWithGantt(project);
     
     const canvas = document.getElementById("scurve-chart-canvas");
     if (!canvas) return;
@@ -8255,7 +8256,53 @@ function renderSubnavPhotosFiles(project) {
     }
 }
 
+function syncScurveMonthsWithGantt(project) {
+    if (project.ganttData && project.ganttData.startDate && project.ganttData.endDate) {
+        const dateList = [];
+        const [sy, sm, sd] = project.ganttData.startDate.split('-').map(Number);
+        const [ey, em, ed] = project.ganttData.endDate.split('-').map(Number);
+        const start = new Date(sy, sm - 1, sd);
+        const end = new Date(ey, em - 1, ed);
+
+        let current = new Date(start);
+        let count = 0;
+        while (current <= end && count < 100) {
+            dateList.push(new Date(current));
+            current.setDate(current.getDate() + 1);
+            count++;
+        }
+
+        if (dateList.length > 0) {
+            const monthThaiNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+            const ganttMonths = [];
+            dateList.forEach(d => {
+                const mIdx = d.getMonth();
+                const yTh = d.getFullYear() + 543;
+                const mName = monthThaiNames[mIdx] + " " + yTh;
+                if (!ganttMonths.includes(mName)) {
+                    ganttMonths.push(mName);
+                }
+            });
+            if (ganttMonths.length > 0) {
+                const newLen = ganttMonths.length * 4;
+                if (project.scurveData && project.scurveData.length > 0) {
+                    project.scurveData.forEach(item => {
+                        if (!item.plan) item.plan = [];
+                        if (!item.actual) item.actual = [];
+                        while (item.plan.length < newLen) item.plan.push(0);
+                        while (item.actual.length < newLen) item.actual.push(0);
+                        if (item.plan.length > newLen) item.plan = item.plan.slice(0, newLen);
+                        if (item.actual.length > newLen) item.actual = item.actual.slice(0, newLen);
+                    });
+                }
+                project.scurveMonths = ganttMonths;
+            }
+        }
+    }
+}
+
 function renderSubnavActualProgress(project) {
+    syncScurveMonthsWithGantt(project);
     if (!project.scurveMonths || project.scurveMonths.length === 0) project.scurveMonths = ["Month 1"];
     if (!project.scurveData) project.scurveData = [];
 
@@ -14152,6 +14199,13 @@ document.addEventListener("DOMContentLoaded", () => {
             const proj = projectsData[code];
             if (proj) projectsToExport = [proj];
         }
+
+        // Sync S-curve months with Gantt dates for all exported projects
+        projectsToExport.forEach(p => {
+            if (typeof syncScurveMonthsWithGantt === "function") {
+                syncScurveMonthsWithGantt(p);
+            }
+        });
 
         if (projectsToExport.length === 0) {
             showToast("ไม่พบข้อมูลโครงการสำหรับสร้างเอกสาร PDF", "error");
