@@ -12063,22 +12063,20 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!projContainer) return;
         projContainer.innerHTML = "";
 
+        let sortedProjects;
         if (currentShareSelectedHospitals.size === 0) {
-            projContainer.innerHTML = `
-                <div style="text-align: center; color: var(--text-muted); font-size: 12px; padding: 60px 16px; font-style: italic; width: 100%;">
-                    <i class="fa-solid fa-hospital text-blue" style="font-size: 28px; display: block; margin-bottom: 8px; opacity: 0.5;"></i>
-                    กรุณาเลือกติ๊กโรงพยาบาลด้านซ้าย เพื่อดูและเลือกโครงการย่อย
-                </div>
-            `;
-            return;
+            // Show all projects in the system by default
+            sortedProjects = Object.values(projectsData)
+                .sort((a, b) => b.year - a.year || a.code.localeCompare(b.code));
+        } else {
+            // Show only projects belonging to the checked hospitals
+            sortedProjects = Object.values(projectsData)
+                .filter(p => currentShareSelectedHospitals.has(p.customer))
+                .sort((a, b) => b.year - a.year || a.code.localeCompare(b.code));
         }
 
-        const sortedProjects = Object.values(projectsData)
-            .filter(p => currentShareSelectedHospitals.has(p.customer))
-            .sort((a, b) => b.year - a.year || a.code.localeCompare(b.code));
-
         if (sortedProjects.length === 0) {
-            projContainer.innerHTML = `<span style="font-size: 12px; color: var(--text-muted); font-style: italic; padding: 16px;">ไม่มีโครงการสำหรับโรงพยาบาลที่เลือก</span>`;
+            projContainer.innerHTML = `<span style="font-size: 12px; color: var(--text-muted); font-style: italic; padding: 16px;">ไม่มีโครงการในระบบ</span>`;
             return;
         }
 
