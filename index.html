@@ -5386,7 +5386,7 @@ body.public-view-mode #public-view-header {
 
     <!-- Project Share Modal -->
     <div class="modal-overlay" id="portal-share-modal" style="z-index: 12000; display: none;">
-        <div class="modal-card" style="max-width: 540px;">
+        <div class="modal-card" style="max-width: 900px; width: 95%;">
             <div class="modal-header">
                 <h3 class="modal-title"><i class="fa-solid fa-share-nodes text-blue"></i> สร้างลิงก์แชร์โครงการภายนอก</h3>
                 <button class="modal-close-btn" id="close-portal-share-modal">&times;</button>
@@ -5397,7 +5397,7 @@ body.public-view-mode #public-view-header {
                 <!-- 3. Link Output Container (Moved to Top for instant visibility!) -->
                 <div id="share-link-output-container" style="display: none; margin-bottom: 20px; padding: 16px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; box-shadow: var(--shadow-sm);">
                     <div style="font-size: 12.5px; font-weight: 700; color: #15803d; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-                        <i class="fa-solid fa-circle-check"></i> สร้างลิงก์แชร์ใหม่สำเร็จ!
+                        <i class="fa-solid fa-circle-check"></i> สร้างลิงก์แชร์ใหม่สำเร็จ! (คัดลอกลงคลิปบอร์ดให้อัตโนมัติแล้ว)
                     </div>
                     <div style="display: flex; gap: 8px; align-items: center; margin-top: 8px;">
                         <input type="text" id="share-link-result-url" class="form-control" readonly style="font-size: 12px; font-family: monospace; background: #ffffff; font-weight: 600;">
@@ -5405,30 +5405,39 @@ body.public-view-mode #public-view-header {
                     </div>
                     <span style="font-size: 10.5px; color: #166534; display: block; margin-top: 8px; font-style: italic;">* ลิงก์แชร์ถูกสร้างขึ้นใหม่เป็นรหัสอ้างอิงเฉพาะตัว (ทุกครั้งที่กด จะเป็นการสร้างใหม่เสมอ)</span>
                 </div>
+
+                <!-- 4. Search Filter Input Box -->
+                <div style="margin-bottom: 20px; background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid var(--border-color);">
+                    <div style="font-size: 12.5px; font-weight: 700; color: var(--navy-dark); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-magnifying-glass text-blue"></i> 🔍 พิมพ์ค้นหาโครงการ หรือโรงพยาบาล :
+                    </div>
+                    <input type="text" id="share-modal-project-search" class="form-control" placeholder="พิมพ์เพื่อค้นหาด้วย รหัส PO, ชื่องาน, หรือชื่อโรงพยาบาล..." style="font-size: 12.5px; padding: 8px 12px; height: 38px; border-radius: 6px;">
+                </div>
                 
                 <div style="border-bottom: 2px solid var(--border-color); padding-bottom: 8px; margin-bottom: 16px; display: flex; gap: 16px;">
-                    <span style="font-weight: 700; font-size: 13.5px; color: var(--navy-dark); border-bottom: 2px solid var(--primary-blue); padding-bottom: 8px; margin-bottom: -10px;">รายการแชร์ทั้งหมด</span>
+                    <span style="font-weight: 700; font-size: 13.5px; color: var(--navy-dark); border-bottom: 2px solid var(--primary-blue); padding-bottom: 8px; margin-bottom: -10px;">รายการเลือกขอบเขตข้อมูลการแชร์</span>
                 </div>
 
-                <div style="display: flex; flex-direction: column; gap: 16px;">
+                <!-- Side by Side Checklists Grid Layout -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 20px;">
                     <!-- 1. Hospital share list -->
-                    <div>
+                    <div style="display: flex; flex-direction: column;">
                         <label class="form-label" style="font-size: 12px; font-weight: 700; color: var(--navy-dark); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
                             <span>🏥 เลือกตามโรงพยาบาล (จะรวมทุกโครงการภายใต้ รพ.)</span>
                             <button type="button" id="btn-share-clear-hospitals" style="background: none; border: none; font-size: 11px; color: #ef4444; cursor: pointer; padding: 0; font-family: 'Prompt';">ล้างการเลือก</button>
                         </label>
-                        <div id="share-hospitals-checkboxes" style="display: grid; grid-template-columns: 1fr; gap: 8px; max-height: 150px; overflow-y: auto; border: 1px solid var(--border-color); padding: 10px; border-radius: 6px; background: #fafafa;">
+                        <div id="share-hospitals-checkboxes" style="display: grid; grid-template-columns: 1fr; gap: 8px; max-height: 280px; overflow-y: auto; border: 1px solid var(--border-color); padding: 10px; border-radius: 6px; background: #fafafa;">
                             <!-- Populated dynamically with checkboxes -->
                         </div>
                     </div>
 
                     <!-- 2. Project share list -->
-                    <div>
+                    <div style="display: flex; flex-direction: column;">
                         <label class="form-label" style="font-size: 12px; font-weight: 700; color: var(--navy-dark); margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
                             <span>📁 เลือกเฉพาะบางโครงการย่อย</span>
                             <button type="button" id="btn-share-clear-projects" style="background: none; border: none; font-size: 11px; color: #ef4444; cursor: pointer; padding: 0; font-family: 'Prompt';">ล้างการเลือก</button>
                         </label>
-                        <div id="share-projects-checkboxes" style="display: grid; grid-template-columns: 1fr; gap: 8px; max-height: 200px; overflow-y: auto; border: 1px solid var(--border-color); padding: 10px; border-radius: 6px; background: #fafafa;">
+                        <div id="share-projects-checkboxes" style="display: grid; grid-template-columns: 1fr; gap: 8px; max-height: 280px; overflow-y: auto; border: 1px solid var(--border-color); padding: 10px; border-radius: 6px; background: #fafafa;">
                             <!-- Populated dynamically with checkboxes -->
                         </div>
                     </div>
@@ -12050,6 +12059,12 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("share-link-output-container").style.display = "none";
         document.getElementById("share-link-result-url").value = "";
 
+        // Reset search input
+        const searchInput = document.getElementById("share-modal-project-search");
+        if (searchInput) {
+            searchInput.value = "";
+        }
+
         // Populate dynamic hospitals
         const hospContainer = document.getElementById("share-hospitals-checkboxes");
         if (hospContainer) {
@@ -12065,6 +12080,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (projCount === 0) return;
                 
                 const div = document.createElement("div");
+                div.className = "share-hospital-item";
                 div.style.cssText = "display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-family: 'Prompt', sans-serif;";
                 div.innerHTML = `
                     <input type="checkbox" class="share-hospital-check" value="${hosp}" id="chk-share-h-${hosp}" style="width: 15px; height: 15px; cursor: pointer;">
@@ -12088,6 +12104,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 const isQuotingStatus = (p.status === "งานที่กำลังเสนอราคา" || p.status === "กำลังเสนอราคา" || p.status === "งานที่รอเสนอราคา");
                 const statusType = isQuotingStatus ? "เสนอราคา" : "งานในมือ";
                 const div = document.createElement("div");
+                div.className = "share-project-item";
                 div.style.cssText = "display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-family: 'Prompt', sans-serif;";
                 div.innerHTML = `
                     <input type="checkbox" class="share-project-check" value="${p.code}" id="chk-share-p-${p.code}" style="width: 15px; height: 15px; cursor: pointer;">
@@ -12180,16 +12197,44 @@ document.addEventListener("DOMContentLoaded", () => {
                 // Copy to clipboard automatically for convenience
                 if (navigator.clipboard && navigator.clipboard.writeText) {
                     await navigator.clipboard.writeText(fullShareUrl);
-                    showToast("📋 สร้างลิงก์แชร์และคัดลอกลงคลิปบอร์ดสำเร็จ!", "success");
+                    showToast("📋 สร้างลิงก์แชร์และคัดลอกลงคลิปบอร์ดให้คุณอัตโนมัติเรียบร้อยแล้ว!", "success");
                 } else {
                     urlInput.select();
                     document.execCommand("copy");
-                    showToast("📋 สร้างลิงก์แชร์และคัดลอกลงคลิปบอร์ดสำเร็จ!", "success");
+                    showToast("📋 สร้างลิงก์แชร์และคัดลอกลงคลิปบอร์ดให้คุณอัตโนมัติเรียบร้อยแล้ว!", "success");
                 }
             } catch (err) {
                 console.error("Failed to generate share link:", err);
                 showToast("เกิดข้อผิดพลาดในการสร้างลิงก์: " + err.message, "error");
             }
+        });
+    }
+
+    // Search modal filter logic
+    const searchInputEl = document.getElementById("share-modal-project-search");
+    if (searchInputEl) {
+        searchInputEl.addEventListener("input", function() {
+            const query = this.value.trim().toLowerCase();
+            
+            // Filter projects
+            document.querySelectorAll("#share-projects-checkboxes > .share-project-item").forEach(item => {
+                const text = item.textContent.toLowerCase();
+                if (text.includes(query)) {
+                    item.style.display = "flex";
+                } else {
+                    item.style.display = "none";
+                }
+            });
+            
+            // Filter hospitals
+            document.querySelectorAll("#share-hospitals-checkboxes > .share-hospital-item").forEach(item => {
+                const text = item.textContent.toLowerCase();
+                if (text.includes(query)) {
+                    item.style.display = "flex";
+                } else {
+                    item.style.display = "none";
+                }
+            });
         });
     }
 
