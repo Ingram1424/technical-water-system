@@ -8314,26 +8314,26 @@ function renderSubnavActualProgress(project) {
 
     // Build Headers
     const isCustomer = appState.currentRole === "customer";
-    let headerRow1 = `<tr style="background: #e0e7ff; border-bottom: 1px solid var(--border-color); text-align: center;">
-        <th rowspan="2" style="padding: 10px; width: 50px;">Items</th>
-        <th rowspan="2" style="padding: 10px; text-align: left; width: 220px;">Description</th>
-        ${isCustomer ? '' : '<th rowspan="2" style="padding: 10px; width: 80px;">Budget</th>'}
-        <th rowspan="2" style="padding: 10px; width: 60px;">%</th>
-        <th rowspan="2" style="padding: 10px; width: 60px;">% (รวม)</th>`;
+    let headerRow1 = `<tr style="background: #e0e7ff; border-bottom: 1px solid var(--border-color); text-align: center; font-size: 13.5px; font-weight: 700;">
+        <th rowspan="2" style="padding: 10px; width: 55px; border: 1px solid var(--border-color);">Items</th>
+        <th rowspan="2" style="padding: 10px; text-align: left; width: 240px; border: 1px solid var(--border-color);">Description</th>
+        ${isCustomer ? '' : '<th rowspan="2" style="padding: 10px; width: 90px; border: 1px solid var(--border-color);">Budget</th>'}
+        <th rowspan="2" style="padding: 10px; width: 65px; border: 1px solid var(--border-color);">%</th>
+        <th rowspan="2" style="padding: 10px; width: 65px; border: 1px solid var(--border-color);">% (รวม)</th>`;
     let headerRow2 = `<tr style="background: #f1f5f9; border-bottom: 2px solid var(--border-color); text-align: center;">`;
-
+ 
     project.scurveMonths.forEach((month, mIdx) => {
-        headerRow1 += `<th colspan="4" style="padding: 6px; border-left: 1px solid var(--border-color);">
-            ${canEdit ? `<input type="text" class="scurve-month-name" data-idx="${mIdx}" value="${month}" style="width: 80px; font-size: 11px; text-align: center; border: 1px solid #ccc; border-radius: 4px; padding: 2px;">` : month}
+        headerRow1 += `<th colspan="4" style="padding: 8px; border-left: 1px solid var(--border-color); border-right: 1px solid var(--border-color); font-size: 13.5px; font-weight: 700;">
+            ${canEdit ? `<input type="text" class="scurve-month-name" data-idx="${mIdx}" value="${month}" style="width: 100px; font-size: 12.5px; font-weight: 700; text-align: center; border: 1px solid #ccc; border-radius: 4px; padding: 2px 4px;">` : month}
         </th>`;
         for (let w = 1; w <= 4; w++) {
-            headerRow2 += `<th style="padding: 6px; width: 40px; font-weight: normal; font-size: 10px; border-left: ${w===1 ? '1px' : '0'} solid var(--border-color);">${w}</th>`;
+            headerRow2 += `<th style="padding: 6px; width: 45px; font-weight: 600; font-size: 11.5px; border-left: ${w===1 ? '1px' : '0'} solid var(--border-color); border-bottom: 1px solid var(--border-color);">${w}</th>`;
         }
     });
-    headerRow1 += `<th rowspan="2" class="hide-accounting hide-customer" style="padding: 10px; width: 40px;">ลบ</th></tr>`;
+    headerRow1 += `<th rowspan="2" class="hide-accounting hide-customer" style="padding: 10px; width: 40px; border: 1px solid var(--border-color);">ลบ</th></tr>`;
     headerRow2 += `</tr>`;
     head.innerHTML = headerRow1 + headerRow2;
-
+ 
     // Build Body
     body.innerHTML = "";
     if (project.scurveData.length === 0) {
@@ -8345,51 +8345,51 @@ function renderSubnavActualProgress(project) {
             
             while(item.plan.length < project.scurveMonths.length * 4) item.plan.push(0);
             while(item.actual.length < project.scurveMonths.length * 4) item.actual.push(0);
-
+ 
             // Calculate current total
             let currentTotal = 0;
             const currentArr = currentScurveMode === 'plan' ? item.plan : item.actual;
             currentArr.forEach(v => currentTotal += (parseFloat(v) || 0));
             item.totalPercent = currentTotal;
-
+ 
             const isSub = item.isSubtask;
             const row = document.createElement("tr");
             row.style = "border-bottom: 1px solid var(--border-color);";
             row.setAttribute("data-row-idx", idx);
             
             const readonlyAttr = canEdit ? '' : 'readonly';
-            const inputStyle = `style="width: 100%; font-size: 10.5px; text-align: center; padding: 3px 2px; border: 1px solid transparent; background: transparent;"`;
-            const editInputStyle = `style="width: 100%; font-size: 10.5px; text-align: center; padding: 3px 2px; border: 1px solid var(--border-color); border-radius: 4px; background: #fff;"`;
-
+            const inputStyle = `style="width: 100%; font-size: 12.5px; text-align: center; padding: 5px 2px; border: 1px solid transparent; background: transparent; color: #334155;"`;
+            const editInputStyle = `style="width: 100%; font-size: 12.5px; text-align: center; padding: 5px 2px; border: 1px solid var(--border-color); border-radius: 4px; background: #fff; color: #334155;"`;
+ 
             let rowHtml = `
-                <td style="padding: 4px; text-align: center;">
-                    ${isSub ? '' : `<input type="text" class="scurve-item-num" data-idx="${idx}" value="${item.item || ''}" ${readonlyAttr} ${canEdit?editInputStyle:inputStyle}>`}
+                <td style="padding: 6px; text-align: center;">
+                    ${isSub ? '' : `<input type="text" class="scurve-item-num" data-idx="${idx}" value="${item.item || ''}" ${readonlyAttr} ${canEdit?editInputStyle:inputStyle} style="font-weight: 600;">`}
                 </td>
-                <td style="padding: 4px 10px;">
+                <td style="padding: 6px 10px;">
                     <div style="display: flex; gap: 4px; padding-left: ${isSub ? '16px' : '0'};">
-                        ${isSub ? '<span style="color:#64748b;">-</span>' : ''}
-                        <input type="text" class="scurve-item-name" data-idx="${idx}" value="${item.name || ''}" placeholder="${isSub?'ชื่องานย่อย':'ชื่องานหลัก'}" ${readonlyAttr} style="width: 100%; font-size: 11px; padding: 4px 6px; border: 1px solid ${canEdit?'var(--border-color)':'transparent'}; border-radius: 4px; background: ${canEdit?'#fff':'transparent'}; font-weight: ${isSub?'normal':'600'};">
+                        ${isSub ? '<span style="color:#64748b; font-weight: 600;">-</span>' : ''}
+                        <input type="text" class="scurve-item-name" data-idx="${idx}" value="${item.name || ''}" placeholder="${isSub?'ชื่องานย่อย':'ชื่องานหลัก'}" ${readonlyAttr} style="width: 100%; font-size: 12.5px; padding: 5px 8px; border: 1px solid ${canEdit?'var(--border-color)':'transparent'}; border-radius: 4px; background: ${canEdit?'#fff':'transparent'}; font-weight: ${isSub?'normal':'700'}; color: #334155;">
                     </div>
                 </td>
                 ${isCustomer ? '' : `
-                <td style="padding: 4px;">
+                <td style="padding: 6px;">
                     ${isSub ? '' : `<input type="number" class="scurve-budget" data-idx="${idx}" value="${item.budget || 0}" step="1000" ${readonlyAttr} ${canEdit?editInputStyle:inputStyle}>`}
                 </td>
                 `}
-                <td style="padding: 4px;">
-                    ${isSub ? '' : `<input type="number" class="scurve-weight" data-idx="${idx}" value="${item.weight || 0}" min="0" max="100" step="0.01" ${readonlyAttr} ${canEdit?editInputStyle:inputStyle}>`}
+                <td style="padding: 6px;">
+                    ${isSub ? '' : `<input type="number" class="scurve-weight" data-idx="${idx}" value="${item.weight || 0}" min="0" max="100" step="0.01" ${readonlyAttr} ${canEdit?editInputStyle:inputStyle} style="font-weight: 600;">`}
                 </td>
-                <td style="padding: 4px;">
-                    ${isSub ? '' : `<input type="number" class="scurve-total-pct" data-idx="${idx}" value="${item.totalPercent}" readonly style="width: 100%; font-size: 10.5px; text-align: center; padding: 3px 2px; border: 1px solid transparent; background: #f8fafc; font-weight: bold; color: ${item.totalPercent === 100 ? '#10b981' : '#e63946'};">`}
+                <td style="padding: 6px;">
+                    ${isSub ? '' : `<input type="number" class="scurve-total-pct" data-idx="${idx}" value="${item.totalPercent}" readonly style="width: 100%; font-size: 12.5px; text-align: center; padding: 5px 2px; border: 1px solid transparent; background: #f8fafc; font-weight: bold; color: ${item.totalPercent === 100 ? '#10b981' : '#e63946'};">`}
                 </td>
             `;
-
+ 
             for (let m = 0; m < project.scurveMonths.length; m++) {
                 for (let w = 0; w < 4; w++) {
                     let wIdx = (m * 4) + w;
                     let val = currentScurveMode === 'plan' ? item.plan[wIdx] : item.actual[wIdx];
                     let valStr = val === 0 ? '' : val;
-                    rowHtml += `<td style="padding: 4px; border-left: ${w===0 ? '1px' : '0'} solid var(--border-color);">
+                    rowHtml += `<td style="padding: 6px; border-left: ${w===0 ? '1px' : '0'} solid var(--border-color); border-right: ${w===3 ? '1px' : '0'} solid var(--border-color);">
                         <input type="number" class="scurve-cell-val" data-idx="${idx}" data-widx="${wIdx}" value="${valStr}" min="0" max="100" step="1" ${readonlyAttr} ${canEdit?editInputStyle:inputStyle} placeholder="${canEdit?'-':'0'}">
                     </td>`;
                 }
