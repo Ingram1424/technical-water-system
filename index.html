@@ -4474,28 +4474,28 @@ body.public-view-mode #public-view-header {
                                 </div>
 
                                 <!-- Document header info inputs -->
-                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 20px; padding: 12px; border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 20px; padding: 12px; border: 1.5px solid var(--border-color); border-radius: var(--radius-md); background: #f8fafc;">
                                     <div>
-                                        <label style="font-size: 11px; font-weight: 600; color: var(--navy-dark); display: block; margin-bottom: 4px;">วันที่เอกสาร:</label>
-                                        <input type="text" id="gantt-doc-date" class="form-control" style="font-size: 11px; padding: 4px 8px; height: auto;" placeholder="เช่น 5/3/2569">
+                                        <label style="font-size: 13.5px; font-weight: 700; color: var(--navy-dark); display: block; margin-bottom: 6px;">วันที่เอกสาร:</label>
+                                        <input type="text" id="gantt-doc-date" class="form-control" style="font-size: 13px; padding: 6px 10px; height: auto; font-weight: 600; border-radius: 6px;" placeholder="เช่น 5/3/2569">
                                     </div>
                                     <div>
-                                        <label style="font-size: 11px; font-weight: 600; color: var(--navy-dark); display: block; margin-bottom: 4px;">เรื่อง:</label>
-                                        <input type="text" id="gantt-doc-subject" class="form-control" style="font-size: 11px; padding: 4px 8px; height: auto;" placeholder="เช่น แผนงานปรับปรุงห้องต้อนรับ...">
+                                        <label style="font-size: 13.5px; font-weight: 700; color: var(--navy-dark); display: block; margin-bottom: 6px;">เรื่อง:</label>
+                                        <input type="text" id="gantt-doc-subject" class="form-control" style="font-size: 13px; padding: 6px 10px; height: auto; font-weight: 600; border-radius: 6px;" placeholder="เช่น แผนงานปรับปรุงห้องต้อนรับ...">
                                     </div>
                                     <div>
-                                        <label style="font-size: 11px; font-weight: 600; color: var(--navy-dark); display: block; margin-bottom: 4px;">เรียน/ถึง:</label>
-                                        <input type="text" id="gantt-doc-to" class="form-control" style="font-size: 11px; padding: 4px 8px; height: auto;" placeholder="เช่น ฝ่ายวิศวกรรมฯ...">
+                                        <label style="font-size: 13.5px; font-weight: 700; color: var(--navy-dark); display: block; margin-bottom: 6px;">เรียน/ถึง:</label>
+                                        <input type="text" id="gantt-doc-to" class="form-control" style="font-size: 13px; padding: 6px 10px; height: auto; font-weight: 600; border-radius: 6px;" placeholder="เช่น ฝ่ายวิศวกรรมฯ...">
                                     </div>
                                     <div>
-                                        <label style="font-size: 11px; font-weight: 600; color: var(--navy-dark); display: block; margin-bottom: 4px;">เอกสารอ้างอิง (Ref PO):</label>
-                                        <input type="text" id="gantt-doc-ref" class="form-control" style="font-size: 11px; padding: 4px 8px; height: auto;" placeholder="เช่น PO.22026002729">
+                                        <label style="font-size: 13.5px; font-weight: 700; color: var(--navy-dark); display: block; margin-bottom: 6px;">เอกสารอ้างอิง (Ref PO):</label>
+                                        <input type="text" id="gantt-doc-ref" class="form-control" style="font-size: 13px; padding: 6px 10px; height: auto; font-weight: 600; border-radius: 6px;" placeholder="เช่น PO.22026002729">
                                     </div>
                                 </div>
 
                                 <!-- Gantt Grid Table Container -->
                                 <div style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: #fff; margin-bottom: 12px;">
-                                    <table id="gantt-grid-table" style="width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; min-width: 900px;">
+                                    <table id="gantt-grid-table" style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; min-width: 950px;">
                                         <thead id="gantt-grid-head" style="background: #f1f5f9; text-align: center; font-weight: 600;">
                                             <!-- Dynamically rendered -->
                                         </thead>
@@ -8780,19 +8780,19 @@ function renderSubnavPlanWork(project) {
                 grp.colspan++;
             });
 
-            // Head Row 1: Columns
+            // Head Row 1: Columns (Font size increased & bolded)
             let tr1 = `<tr style="background: #e0e7ff; border: 1px solid var(--border-color); text-align: center;">
-                <th rowspan="2" style="padding: 10px; width: 60px; border: 1px solid var(--border-color);">Items</th>
-                <th rowspan="2" style="padding: 10px; min-width: 250px; text-align: left; border: 1px solid var(--border-color);">Description</th>`;
+                <th rowspan="2" style="padding: 10px; width: 65px; border: 1px solid var(--border-color); font-size: 13.5px; font-weight: 700;">Items</th>
+                <th rowspan="2" style="padding: 10px; min-width: 250px; text-align: left; border: 1px solid var(--border-color); font-size: 13.5px; font-weight: 700;">Description</th>`;
             monthGroups.forEach(grp => {
-                tr1 += `<th colspan="${grp.colspan}" style="padding: 6px; border: 1px solid var(--border-color);">${grp.name}</th>`;
+                tr1 += `<th colspan="${grp.colspan}" style="padding: 8px; border: 1px solid var(--border-color); font-size: 13px; font-weight: 700; color: var(--navy-dark);">${grp.name}</th>`;
             });
-            tr1 += `<th rowspan="2" class="hide-accounting hide-customer" style="padding: 10px; width: 50px; border: 1px solid var(--border-color);">ลบ</th></tr>`;
+            tr1 += `<th rowspan="2" class="hide-accounting hide-customer" style="padding: 10px; width: 50px; border: 1px solid var(--border-color); font-size: 13px; font-weight: 700;">ลบ</th></tr>`;
 
-            // Head Row 2: Days
+            // Head Row 2: Days (Narrowed from 22px to 18px, styled bold and clear)
             let tr2 = `<tr style="background: #f1f5f9; text-align: center;">`;
             dateList.forEach(d => {
-                tr2 += `<th style="padding: 4px; border: 1px solid var(--border-color); font-weight: normal; font-size: 9px; min-width: 22px;">${d.getDate()}</th>`;
+                tr2 += `<th style="padding: 4px 2px; border: 1px solid var(--border-color); font-weight: 700; font-size: 10.5px; width: 18px; min-width: 18px; max-width: 18px; text-align: center;">${d.getDate()}</th>`;
             });
             tr2 += `</tr>`;
 
@@ -8817,19 +8817,19 @@ function renderSubnavPlanWork(project) {
                     tr.setAttribute("data-row-idx", idx);
 
                     const readonlyAttr = canEdit ? '' : 'readonly';
-                    const inputStyle = `style="width: 100%; font-size: 11px; padding: 4px 6px; border: 1px solid transparent; background: transparent;"`;
-                    const editStyle = `style="width: 100%; font-size: 11px; padding: 4px 6px; border: 1px solid var(--border-color); border-radius: 4px; background: #fff;"`;
+                    const inputStyle = `style="width: 100%; font-size: 12.5px; font-weight: 700; padding: 5px 6px; border: 1px solid transparent; background: transparent; text-align: center; color: var(--navy-dark);"`;
+                    const editStyle = `style="width: 100%; font-size: 12.5px; font-weight: 700; padding: 5px 6px; border: 1px solid var(--border-color); border-radius: 4px; background: #fff; text-align: center; color: var(--navy-dark);"`;
 
                     if (task.rowType === 'phase') {
                         // Level 1: Phase (Spans all columns, light gray background)
                         tr.style.background = "#e2e8f0";
                         tr.style.fontWeight = "700";
                         tr.innerHTML = `
-                            <td style="padding: 6px; text-align: center; border: 1px solid var(--border-color); width: 60px;">
+                            <td style="padding: 6px; text-align: center; border: 1px solid var(--border-color); width: 65px;">
                                 <input type="text" class="gantt-item-num" data-idx="${idx}" value="${task.itemNum || ''}" ${readonlyAttr} ${canEdit ? editStyle : inputStyle} placeholder="เช่น Phase 1">
                             </td>
                             <td colspan="${dateList.length + 1}" style="padding: 6px; border: 1px solid var(--border-color);">
-                                <input type="text" class="gantt-item-name" data-idx="${idx}" value="${task.name || ''}" ${readonlyAttr} style="width: 100%; font-size: 11.5px; font-weight: 700; padding: 4px 6px; border: 1px solid ${canEdit ? 'var(--border-color)' : 'transparent'}; border-radius: 4px; background: ${canEdit ? '#fff' : 'transparent'};" placeholder="Phase เช่น Phase 1 ปรับปรุงพื้นที่แผนกต้อนรับ...">
+                                <input type="text" class="gantt-item-name" data-idx="${idx}" value="${task.name || ''}" ${readonlyAttr} style="width: 100%; font-size: 14px; font-weight: 800; padding: 6px 8px; border: 1px solid ${canEdit ? 'var(--border-color)' : 'transparent'}; border-radius: 4px; background: ${canEdit ? '#fff' : 'transparent'}; color: var(--navy-dark);" placeholder="Phase เช่น Phase 1 ปรับปรุงพื้นที่แผนกต้อนรับ...">
                             </td>
                             <td class="hide-accounting hide-customer" style="padding: 6px; text-align: center; border: 1px solid var(--border-color); width: 50px;">
                                 ${canEdit ? `<button class="btn-delete-gantt-row" data-idx="${idx}" style="background:none; border:none; color:#e63946; cursor:pointer; font-size:12px;"><i class="fa-solid fa-trash-can"></i></button>` : ''}
@@ -8840,11 +8840,11 @@ function renderSubnavPlanWork(project) {
                         tr.style.background = "#eff6ff";
                         tr.style.fontWeight = "700";
                         tr.innerHTML = `
-                            <td style="padding: 6px; text-align: center; border: 1px solid var(--border-color); width: 60px;">
+                            <td style="padding: 6px; text-align: center; border: 1px solid var(--border-color); width: 65px;">
                                 <input type="text" class="gantt-item-num" data-idx="${idx}" value="${task.itemNum || ''}" ${readonlyAttr} ${canEdit ? editStyle : inputStyle} placeholder="เช่น 1.1">
                             </td>
                             <td colspan="${dateList.length + 1}" style="padding: 6px; border: 1px solid var(--border-color);">
-                                <input type="text" class="gantt-item-name" data-idx="${idx}" value="${task.name || ''}" ${readonlyAttr} style="width: 100%; font-size: 11px; font-weight: 700; color: #1e40af; padding: 4px 6px; border: 1px solid ${canEdit ? 'var(--border-color)' : 'transparent'}; border-radius: 4px; background: ${canEdit ? '#fff' : 'transparent'};" placeholder="ประเภทงาน เช่น 1.1 งานรื้อถอน">
+                                <input type="text" class="gantt-item-name" data-idx="${idx}" value="${task.name || ''}" ${readonlyAttr} style="width: 100%; font-size: 13px; font-weight: 800; color: #1e40af; padding: 6px 8px; border: 1px solid ${canEdit ? 'var(--border-color)' : 'transparent'}; border-radius: 4px; background: ${canEdit ? '#fff' : 'transparent'};" placeholder="ประเภทงาน เช่น 1.1 งานรื้อถอน">
                             </td>
                             <td class="hide-accounting hide-customer" style="padding: 6px; text-align: center; border: 1px solid var(--border-color); width: 50px;">
                                 ${canEdit ? `<button class="btn-delete-gantt-row" data-idx="${idx}" style="background:none; border:none; color:#e63946; cursor:pointer; font-size:12px;"><i class="fa-solid fa-trash-can"></i></button>` : ''}
@@ -8855,11 +8855,11 @@ function renderSubnavPlanWork(project) {
                         tr.style.background = "#ffffff";
                         tr.style.fontWeight = "700";
                         tr.innerHTML = `
-                            <td style="padding: 6px; text-align: center; border: 1px solid var(--border-color); width: 60px;">
+                            <td style="padding: 6px; text-align: center; border: 1px solid var(--border-color); width: 65px;">
                                 <input type="text" class="gantt-item-num" data-idx="${idx}" value="${task.itemNum || ''}" ${readonlyAttr} ${canEdit ? editStyle : inputStyle} placeholder="เช่น 1.2.1">
                             </td>
                             <td colspan="${dateList.length + 1}" style="padding: 6px; border: 1px solid var(--border-color);">
-                                <input type="text" class="gantt-item-name" data-idx="${idx}" value="${task.name || ''}" ${readonlyAttr} style="width: 100%; font-size: 11px; font-weight: 700; padding: 4px 6px; border: 1px solid ${canEdit ? 'var(--border-color)' : 'transparent'}; border-radius: 4px; background: ${canEdit ? '#fff' : 'transparent'}; text-decoration: underline;" placeholder="หมวดงาน เช่น 1.2.1 หมวดงานผนัง">
+                                <input type="text" class="gantt-item-name" data-idx="${idx}" value="${task.name || ''}" ${readonlyAttr} style="width: 100%; font-size: 13px; font-weight: 800; padding: 6px 8px; border: 1px solid ${canEdit ? 'var(--border-color)' : 'transparent'}; border-radius: 4px; background: ${canEdit ? '#fff' : 'transparent'}; text-decoration: underline; color: #334155;" placeholder="หมวดงาน เช่น 1.2.1 หมวดงานผนัง">
                             </td>
                             <td class="hide-accounting hide-customer" style="padding: 6px; text-align: center; border: 1px solid var(--border-color); width: 50px;">
                                 ${canEdit ? `<button class="btn-delete-gantt-row" data-idx="${idx}" style="background:none; border:none; color:#e63946; cursor:pointer; font-size:12px;"><i class="fa-solid fa-trash-can"></i></button>` : ''}
@@ -8868,21 +8868,21 @@ function renderSubnavPlanWork(project) {
                     } else {
                         // Level 4: งานย่อย (Daily Grid Row)
                         const indent = task.isSubtask ? "padding-left: 20px;" : "";
-                        const nameWeight = task.isSubtask ? "normal" : "600";
+                        const nameWeight = task.isSubtask ? "600" : "700";
                         
                         let rowHtml = `
-                            <td style="padding: 6px; text-align: center; border: 1px solid var(--border-color); width: 60px;">
+                            <td style="padding: 6px; text-align: center; border: 1px solid var(--border-color); width: 65px;">
                                 <input type="text" class="gantt-item-num" data-idx="${idx}" value="${task.itemNum || ''}" ${readonlyAttr} ${canEdit ? editStyle : inputStyle} placeholder="-">
                             </td>
                             <td style="padding: 6px; border: 1px solid var(--border-color); min-width: 250px;">
                                 <div style="display: flex; align-items: center; gap: 4px; ${indent}">
                                     ${canEdit ? `<input type="checkbox" class="gantt-subtask-toggle" data-idx="${idx}" ${task.isSubtask ? 'checked' : ''} title="ย่อหน้าเป็นงานย่อย" style="margin-right: 4px;">` : (task.isSubtask ? '<span style="color:#64748b; margin-right:4px;">-</span>' : '')}
-                                    <input type="text" class="gantt-item-name" data-idx="${idx}" value="${task.name || ''}" ${readonlyAttr} style="width: 100%; font-size: 11px; padding: 4px 6px; border: 1px solid ${canEdit ? 'var(--border-color)' : 'transparent'}; border-radius: 4px; background: ${canEdit ? '#fff' : 'transparent'}; font-weight: ${nameWeight};" placeholder="ชื่องานย่อย/รายการงาน">
+                                    <input type="text" class="gantt-item-name" data-idx="${idx}" value="${task.name || ''}" ${readonlyAttr} style="width: 100%; font-size: 12.5px; padding: 6px 8px; border: 1px solid ${canEdit ? 'var(--border-color)' : 'transparent'}; border-radius: 4px; background: ${canEdit ? '#fff' : 'transparent'}; font-weight: ${nameWeight}; color: #334155;" placeholder="ชื่องานย่อย/รายการงาน">
                                 </div>
                             </td>
                         `;
 
-                        // Render timeline grid cells
+                        // Render timeline grid cells (18px fixed width with 32px height)
                         dateList.forEach(d => {
                             const dStr = formatDateLocal(d);
                             const val = task.cells ? (task.cells[dStr] || 0) : 0;
@@ -8892,7 +8892,7 @@ function renderSubnavPlanWork(project) {
                             else if (val === 3) cellBg = "background-color: #fca5a5;"; // Red (เสียงดังมาก)
                             
                             rowHtml += `
-                                <td class="gantt-cell" data-row-idx="${idx}" data-date="${dStr}" style="border: 1px solid var(--border-color); ${cellBg} cursor: ${canEdit ? 'crosshair' : 'default'}; user-select: none;">
+                                <td class="gantt-cell" data-row-idx="${idx}" data-date="${dStr}" style="border: 1px solid var(--border-color); ${cellBg} cursor: ${canEdit ? 'crosshair' : 'default'}; user-select: none; width: 18px; min-width: 18px; max-width: 18px; height: 32px;">
                                 </td>
                             `;
                         });
@@ -12284,7 +12284,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         if (val === 1) cellBg = "class='cell-yellow'";
                         else if (val === 2) cellBg = "class='cell-green'";
                         else if (val === 3) cellBg = "class='cell-red'";
-                        gridCellsHtml += `<td ${cellBg} style="border: 1px solid #94a3b8; width: 22px;"></td>`;
+                        gridCellsHtml += `<td ${cellBg} style="border: 1px solid #94a3b8; width: 18px; min-width: 18px; max-width: 18px; height: 28px;"></td>`;
                     });
 
                     rowsHtml += `
@@ -12304,7 +12304,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             let daysHeaderHtml = "";
             dateList.forEach(d => {
-                daysHeaderHtml += `<th style="border: 1px solid #94a3b8; font-size: 8px; font-weight: normal; width: 22px; padding: 2px;">${d.getDate()}</th>`;
+                daysHeaderHtml += `<th style="border: 1px solid #94a3b8; font-size: 10px; font-weight: bold; width: 18px; min-width: 18px; max-width: 18px; padding: 4px 2px; text-align: center;">${d.getDate()}</th>`;
             });
 
             printWindow.document.write(`
@@ -12428,6 +12428,17 @@ document.addEventListener("DOMContentLoaded", () => {
                             body {
                                 padding-top: 70px !important;
                             }
+                        }
+                        /* Increase font sizes and weight in exported Gantt table */
+                        table {
+                            font-size: 11.5px !important;
+                        }
+                        th {
+                            font-size: 12px !important;
+                            font-weight: bold !important;
+                        }
+                        td {
+                            font-size: 11.5px !important;
                         }
                     </style>
                 </head>
