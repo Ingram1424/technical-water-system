@@ -5394,6 +5394,18 @@ body.public-view-mode #public-view-header {
             <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
                 <p style="font-size: 12.5px; color: var(--text-muted); margin: 0 0 16px 0;">คุณสามารถเลือกโครงการย่อยหรือโรงพยาบาลหลายๆ รายการเข้าไว้ด้วยกันในลิงก์เดียว เมื่อส่งลิงก์นี้ให้ผู้อื่นจะเข้าถึงเฉพาะโครงการที่เลือกโดยไม่ต้องล็อกอิน</p>
                 
+                <!-- 3. Link Output Container (Moved to Top for instant visibility!) -->
+                <div id="share-link-output-container" style="display: none; margin-bottom: 20px; padding: 16px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; box-shadow: var(--shadow-sm);">
+                    <div style="font-size: 12.5px; font-weight: 700; color: #15803d; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                        <i class="fa-solid fa-circle-check"></i> สร้างลิงก์แชร์ใหม่สำเร็จ!
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center; margin-top: 8px;">
+                        <input type="text" id="share-link-result-url" class="form-control" readonly style="font-size: 12px; font-family: monospace; background: #ffffff; font-weight: 600;">
+                        <button type="button" class="btn btn-outline-green" id="btn-copy-share-result-url" style="white-space: nowrap; font-size: 12px; padding: 8px 14px;"><i class="fa-solid fa-copy"></i> คัดลอกลิงก์</button>
+                    </div>
+                    <span style="font-size: 10.5px; color: #166534; display: block; margin-top: 8px; font-style: italic;">* ลิงก์แชร์ถูกสร้างขึ้นใหม่เป็นรหัสอ้างอิงเฉพาะตัว (ทุกครั้งที่กด จะเป็นการสร้างใหม่เสมอ)</span>
+                </div>
+                
                 <div style="border-bottom: 2px solid var(--border-color); padding-bottom: 8px; margin-bottom: 16px; display: flex; gap: 16px;">
                     <span style="font-weight: 700; font-size: 13.5px; color: var(--navy-dark); border-bottom: 2px solid var(--primary-blue); padding-bottom: 8px; margin-bottom: -10px;">รายการแชร์ทั้งหมด</span>
                 </div>
@@ -5420,18 +5432,6 @@ body.public-view-mode #public-view-header {
                             <!-- Populated dynamically with checkboxes -->
                         </div>
                     </div>
-                </div>
-
-                <!-- 3. Link Output Container -->
-                <div id="share-link-output-container" style="display: none; margin-top: 20px; padding: 16px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px;">
-                    <div style="font-size: 12.5px; font-weight: 700; color: #15803d; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-                        <i class="fa-solid fa-circle-check"></i> สร้างลิงก์แชร์ใหม่สำเร็จ!
-                    </div>
-                    <div style="display: flex; gap: 8px; align-items: center; margin-top: 8px;">
-                        <input type="text" id="share-link-result-url" class="form-control" readonly style="font-size: 12px; font-family: monospace; background: #ffffff; font-weight: 600;">
-                        <button type="button" class="btn btn-outline-green" id="btn-copy-share-result-url" style="white-space: nowrap; font-size: 12px; padding: 8px 14px;"><i class="fa-solid fa-copy"></i> คัดลอกลิงก์</button>
-                    </div>
-                    <span style="font-size: 10.5px; color: #166534; display: block; margin-top: 8px; font-style: italic;">* ลิงก์แชร์ถูกสร้างขึ้นใหม่เป็นรหัสอ้างอิงเฉพาะตัว (ทุกครั้งที่กด จะเป็นการสร้างใหม่เสมอ)</span>
                 </div>
             </div>
             <div class="modal-footer">
@@ -12157,10 +12157,27 @@ document.addEventListener("DOMContentLoaded", () => {
                 const pathname = window.location.pathname || '/';
                 const fullShareUrl = `${origin}${pathname}?share=${linkId}`;
                 
-                document.getElementById("share-link-result-url").value = fullShareUrl;
-                document.getElementById("share-link-output-container").style.display = "block";
+                const urlInput = document.getElementById("share-link-result-url");
+                const outputContainer = document.getElementById("share-link-output-container");
                 
-                showToast("สร้างลิงก์แชร์โครงการสำเร็จ!", "success");
+                urlInput.value = fullShareUrl;
+                outputContainer.style.display = "block";
+                
+                // Auto-scroll the modal body to the top where the output container is located!
+                const modalBody = document.querySelector("#portal-share-modal .modal-body");
+                if (modalBody) {
+                    modalBody.scrollTo({ top: 0, behavior: "smooth" });
+                }
+                
+                // Copy to clipboard automatically for convenience
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(fullShareUrl);
+                    showToast("📋 สร้างลิงก์แชร์และคัดลอกลงคลิปบอร์ดสำเร็จ!", "success");
+                } else {
+                    urlInput.select();
+                    document.execCommand("copy");
+                    showToast("📋 สร้างลิงก์แชร์และคัดลอกลงคลิปบอร์ดสำเร็จ!", "success");
+                }
             } catch (err) {
                 console.error("Failed to generate share link:", err);
                 showToast("เกิดข้อผิดพลาดในการสร้างลิงก์: " + err.message, "error");
