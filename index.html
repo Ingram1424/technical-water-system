@@ -10182,7 +10182,7 @@ function renderCostManagement() {
                 : `<button class="btn-delete-row" disabled style="opacity:0.3; cursor:not-allowed;" title="${activeCode === 'all' ? 'ไม่สามารถลบข้อมูลจากมุมมองภาพรวมได้' : 'ไม่มีสิทธิ์ลบข้อมูล'}"><i class="fa-solid fa-trash-can"></i></button>`;
 
             const fileHTML = exp.file ? 
-                `<a href="${exp.fileUrl || '#'}" download="${exp.file}" class="btn-expense-download" title="ดูเอกสารอ้างอิง: ${exp.file}" style="color: var(--primary-blue); font-size: 14px;"><i class="fa-solid fa-file-invoice-dollar"></i></a>` :
+                `<a href="#" class="btn-expense-view-pdf" data-url="${exp.fileUrl || ''}" data-file="${exp.file}" title="ดูเอกสารอ้างอิง: ${exp.file}" style="color: var(--primary-blue); font-size: 14px; cursor: pointer;"><i class="fa-solid fa-file-invoice-dollar"></i></a>` :
                 `<span class="text-muted" style="font-size: 11px;">-</span>`;
 
             const displayTitle = exp.projectCode ? `[${exp.projectCode}] ${exp.title}` : exp.title;
@@ -10203,6 +10203,17 @@ function renderCostManagement() {
                 if (activeCode === "all") return;
                 const expIdx = parseInt(this.getAttribute("data-idx"));
                 deleteExpense(expIdx);
+            });
+        });
+
+        tbody.querySelectorAll(".btn-expense-view-pdf").forEach(btn => {
+            btn.addEventListener("click", function(e) {
+                e.preventDefault();
+                const fileUrl = this.getAttribute("data-url");
+                const fileName = this.getAttribute("data-file");
+                if (window.openPdfViewer) {
+                    window.openPdfViewer(fileUrl, fileName, "ดูเอกสารอ้างอิง: " + fileName);
+                }
             });
         });
     }
