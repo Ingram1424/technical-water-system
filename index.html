@@ -16931,10 +16931,14 @@ function renderPermissionsManagement() {
             
             // Extract project code (e.g. "PO-1111" from "ขออนุมัติเปิดงบ: [PO-1111] ซื้อคอม")
             let projectCode = btnDetail.getAttribute("data-project-code") || btnDetail.getAttribute("data-code");
-            if (!projectCode) {
-                const notifItem = btnDetail.closest(".notif-item");
-                if (notifItem) {
-                    const text = notifItem.innerText || notifItem.textContent;
+            let isDrawdown = false;
+            const notifItem = btnDetail.closest(".notif-item");
+            if (notifItem) {
+                const text = notifItem.innerText || notifItem.textContent;
+                if (text.includes("ขออนุมัติเบิกงบ")) {
+                    isDrawdown = true;
+                }
+                if (!projectCode) {
                     const match = text.match(/\[([A-Z0-9-]+)\]/i);
                     if (match && match[1]) {
                         projectCode = match[1];
@@ -16957,25 +16961,48 @@ function renderPermissionsManagement() {
                     const notifDropdown = document.getElementById("notification-dropdown");
                     if (notifDropdown) notifDropdown.classList.remove("active");
                     
-                    // Set selected project
-                    appState.selectedDetailProject = matchedCode;
-                    sessionStorage.setItem("technical_water_last_detail_project", matchedCode);
-                    
-                    // Sync dropdown selector
-                    const projSelector = document.getElementById("subnav-project-selector");
-                    if (projSelector) projSelector.value = matchedCode;
-                    
-                    // Go to projects-list view
-                    if (typeof switchView === "function") {
-                        switchView("projects-list");
+                    if (isDrawdown) {
+                        // Set selected cost project
+                        updateSelectedCostProject(matchedCode);
+                        
+                        // Update cost-project-selector dropdown value
+                        const costSelector = document.getElementById("cost-project-selector");
+                        if (costSelector) {
+                            costSelector.value = matchedCode;
+                        }
+                        
+                        // Navigate to the Cost view
+                        if (typeof switchView === "function") {
+                            switchView("cost");
+                        }
+                        
+                        // Open the pending approvals tab in Cost Management
+                        const tabBtn = document.querySelector(".cost-tab-btn[data-cost-tab='approval-pending']");
+                        if (tabBtn) {
+                            tabBtn.click();
+                        }
+                        showToast(`📂 เปิดรายละเอียดการเบิกงบโครงการ ${matchedCode} สำเร็จ`, "success");
+                    } else {
+                        // Set selected project
+                        appState.selectedDetailProject = matchedCode;
+                        sessionStorage.setItem("technical_water_last_detail_project", matchedCode);
+                        
+                        // Sync dropdown selector
+                        const projSelector = document.getElementById("subnav-project-selector");
+                        if (projSelector) projSelector.value = matchedCode;
+                        
+                        // Go to projects-list view
+                        if (typeof switchView === "function") {
+                            switchView("projects-list");
+                        }
+                        
+                        // Render details workspace
+                        if (typeof renderSubnavProjectWorkspace === "function") {
+                            renderSubnavProjectWorkspace();
+                        }
+                        
+                        showToast(`📂 เปิดรายละเอียดโครงการ ${matchedCode} สำเร็จ`, "success");
                     }
-                    
-                    // Render details workspace
-                    if (typeof renderSubnavProjectWorkspace === "function") {
-                        renderSubnavProjectWorkspace();
-                    }
-                    
-                    showToast(`📂 เปิดรายละเอียดโครงการ ${matchedCode} สำเร็จ`, "success");
                 } else {
                     showToast(`ไม่พบรหัสโครงการ ${projectCode} ในฐานข้อมูล`, "warning");
                 }
