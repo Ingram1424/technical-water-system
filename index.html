@@ -7953,17 +7953,12 @@ function updateScurveTotals(project) {
             currentParentWeight = parseFloat(item.weight) || 0;
         }
         
-        let prevAVal = 0;
         for (let i = 0; i < planWeeklySums.length; i++) {
             let pVal = parseFloat(item.plan ? item.plan[i] : 0) || 0;
-            
-            // Calculate actual cumulative increment
-            let aValRaw = (item.actual && item.actual[i] !== undefined && item.actual[i] !== null && item.actual[i] !== '') ? (parseFloat(item.actual[i]) || 0) : prevAVal;
-            let aValIncrement = Math.max(0, aValRaw - prevAVal);
-            prevAVal = aValRaw;
+            let aVal = (item.actual && item.actual[i] !== undefined && item.actual[i] !== null && item.actual[i] !== '') ? (parseFloat(item.actual[i]) || 0) : 0;
 
             planWeeklySums[i] += (currentParentWeight * pVal / 100);
-            actualWeeklySums[i] += (currentParentWeight * aValIncrement / 100);
+            actualWeeklySums[i] += (currentParentWeight * aVal / 100);
         }
     });
 
@@ -8058,18 +8053,14 @@ function renderSCurveChart(project) {
             if (!item.isSubtask) {
                 currentParentWeight = parseFloat(item.weight) || 0;
             }
-            let prevAVal = 0;
             for (let i = 0; i < planWeeklySums.length; i++) {
                 let pVal = parseFloat(item.plan ? item.plan[i] : 0) || 0;
                 
-                // Calculate actual cumulative increment
                 let hasActualData = (item.actual && item.actual[i] !== undefined && item.actual[i] !== null && item.actual[i] !== '');
-                let aValRaw = hasActualData ? (parseFloat(item.actual[i]) || 0) : prevAVal;
-                let aValIncrement = Math.max(0, aValRaw - prevAVal);
-                prevAVal = aValRaw;
+                let aVal = hasActualData ? (parseFloat(item.actual[i]) || 0) : 0;
 
                 planWeeklySums[i] += (currentParentWeight * pVal / 100);
-                actualWeeklySums[i] += (currentParentWeight * aValIncrement / 100);
+                actualWeeklySums[i] += (currentParentWeight * aVal / 100);
 
                 if (hasActualData && i > lastActualIndex) {
                     lastActualIndex = i;
@@ -8565,15 +8556,11 @@ function renderSubnavActualProgress(project) {
             while(item.plan.length < project.scurveMonths.length * 4) item.plan.push(0);
             while(item.actual.length < project.scurveMonths.length * 4) item.actual.push(0);
  
-            // Calculate cumulative total for actual, sum for plan
+            // Calculate sum for both plan and actual progress
             let currentTotal = 0;
-            if (currentScurveMode === 'plan') {
-                item.plan.forEach(v => currentTotal += (parseFloat(v) || 0));
-            } else {
-                let nonZeroActuals = item.actual.map(v => parseFloat(v) || 0);
-                currentTotal = nonZeroActuals.length > 0 ? Math.max(...nonZeroActuals) : 0;
-            }
-            item.totalPercent = currentTotal;
+            const vals = isPlanMode ? item.plan : item.actual;
+            vals.forEach(v => currentTotal += (parseFloat(v) || 0));
+            item.totalPercent = parseFloat(currentTotal.toFixed(1));
  
             const isSub = item.isSubtask;
             const row = document.createElement("tr");
@@ -8658,11 +8645,10 @@ function renderSubnavActualProgress(project) {
                                     totalVal += parseFloat(inp.value) || 0;
                                 });
                             } else {
-                                let vals = [];
                                 rowTr.querySelectorAll(".scurve-cell-val").forEach(inp => {
-                                    vals.push(parseFloat(inp.value) || 0);
+                                    totalVal += parseFloat(inp.value) || 0;
                                 });
-                                totalVal = vals.length > 0 ? Math.max(...vals) : 0;
+                                totalVal = parseFloat(totalVal.toFixed(1));
                             }
                             const totalEl = rowTr.querySelector(".scurve-total-pct");
                             if (totalEl) {
@@ -14816,7 +14802,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                 <td style="padding-left: ${isSub ? '20px' : '8px'}; font-weight: ${isSub ? 'normal' : '600'};">${isSub ? '- ' : ''}${item.name || ''}</td>
                                 ${isCustomer ? '' : `<td style="text-align: center;">${isSub ? '' : formatNumber(item.budget || 0)}</td>`}
                                 <td style="text-align: center;">${isSub ? '' : (item.weight || 0) + '%'}</td>
-                                <td style="text-align: center; font-weight: bold;">${isSub ? '' : (item.actual && item.actual.length > 0 ? Math.max(...(item.actual.map(b=>parseFloat(b)||0)), 0) : 0) + '%'}</td>
+                                <td style="text-align: center; font-weight: bold;">${isSub ? '' : (item.actual && item.actual.length > 0 ? item.actual.reduce((sum, v) => sum + (parseFloat(v) || 0), 0) : 0).toFixed(1) + '%'}</td>
                                 ${cells}
                             </tr>
                         `;
@@ -14829,13 +14815,9 @@ document.addEventListener("DOMContentLoaded", () => {
                         if (!item.isSubtask) {
                             currentParentWeightValAct = parseFloat(item.weight) || 0;
                         }
-                        let prevAVal = 0;
                         for (let i = 0; i < weeklyActualSums.length; i++) {
-                            let aValRaw = (item.actual && item.actual[i] !== undefined && item.actual[i] !== null && item.actual[i] !== '') ? (parseFloat(item.actual[i]) || 0) : prevAVal;
-                            let aValIncrement = Math.max(0, aValRaw - prevAVal);
-                            prevAVal = aValRaw;
-
-                            weeklyActualSums[i] += (currentParentWeightValAct * aValIncrement / 100);
+                            let aVal = (item.actual && item.actual[i] !== undefined && item.actual[i] !== null && item.actual[i] !== '') ? (parseFloat(item.actual[i]) || 0) : 0;
+                            weeklyActualSums[i] += (currentParentWeightValAct * aVal / 100);
                         }
                     });
                     
