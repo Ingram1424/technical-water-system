@@ -11149,9 +11149,16 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     // Close dropdowns on outside click
-    document.addEventListener("click", () => {
-        profileDropdown.classList.remove("active");
-        notifDropdown.classList.remove("active");
+    document.addEventListener("click", (e) => {
+        const isProfileClick = e.target.closest("#profile-trigger-btn") || e.target.closest("#profile-dropdown");
+        if (!isProfileClick) {
+            profileDropdown.classList.remove("active");
+        }
+        
+        const isNotifClick = e.target.closest("#notification-btn") || e.target.closest("#notification-dropdown");
+        if (!isNotifClick) {
+            notifDropdown.classList.remove("active");
+        }
     });
 
     // 4. Role Selection Click Listeners
