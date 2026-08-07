@@ -23,7 +23,17 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Supabase JS Client for Real-time Cloud Database -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <style>
+        <style>
+/* Hide number input spinners globally */
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+input[type=number] {
+    -moz-appearance: textfield;
+}
+
 /* Clean, Professional White & Blue Design System */
 
 /* Variables & Theme Tokens */
@@ -8056,7 +8066,7 @@ function renderSCurveChart(project) {
             for (let i = 0; i < planWeeklySums.length; i++) {
                 let pVal = parseFloat(item.plan ? item.plan[i] : 0) || 0;
                 
-                let hasActualData = (item.actual && item.actual[i] !== undefined && item.actual[i] !== null && item.actual[i] !== '');
+                let hasActualData = (item.actual && item.actual[i] !== undefined && item.actual[i] !== null && item.actual[i] !== '' && item.actual[i] !== '-' && !isNaN(parseFloat(item.actual[i])) && parseFloat(item.actual[i]) > 0);
                 let aVal = hasActualData ? (parseFloat(item.actual[i]) || 0) : 0;
 
                 planWeeklySums[i] += (currentParentWeight * pVal / 100);
@@ -8146,7 +8156,7 @@ function renderSCurveChart(project) {
                     },
                     y: {
                         beginAtZero: true,
-                        max: 100,
+                        max: 110,
                         ticks: {
                             font: { family: "Prompt", size: 11, weight: "600" },
                             callback: function(value) { return value + "%"; }
