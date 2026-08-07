@@ -364,6 +364,18 @@ body:not(.public-view-mode) .main-header {
 }
 .btn-drawdown-detail:hover { opacity: 0.85; }
 
+.btn-delete-notif {
+    display: inline-flex; align-items: center; justify-content: center;
+    height: 23px; width: 26px; border-radius: 4px;
+    background: rgba(239, 68, 68, 0.1); color: #ef4444;
+    border: none; cursor: pointer; transition: all 0.15s;
+    margin-top: 6px;
+}
+.btn-delete-notif:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #dc2626;
+}
+
 .notification-dropdown {
     position: absolute;
     top: calc(100% + 8px);
@@ -3407,7 +3419,10 @@ body.public-view-mode #public-view-header {
                                     <div class="notif-content">
                                         <p class="notif-text">งานรออนุมัติ: <strong>เปลี่ยน BUSDUCT LINE DB</strong> (รอวันที่ 1)</p>
                                         <span class="notif-time">17/7/2569</span>
-                                        <button class="btn-acknowledge" data-notif-id="notif-1"><i class="fa-solid fa-check mr-1"></i>รับทราบ</button>
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <button class="btn-acknowledge" data-notif-id="notif-1"><i class="fa-solid fa-check mr-1"></i>รับทราบ</button>
+                                            <button class="btn-delete-notif" data-notif-id="notif-1" title="ลบการแจ้งเตือน"><i class="fa-solid fa-trash-can"></i></button>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="notif-item unread approval-notif" data-notif-type="approval">
@@ -3415,7 +3430,10 @@ body.public-view-mode #public-view-header {
                                     <div class="notif-content">
                                         <p class="notif-text">งานรออนุมัติ: <strong>เปลี่ยน Air Circuit Breaker 1,600A</strong> (รอวันที่ 2 70%)</p>
                                         <span class="notif-time">17/7/2569</span>
-                                        <button class="btn-acknowledge" data-notif-id="notif-2"><i class="fa-solid fa-check mr-1"></i>รับทราบ</button>
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <button class="btn-acknowledge" data-notif-id="notif-2"><i class="fa-solid fa-check mr-1"></i>รับทราบ</button>
+                                            <button class="btn-delete-notif" data-notif-id="notif-2" title="ลบการแจ้งเตือน"><i class="fa-solid fa-trash-can"></i></button>
+                                        </div>
                                     </div>
                                 </div>
                                 <div class="notif-item unread approval-notif" data-notif-type="approval">
@@ -3423,7 +3441,10 @@ body.public-view-mode #public-view-header {
                                     <div class="notif-content">
                                         <p class="notif-text">งานรออนุมัติ: <strong>SSG 0035/2569 เดือน พ.ค.</strong> (รอวันที่ 1)</p>
                                         <span class="notif-time">17/7/2569</span>
-                                        <button class="btn-acknowledge" data-notif-id="notif-3"><i class="fa-solid fa-check mr-1"></i>รับทราบ</button>
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <button class="btn-acknowledge" data-notif-id="notif-3"><i class="fa-solid fa-check mr-1"></i>รับทราบ</button>
+                                            <button class="btn-delete-notif" data-notif-id="notif-3" title="ลบการแจ้งเตือน"><i class="fa-solid fa-trash-can"></i></button>
+                                        </div>
                                     </div>
                                 </div>
                                 <!-- General notifications (hidden for accounting role via JS) -->
@@ -16892,12 +16913,18 @@ function renderPermissionsManagement() {
                         
                         const notifId = `drawdown-${code}-${idx}`;
                         
+                        const ack = getAcknowledged();
+                        if (ack.includes(notifId)) return;
+                        
                         div.innerHTML = `
                             <div class="notif-icon cost" style="background: rgba(15, 82, 186, 0.1); color: #0f52ba;"><i class="fa-solid fa-paper-plane"></i></div>
                             <div class="notif-content">
                                 <p class="notif-text">ขออนุมัติเบิกงบ: <strong>[${code}] ${e.title}</strong> (${formatNumber(e.amount)} บาท)</p>
                                 <span class="notif-time">${e.date}</span>
-                                <button class="btn-drawdown-detail" onclick="acknowledgeDisbursementNotif('${notifId}', '${code}')"><i class="fa-solid fa-arrow-right mr-1"></i>ตรวจสอบคำขอ</button>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <button class="btn-drawdown-detail" onclick="acknowledgeDisbursementNotif('${notifId}', '${code}')"><i class="fa-solid fa-arrow-right mr-1"></i>ตรวจสอบคำขอ</button>
+                                    <button class="btn-delete-notif" data-notif-id="${notifId}" title="ลบการแจ้งเตือน"><i class="fa-solid fa-trash-can"></i></button>
+                                </div>
                             </div>
                         `;
                         body.insertBefore(div, body.firstChild);
@@ -17044,6 +17071,28 @@ function renderPermissionsManagement() {
     }
 
     document.addEventListener("click", function(e) {
+        // 0. Delete notification button click
+        const btnDelete = e.target.closest(".btn-delete-notif");
+        if (btnDelete) {
+            e.stopPropagation();
+            const notifId = btnDelete.getAttribute("data-notif-id");
+            const item = btnDelete.closest(".notif-item");
+            if (item) {
+                item.style.opacity = "0";
+                item.style.transform = "translateX(30px)";
+                item.style.transition = "all 0.3s ease";
+                setTimeout(() => {
+                    item.remove();
+                    updateBellBadge();
+                }, 300);
+                
+                if (notifId) {
+                    markAcknowledged(notifId);
+                }
+            }
+            return;
+        }
+
         // 1. Acknowledge button click
         const btnAck = e.target.closest(".btn-acknowledge");
         if (btnAck) {
@@ -17188,12 +17237,10 @@ function renderPermissionsManagement() {
     // Apply acknowledged state from storage
     const ack = getAcknowledged();
     ack.forEach(id => {
-        const btn = document.querySelector(`.btn-acknowledge[data-notif-id="${id}"]`);
+        const btn = document.querySelector(`.btn-acknowledge[data-notif-id="${id}"], .btn-delete-notif[data-notif-id="${id}"]`);
         if (btn) {
             const item = btn.closest(".notif-item");
-            if (item) { item.classList.remove("unread"); item.style.opacity = "0.5"; }
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-check-double mr-1"></i>รับทราบแล้ว';
+            if (item) { item.remove(); }
         }
     });
     updateBellBadge();
