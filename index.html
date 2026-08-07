@@ -8152,17 +8152,18 @@ function renderSCurveChart(project) {
                 scales: {
                     x: {
                         grid: { display: false },
-                        ticks: { font: { family: "Prompt", size: 11, weight: "600" }, maxRotation: 45, minRotation: 45 }
+                        ticks: { font: { family: "Prompt", size: 11, weight: "600" }, maxRotation: 45, minRotation: 45 },
+                        border: { display: false }
                     },
                     y: {
                         beginAtZero: true,
-                        max: 110,
+                        max: 100,
+                        grace: 0,
+                        border: { display: false },
                         ticks: {
+                            stepSize: 20,
                             font: { family: "Prompt", size: 11, weight: "600" },
-                            callback: function(value) { 
-                                if (value > 100) return "";
-                                return value + "%"; 
-                            }
+                            callback: function(value) { return value + "%"; }
                         }
                     }
                 }
