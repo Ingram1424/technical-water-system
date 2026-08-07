@@ -4471,6 +4471,8 @@ body.public-view-mode #public-view-header {
                                             <button id="brush-red" class="btn btn-sm active" style="font-size: 10px; padding: 4px 10px; background: #f87171; color: #991b1b; border: 1px solid #ef4444; font-weight: 600; cursor: pointer; border-radius: 4px; border-style: solid;">เสียงดังมาก (สีแดง)</button>
                                             <button id="brush-yellow" class="btn btn-sm" style="font-size: 10px; padding: 4px 10px; background: #fcd34d; color: #854d0e; border: 1px solid #eab308; font-weight: 600; cursor: pointer; border-radius: 4px; opacity: 0.6; border-style: solid;">เสียงดังปานกลาง (สีเหลือง)</button>
                                             <button id="brush-green" class="btn btn-sm" style="font-size: 10px; padding: 4px 10px; background: #22c55e; color: #ffffff; border: 1px solid #16a34a; font-weight: 600; cursor: pointer; border-radius: 4px; opacity: 0.6; border-style: solid;">เสียงดังน้อย (สีเขียว)</button>
+                                            <button id="brush-orange" class="btn btn-sm" style="font-size: 10px; padding: 4px 10px; background: #f97316; color: #ffffff; border: 1px solid #ea580c; font-weight: 600; cursor: pointer; border-radius: 4px; opacity: 0.6; border-style: solid;">กลางวัน (สีส้ม)</button>
+                                            <button id="brush-black" class="btn btn-sm" style="font-size: 10px; padding: 4px 10px; background: #000000; color: #ffffff; border: 1px solid #000000; font-weight: 600; cursor: pointer; border-radius: 4px; opacity: 0.6; border-style: solid;">กลางคืน (สีดำ)</button>
                                             <button id="brush-eraser" class="btn btn-sm" style="font-size: 10px; padding: 4px 10px; background: #ffffff; color: #64748b; border: 1px solid #cbd5e1; font-weight: 600; cursor: pointer; border-radius: 4px; opacity: 0.6; border-style: solid;">ยางลบ</button>
                                         </div>
                                     </div>
@@ -7813,7 +7815,15 @@ function calculatePlanScurveFromGantt(proj) {
             let activeDays = 0;
             dateList.forEach(dStr => {
                 const val = task.cells[dStr];
-                if (val > 0) {
+                let noise = 0;
+                if (val) {
+                    if (typeof val === 'object') {
+                        noise = val.noise || 0;
+                    } else {
+                        noise = parseInt(val) || 0;
+                    }
+                }
+                if (noise > 0) {
                     activeDays++;
                 }
             });
@@ -7822,7 +7832,15 @@ function calculatePlanScurveFromGantt(proj) {
                 // Distribute progress across weeks
                 dateList.forEach((dStr, dIdx) => {
                     const val = task.cells[dStr];
-                    if (val > 0) {
+                    let noise = 0;
+                    if (val) {
+                        if (typeof val === 'object') {
+                            noise = val.noise || 0;
+                        } else {
+                            noise = parseInt(val) || 0;
+                        }
+                    }
+                    if (noise > 0) {
                         let wIdx = Math.floor(dIdx / interval);
                         if (wIdx >= numWeeks) wIdx = numWeeks - 1;
                         item.plan[wIdx] += (1 / activeDays) * 100;
@@ -9267,13 +9285,32 @@ function renderSubnavPlanWork(project) {
                         dateList.forEach(d => {
                             const dStr = formatDateLocal(d);
                             const val = task.cells ? (task.cells[dStr] || 0) : 0;
+                            let noise = 0;
+                            let shift = null;
+                            if (val) {
+                                if (typeof val === 'object') {
+                                    noise = val.noise || 0;
+                                    shift = val.shift || null;
+                                } else {
+                                    noise = parseInt(val) || 0;
+                                }
+                            }
+                            
                             let cellBg = "";
-                            if (val === 1) cellBg = "background-color: #fcd34d;"; // Yellow (เสียงดังปานกลาง)
-                            else if (val === 2) cellBg = "background-color: #22c55e;"; // Green (เสียงดังน้อย)
-                            else if (val === 3) cellBg = "background-color: #f87171;"; // Red (เสียงดังมาก)
+                            if (noise === 1) cellBg = "background-color: #fcd34d;"; // Yellow (เสียงดังปานกลาง)
+                            else if (noise === 2) cellBg = "background-color: #22c55e;"; // Green (เสียงดังน้อย)
+                            else if (noise === 3) cellBg = "background-color: #f87171;"; // Red (เสียงดังมาก)
+
+                            let triangleHtml = "";
+                            if (shift === 'day') {
+                                triangleHtml = `<div style="position: absolute; top: 0; left: 0; width: 0; height: 0; border-top: 8px solid #f97316; border-right: 8px solid transparent; pointer-events: none;"></div>`;
+                            } else if (shift === 'night') {
+                                triangleHtml = `<div style="position: absolute; top: 0; left: 0; width: 0; height: 0; border-top: 8px solid #000000; border-right: 8px solid transparent; pointer-events: none;"></div>`;
+                            }
                             
                             rowHtml += `
-                                <td class="gantt-cell" data-row-idx="${idx}" data-date="${dStr}" style="border: 1px solid var(--border-color); ${cellBg} cursor: ${canEdit ? 'crosshair' : 'default'}; user-select: none; width: 18px; min-width: 18px; max-width: 18px; height: 32px;">
+                                <td class="gantt-cell" data-row-idx="${idx}" data-date="${dStr}" style="position: relative; border: 1px solid var(--border-color); ${cellBg} cursor: ${canEdit ? 'crosshair' : 'default'}; user-select: none; width: 18px; min-width: 18px; max-width: 18px; height: 32px;">
+                                    ${triangleHtml}
                                 </td>
                             `;
                         });
@@ -9358,19 +9395,61 @@ function renderSubnavPlanWork(project) {
 
                         window.ganttIsDirty = true; // Mark dirty on color click/drag
 
+                        // Decode existing cell value
+                        const val = task.cells[dStr];
+                        let noise = 0;
+                        let shift = null;
+                        if (val) {
+                            if (typeof val === 'object') {
+                                noise = val.noise || 0;
+                                shift = val.shift || null;
+                            } else {
+                                noise = parseInt(val) || 0;
+                            }
+                        }
+
+                        const updateCellTriangleDOM = (el, sh) => {
+                            if (sh === 'day') {
+                                el.innerHTML = `<div style="position: absolute; top: 0; left: 0; width: 0; height: 0; border-top: 8px solid #f97316; border-right: 8px solid transparent; pointer-events: none;"></div>`;
+                            } else if (sh === 'night') {
+                                el.innerHTML = `<div style="position: absolute; top: 0; left: 0; width: 0; height: 0; border-top: 8px solid #000000; border-right: 8px solid transparent; pointer-events: none;"></div>`;
+                            } else {
+                                el.innerHTML = "";
+                            }
+                        };
+
                         if (currentGanttBrush === 'red') {
-                            task.cells[dStr] = 3;
+                            noise = 3;
+                            task.cells[dStr] = { noise, shift };
                             cell.style.backgroundColor = "#f87171";
+                            updateCellTriangleDOM(cell, shift);
                         } else if (currentGanttBrush === 'yellow') {
-                            task.cells[dStr] = 1;
+                            noise = 1;
+                            task.cells[dStr] = { noise, shift };
                             cell.style.backgroundColor = "#fcd34d";
+                            updateCellTriangleDOM(cell, shift);
                         } else if (currentGanttBrush === 'green') {
-                            task.cells[dStr] = 2;
+                            noise = 2;
+                            task.cells[dStr] = { noise, shift };
                             cell.style.backgroundColor = "#22c55e";
+                            updateCellTriangleDOM(cell, shift);
+                        } else if (currentGanttBrush === 'orange') {
+                            shift = 'day';
+                            if (noise === 0) noise = 2; // Default to green noise if none
+                            task.cells[dStr] = { noise, shift };
+                            cell.style.backgroundColor = noise === 3 ? "#f87171" : (noise === 1 ? "#fcd34d" : "#22c55e");
+                            updateCellTriangleDOM(cell, shift);
+                        } else if (currentGanttBrush === 'black') {
+                            shift = 'night';
+                            if (noise === 0) noise = 2; // Default to green noise if none
+                            task.cells[dStr] = { noise, shift };
+                            cell.style.backgroundColor = noise === 3 ? "#f87171" : (noise === 1 ? "#fcd34d" : "#22c55e");
+                            updateCellTriangleDOM(cell, shift);
                         } else {
                             // Eraser
                             delete task.cells[dStr];
                             cell.style.backgroundColor = "";
+                            updateCellTriangleDOM(cell, null);
                         }
                     };
 
@@ -13103,6 +13182,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const brushRed = document.getElementById("brush-red");
     const brushYellow = document.getElementById("brush-yellow");
     const brushGreen = document.getElementById("brush-green");
+    const brushOrange = document.getElementById("brush-orange");
+    const brushBlack = document.getElementById("brush-black");
     const brushEraser = document.getElementById("brush-eraser");
 
     // Dynamic Row Actions Helpers
@@ -13192,18 +13273,22 @@ document.addEventListener("DOMContentLoaded", () => {
     // Brush Toggles
     const updateBrushUI = (activeBrush) => {
         currentGanttBrush = activeBrush;
-        [brushRed, brushYellow, brushGreen, brushEraser].forEach(btn => {
+        [brushRed, brushYellow, brushGreen, brushOrange, brushBlack, brushEraser].forEach(btn => {
             if (btn) btn.style.opacity = "0.6";
         });
         if (activeBrush === 'red' && brushRed) brushRed.style.opacity = "1";
         if (activeBrush === 'yellow' && brushYellow) brushYellow.style.opacity = "1";
         if (activeBrush === 'green' && brushGreen) brushGreen.style.opacity = "1";
+        if (activeBrush === 'orange' && brushOrange) brushOrange.style.opacity = "1";
+        if (activeBrush === 'black' && brushBlack) brushBlack.style.opacity = "1";
         if (activeBrush === 'eraser' && brushEraser) brushEraser.style.opacity = "1";
     };
 
     if (brushRed) brushRed.addEventListener("click", () => updateBrushUI('red'));
     if (brushYellow) brushYellow.addEventListener("click", () => updateBrushUI('yellow'));
     if (brushGreen) brushGreen.addEventListener("click", () => updateBrushUI('green'));
+    if (brushOrange) brushOrange.addEventListener("click", () => updateBrushUI('orange'));
+    if (brushBlack) brushBlack.addEventListener("click", () => updateBrushUI('black'));
     if (brushEraser) brushEraser.addEventListener("click", () => updateBrushUI('eraser'));
     updateBrushUI('red');
 
@@ -13338,11 +13423,30 @@ document.addEventListener("DOMContentLoaded", () => {
                     dateList.forEach(d => {
                         const dStr = formatDateLocal(d);
                         const val = task.cells ? (task.cells[dStr] || 0) : 0;
+                        let noise = 0;
+                        let shift = null;
+                        if (val) {
+                            if (typeof val === 'object') {
+                                noise = val.noise || 0;
+                                shift = val.shift || null;
+                            } else {
+                                noise = parseInt(val) || 0;
+                            }
+                        }
+
                         let cellBg = "";
-                        if (val === 1) cellBg = "class='cell-yellow'";
-                        else if (val === 2) cellBg = "class='cell-green'";
-                        else if (val === 3) cellBg = "class='cell-red'";
-                        gridCellsHtml += `<td ${cellBg} style="border: 1px solid #94a3b8; width: 18px; min-width: 18px; max-width: 18px; height: 28px;"></td>`;
+                        if (noise === 1) cellBg = "class='cell-yellow'";
+                        else if (noise === 2) cellBg = "class='cell-green'";
+                        else if (noise === 3) cellBg = "class='cell-red'";
+
+                        let triangleHtml = "";
+                        if (shift === 'day') {
+                            triangleHtml = `<div style="position: absolute; top: 0; left: 0; width: 0; height: 0; border-top: 8px solid #f97316 !important; border-right: 8px solid transparent !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; pointer-events: none;"></div>`;
+                        } else if (shift === 'night') {
+                            triangleHtml = `<div style="position: absolute; top: 0; left: 0; width: 0; height: 0; border-top: 8px solid #000000 !important; border-right: 8px solid transparent !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; pointer-events: none;"></div>`;
+                        }
+
+                        gridCellsHtml += `<td ${cellBg} style="position: relative; border: 1px solid #94a3b8; width: 18px; min-width: 18px; max-width: 18px; height: 28px;">${triangleHtml}</td>`;
                     });
 
                     rowsHtml += `
@@ -14557,11 +14661,30 @@ document.addEventListener("DOMContentLoaded", () => {
                                 dateList.forEach(d => {
                                     const dStr = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
                                     const val = task.cells ? (task.cells[dStr] || 0) : 0;
+                                    let noise = 0;
+                                    let shift = null;
+                                    if (val) {
+                                        if (typeof val === 'object') {
+                                            noise = val.noise || 0;
+                                            shift = val.shift || null;
+                                        } else {
+                                            noise = parseInt(val) || 0;
+                                        }
+                                    }
+
                                     let cellBg = "";
-                                    if (val === 1) cellBg = "background-color: #fcd34d !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;";
-                                    else if (val === 2) cellBg = "background-color: #22c55e !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;";
-                                    else if (val === 3) cellBg = "background-color: #f87171 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;";
-                                    gridCellsHtml += `<td style="border: 1px solid #cbd5e1; width: 18px; ${cellBg}"></td>`;
+                                    if (noise === 1) cellBg = "background-color: #fcd34d !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;";
+                                    else if (noise === 2) cellBg = "background-color: #22c55e !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;";
+                                    else if (noise === 3) cellBg = "background-color: #f87171 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;";
+                                    
+                                    let triangleHtml = "";
+                                    if (shift === 'day') {
+                                        triangleHtml = `<div style="position: absolute; top: 0; left: 0; width: 0; height: 0; border-top: 8px solid #f97316 !important; border-right: 8px solid transparent !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; pointer-events: none;"></div>`;
+                                    } else if (shift === 'night') {
+                                        triangleHtml = `<div style="position: absolute; top: 0; left: 0; width: 0; height: 0; border-top: 8px solid #000000 !important; border-right: 8px solid transparent !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; pointer-events: none;"></div>`;
+                                    }
+
+                                    gridCellsHtml += `<td style="position: relative; border: 1px solid #cbd5e1; width: 18px; ${cellBg}">${triangleHtml}</td>`;
                                 });
 
                                 rowsHtml += `
