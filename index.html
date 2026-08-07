@@ -6834,20 +6834,6 @@ function switchView(viewName) {
         appState.selectedDetailProject = "all";
         appState.showCumulativeOverview = (viewName === "dashboard");
         sessionStorage.setItem("technical_water_last_detail_project", "all");
-        
-        if (viewName === "cost") {
-            // Reset selected cost project and default main tab to overview
-            appState.selectedCostProject = "all";
-            sessionStorage.setItem("technical_water_last_cost_project", "all");
-            
-            setTimeout(() => {
-                const costSelector = document.getElementById("cost-project-selector");
-                if (costSelector) costSelector.value = "all";
-                if (typeof switchCostMainTab === "function") {
-                    switchCostMainTab("overview");
-                }
-            }, 0);
-        }
     } else if (viewName === "projects-list" || viewName === "quoting-projects-list") {
         appState.showCumulativeOverview = false;
     }
@@ -10900,6 +10886,16 @@ document.addEventListener("DOMContentLoaded", () => {
         item.addEventListener("click", function(e) {
             e.preventDefault();
             const viewName = this.getAttribute("data-view");
+            
+            if (viewName === "cost") {
+                appState.selectedCostProject = "all";
+                sessionStorage.setItem("technical_water_last_cost_project", "all");
+                const costSelector = document.getElementById("cost-project-selector");
+                if (costSelector) costSelector.value = "all";
+                if (typeof switchCostMainTab === "function") {
+                    switchCostMainTab("overview");
+                }
+            }
             
             // If clicking on the currently active tab (e.g. quoting-projects-list or projects-list), collapse and return to dashboard
             if (appState.currentView === viewName && (viewName === "quoting-projects-list" || viewName === "projects-list")) {
