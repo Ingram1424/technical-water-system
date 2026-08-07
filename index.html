@@ -16962,18 +16962,82 @@ function renderPermissionsManagement() {
     }
 
     document.addEventListener("click", function(e) {
-        const btn = e.target.closest(".btn-acknowledge");
-        if (!btn) return;
-        e.stopPropagation();
-        const notifId = btn.getAttribute("data-notif-id");
-        const item = btn.closest(".notif-item");
-        if (item) {
-            item.classList.remove("unread");
-            item.style.opacity = "0.5";
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-check-double mr-1"></i>รับทราบแล้ว';
-            markAcknowledged(notifId);
-            updateBellBadge();
+        // 1. Acknowledge button click
+        const btnAck = e.target.closest(".btn-acknowledge");
+        if (btnAck) {
+            e.stopPropagation();
+            const notifId = btnAck.getAttribute("data-notif-id");
+            const item = btnAck.closest(".notif-item");
+            if (item) {
+                item.classList.remove("unread");
+                item.style.opacity = "0.5";
+                btnAck.disabled = true;
+                btnAck.innerHTML = '<i class="fa-solid fa-check-double mr-1"></i>รับทราบแล้ว';
+                markAcknowledged(notifId);
+                updateBellBadge();
+            }
+            return;
+        }
+
+        // 2. View details button click inside notification dropdown
+        const btnDetail = e.target.closest(".btn-view-detail") || (e.target.closest("button") && e.target.closest("button").textContent.includes("ดูรายละเอียด"));
+        if (btnDetail) {
+            e.stopPropagation();
+            e.preventDefault();
+            
+            // Extract project code (e.g. "PO-1111" from "ขออนุมัติเปิดงบ: [PO-1111] ซื้อคอม")
+            let projectCode = btnDetail.getAttribute("data-project-code") || btnDetail.getAttribute("data-code");
+            if (!projectCode) {
+                const notifItem = btnDetail.closest(".notif-item");
+                if (notifItem) {
+                    const text = notifItem.innerText || notifItem.textContent;
+                    const match = text.match(/\[([A-Z0-9-]+)\]/i);
+                    if (match && match[1]) {
+                        projectCode = match[1];
+                    }
+                }
+            }
+            
+            if (projectCode) {
+                let matchedCode = null;
+                const searchCode = projectCode.trim().toLowerCase();
+                for (const key in projectsData) {
+                    if (key.toLowerCase() === searchCode) {
+                        matchedCode = key;
+                        break;
+                    }
+                }
+                
+                if (matchedCode) {
+                    // Close the notification dropdown
+                    const notifDropdown = document.getElementById("notification-dropdown");
+                    if (notifDropdown) notifDropdown.classList.remove("active");
+                    
+                    // Set selected project
+                    appState.selectedDetailProject = matchedCode;
+                    sessionStorage.setItem("technical_water_last_detail_project", matchedCode);
+                    
+                    // Sync dropdown selector
+                    const projSelector = document.getElementById("subnav-project-selector");
+                    if (projSelector) projSelector.value = matchedCode;
+                    
+                    // Go to projects-list view
+                    if (typeof switchView === "function") {
+                        switchView("projects-list");
+                    }
+                    
+                    // Render details workspace
+                    if (typeof renderSubnavProjectWorkspace === "function") {
+                        renderSubnavProjectWorkspace();
+                    }
+                    
+                    showToast(`📂 เปิดรายละเอียดโครงการ ${matchedCode} สำเร็จ`, "success");
+                } else {
+                    showToast(`ไม่พบรหัสโครงการ ${projectCode} ในฐานข้อมูล`, "warning");
+                }
+            } else {
+                showToast("ไม่พบข้อมูลโครงการสำหรับการแจ้งเตือนนี้", "warning");
+            }
         }
     });
 
