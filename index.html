@@ -8157,13 +8157,24 @@ function renderSCurveChart(project) {
                     },
                     y: {
                         beginAtZero: true,
-                        max: 100,
+                        max: 115,
                         grace: 0,
                         border: { display: false },
+                        grid: {
+                            color: function(context) {
+                                if (context.tick && context.tick.value > 100) {
+                                    return 'transparent';
+                                }
+                                return 'rgba(0, 0, 0, 0.05)';
+                            }
+                        },
                         ticks: {
                             stepSize: 20,
                             font: { family: "Prompt", size: 11, weight: "600" },
-                            callback: function(value) { return value + "%"; }
+                            callback: function(value) { 
+                                if (value > 100) return "";
+                                return value + "%"; 
+                            }
                         }
                     }
                 }
