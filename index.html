@@ -1128,6 +1128,18 @@ select.form-control {
     border: 1px solid rgba(245, 158, 11, 0.2);
 }
 
+.badge-status.danger {
+    background-color: rgba(220, 38, 38, 0.08);
+    color: #dc2626;
+    border: 1px solid rgba(220, 38, 38, 0.2);
+}
+
+.badge-status.info {
+    background-color: rgba(59, 130, 246, 0.08);
+    color: #2563eb;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
 .percent-display-row {
     display: flex;
     align-items: center;
@@ -4006,6 +4018,38 @@ body.public-view-mode #public-view-header {
                                 </tbody>
                             </table>
                         </div>
+
+                        <div class="section-header" style="margin-top: 24px; margin-bottom: 16px; border-bottom: 2px solid var(--border-color); padding-bottom: 14px;">
+                            <div class="section-title-wrapper">
+                                <div>
+                                    <h2 class="section-title"><i class="fa-solid fa-paper-plane" style="color: #0f52ba;"></i> คำขออนุมัติเบิกจ่ายเงินโครงการ</h2>
+                                    <p class="section-subtitle">รายการเบิกจ่ายงบประมาณโครงการที่ PM ส่งเข้ามาเพื่อขออนุมัติจากบัญชี</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div style="overflow-x: auto;">
+                            <table class="transaction-table" id="disbursement-pending-table" style="min-width: 960px; width: 100%;">
+                                <thead>
+                                    <tr style="background: linear-gradient(135deg, #e0f2fe, #bae6fd);">
+                                        <th style="color: #0369a1; font-size: 12px; white-space: nowrap;">วันที่ขอเบิก</th>
+                                        <th style="color: #0369a1; font-size: 12px;">โครงการ</th>
+                                        <th style="color: #0369a1; font-size: 12px;">รายการค่าใช้จ่าย</th>
+                                        <th style="color: #0369a1; font-size: 12px;">ประเภท</th>
+                                        <th style="color: #0369a1; font-size: 12px;">เอกสารอ้างอิง</th>
+                                        <th style="color: #0369a1; font-size: 12px; text-align: right;">จำนวนเงิน</th>
+                                        <th style="text-align: center; color: #0369a1; font-size: 12px; width: 160px;">จัดการ</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="disbursement-pending-tbody">
+                                    <tr id="disbursement-empty-row">
+                                        <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 32px; font-style: italic;">
+                                            <i class="fa-solid fa-inbox" style="font-size: 24px; display: block; margin-bottom: 8px; opacity: 0.4;"></i>
+                                            ยังไม่มีรายการขอเบิกจ่ายรออนุมัติ
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </section>
                 </div>
             </div>
@@ -4680,9 +4724,14 @@ body.public-view-mode #public-view-header {
                                 <div class="expenses-list-panel">
                                     <div class="d-flex justify-content-between align-items-center mb-3">
                                         <h4 class="panel-subtitle-thai mb-0">รายการเบิกจ่ายต้นทุนของโครงการ</h4>
-                                        <button class="btn btn-sm btn-outline-blue hide-accounting" id="subtab-open-expense-modal-btn">
-                                            <i class="fa-solid fa-plus"></i> บันทึกรายจ่าย
-                                        </button>
+                                        <div style="display: flex; gap: 8px;">
+                                            <button class="btn btn-sm btn-outline-blue hide-accounting" id="subtab-open-expense-modal-btn" style="font-family: 'Prompt'; font-size: 11px;">
+                                                <i class="fa-solid fa-plus"></i> บันทึกจ่ายตรง
+                                            </button>
+                                            <button class="btn btn-sm btn-primary hide-accounting" id="subtab-open-drawdown-modal-btn" style="font-family: 'Prompt'; font-size: 11px; background: linear-gradient(135deg, var(--primary-blue), var(--primary-blue-light)); border: none; box-shadow: var(--shadow-sm);">
+                                                <i class="fa-solid fa-paper-plane"></i> ขอเบิกงบโครงการ
+                                            </button>
+                                        </div>
                                     </div>
                                     <div class="table-container shadow-sm border-rounded-md" style="max-height: 400px; overflow-y: auto;">
                                         <table class="doc-table">
@@ -4691,6 +4740,7 @@ body.public-view-mode #public-view-header {
                                                     <th>วันที่ทำรายการ</th>
                                                     <th>รายการค่าใช้จ่าย</th>
                                                     <th>ประเภท</th>
+                                                    <th>สถานะ</th>
                                                     <th class="text-right">จำนวนเงิน</th>
                                                     <th class="text-center hide-accounting" style="width: 130px;">จัดการ</th>
                                                 </tr>
@@ -8980,7 +9030,7 @@ function renderSubnavCostTab(project) {
     if (tableBody) {
         tableBody.innerHTML = "";
         const isPM = (appState.currentRole === "pm" || appState.currentRole === "admin");
-        const colCount = isPM ? 5 : 4;
+        const colCount = isPM ? 6 : 5;
         if (!project.expenses || project.expenses.length === 0) {
             tableBody.innerHTML = `<tr><td colspan="${colCount}" class="text-center text-muted py-4">ไม่มีข้อมูลธุรกรรมรายจ่าย</td></tr>`;
             return;
@@ -8988,6 +9038,22 @@ function renderSubnavCostTab(project) {
         project.expenses.forEach((e, idx) => {
             const tr = document.createElement("tr");
             
+            const status = e.status || "จ่ายตรง";
+            let badgeClass = "info";
+            let statusText = "จ่ายตรง";
+            if (status === "รออนุมัติ") {
+                badgeClass = "warning";
+                statusText = "รออนุมัติ";
+            } else if (status === "อนุมัติแล้ว") {
+                badgeClass = "success";
+                statusText = "อนุมัติแล้ว";
+            } else if (status === "ปฏิเสธ") {
+                badgeClass = "danger";
+                statusText = `ปฏิเสธ ${e.rejectReason ? '(' + e.rejectReason + ')' : ''}`;
+            }
+
+            const statusHTML = `<span class="badge-status ${badgeClass}" title="${statusText}">${statusText}</span>`;
+
             const actionsHTML = `
                 <td class="text-center hide-accounting">
                     <div style="display: flex; gap: 6px; justify-content: center; align-items: center;">
@@ -9009,6 +9075,7 @@ function renderSubnavCostTab(project) {
                 <td>${e.date}</td>
                 <td><strong>${e.title}</strong></td>
                 <td><span class="badge-status ${e.type === "ค่าแรง" ? "success" : "warning"}">${e.type}</span></td>
+                <td>${statusHTML}</td>
                 <td class="text-right text-navy font-semibold">${formatNumber(e.amount)} บาท</td>
                 ${actionsHTML}
             `;
@@ -10531,6 +10598,11 @@ function renderCostManagement() {
 
     // C. Render Cost Donut Chart
     renderCostStructureDonutChart(project.costStructure);
+    
+    // Render pending disbursements
+    if (typeof renderDisbursementPendingTable === "function") {
+        renderDisbursementPendingTable();
+    }
 }
 
 function renderCostStructureDonutChart(structure) {
@@ -10631,6 +10703,7 @@ function recalculateCostStructure(project) {
     let otherSum = 0;
     
     project.expenses.forEach(e => {
+        if (e.status === "รออนุมัติ" || e.status === "ปฏิเสธ") return; // Skip pending/rejected requests
         if (e.type === "ค่าแรง") laborSum += e.amount;
         else if (e.type === "ค่าวัสดุ") materialSum += e.amount;
         else otherSum += e.amount;
@@ -11604,6 +11677,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 11. MODAL: Add/Edit Expense
     let editingExpenseIndex = -1;
+    let isDrawdownRequest = false;
     const expenseModal = document.getElementById("expense-modal");
     const openExpenseBtn = document.getElementById("open-expense-modal-btn");
     const closeExpenseBtn = document.getElementById("close-expense-modal");
@@ -11624,18 +11698,30 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (editIdx === -1) {
-            if (modalTitle) modalTitle.innerHTML = `<i class="fa-solid fa-receipt"></i> บันทึกค่าใช้จ่ายใหม่`;
-            if (submitBtn) submitBtn.textContent = "บันทึกรายการ";
+            if (isDrawdownRequest) {
+                if (modalTitle) modalTitle.innerHTML = `<i class="fa-solid fa-paper-plane"></i> ขอเบิกงบโครงการใหม่`;
+                if (submitBtn) submitBtn.textContent = "ส่งคำขอเบิกงบ";
+            } else {
+                if (modalTitle) modalTitle.innerHTML = `<i class="fa-solid fa-receipt"></i> บันทึกค่าใช้จ่ายใหม่`;
+                if (submitBtn) submitBtn.textContent = "บันทึกรายการ";
+            }
             document.getElementById("exp-date").value = new Date().toISOString().substring(0, 10);
             document.getElementById("exp-title").value = "";
             document.getElementById("exp-amount").value = "";
             document.getElementById("exp-type").value = "ค่าแรง";
         } else {
-            if (modalTitle) modalTitle.innerHTML = `<i class="fa-solid fa-pen-to-square"></i> แก้ไขข้อมูลรายจ่าย`;
-            if (submitBtn) submitBtn.textContent = "บันทึกการแก้ไข";
-            
             const exp = project.expenses[editIdx];
             if (!exp) return;
+
+            isDrawdownRequest = (exp.status === "รออนุมัติ" || exp.status === "อนุมัติแล้ว" || exp.status === "ปฏิเสธ");
+            
+            if (isDrawdownRequest) {
+                if (modalTitle) modalTitle.innerHTML = `<i class="fa-solid fa-pen-to-square"></i> แก้ไขข้อมูลคำขอเบิกงบ`;
+                if (submitBtn) submitBtn.textContent = "บันทึกการแก้ไขคำขอ";
+            } else {
+                if (modalTitle) modalTitle.innerHTML = `<i class="fa-solid fa-pen-to-square"></i> แก้ไขข้อมูลรายจ่าย`;
+                if (submitBtn) submitBtn.textContent = "บันทึกการแก้ไข";
+            }
             
             document.getElementById("exp-date").value = exp.date;
             document.getElementById("exp-title").value = exp.title || "";
@@ -11649,11 +11735,23 @@ document.addEventListener("DOMContentLoaded", () => {
         expenseModal.classList.remove("active");
     };
 
-    if (openExpenseBtn) openExpenseBtn.addEventListener("click", () => window.openExpenseModal(-1));
+    if (openExpenseBtn) openExpenseBtn.addEventListener("click", () => {
+        isDrawdownRequest = false;
+        window.openExpenseModal(-1);
+    });
     const subtabOpenExpenseBtn = document.getElementById("subtab-open-expense-modal-btn");
     if (subtabOpenExpenseBtn) {
         subtabOpenExpenseBtn.addEventListener("click", () => {
             updateSelectedCostProject(appState.selectedDetailProject);
+            isDrawdownRequest = false;
+            window.openExpenseModal(-1);
+        });
+    }
+    const subtabOpenDrawdownBtn = document.getElementById("subtab-open-drawdown-modal-btn");
+    if (subtabOpenDrawdownBtn) {
+        subtabOpenDrawdownBtn.addEventListener("click", () => {
+            updateSelectedCostProject(appState.selectedDetailProject);
+            isDrawdownRequest = true;
             window.openExpenseModal(-1);
         });
     }
@@ -11689,12 +11787,18 @@ document.addEventListener("DOMContentLoaded", () => {
                     file = oldExp.file || "";
                     fileUrl = oldExp.fileUrl || "";
                 }
-                project.expenses[editingExpenseIndex] = { date, title, type, amount, file, fileUrl };
-                showToast(`แก้ไขรายการจ่าย: ${title} สำเร็จ!`, "success");
+                const status = oldExp.status || (isDrawdownRequest ? "รออนุมัติ" : "จ่ายตรง");
+                project.expenses[editingExpenseIndex] = { date, title, type, amount, file, fileUrl, status, rejectReason: oldExp.rejectReason || "" };
+                showToast(`แก้ไขรายการ: ${title} สำเร็จ!`, "success");
             } else {
                 // Add new expense
-                project.expenses.unshift({ date, title, type, amount, file, fileUrl });
-                showToast(`บันทึกรายการจ่าย: ${title} จำนวน ${formatNumber(amount)} บาท สำเร็จ!`, "success");
+                const status = isDrawdownRequest ? "รออนุมัติ" : "จ่ายตรง";
+                project.expenses.unshift({ date, title, type, amount, file, fileUrl, status, rejectReason: "" });
+                if (isDrawdownRequest) {
+                    showToast(`ส่งคำขอเบิกงบ: ${title} จำนวน ${formatNumber(amount)} บาท เรียบร้อยแล้ว!`, "success");
+                } else {
+                    showToast(`บันทึกรายการจ่าย: ${title} จำนวน ${formatNumber(amount)} บาท สำเร็จ!`, "success");
+                }
             }
             
             recalculateCostStructure(project);
@@ -16591,6 +16695,161 @@ function renderPermissionsManagement() {
         });
     }
 
+    // ── Render Disbursement Pending table ───────────────────────
+    window.renderDisbursementPendingTable = function() {
+        const tbody = document.getElementById("disbursement-pending-tbody");
+        if (!tbody) return;
+        
+        tbody.querySelectorAll("tr.disbursement-data-row").forEach(r => r.remove());
+        
+        const pendingList = [];
+        Object.keys(projectsData).forEach(code => {
+            const p = projectsData[code];
+            if (p.expenses) {
+                p.expenses.forEach((e, idx) => {
+                    if (e.status === "รออนุมัติ") {
+                        pendingList.push({ projectCode: code, projectName: p.name, expense: e, expenseIdx: idx });
+                    }
+                });
+            }
+        });
+
+        const emptyRow = document.getElementById("disbursement-empty-row");
+        if (pendingList.length === 0) {
+            if (emptyRow) emptyRow.style.display = "";
+            return;
+        }
+        if (emptyRow) emptyRow.style.display = "none";
+
+        pendingList.forEach((item, idx) => {
+            const tr = document.createElement("tr");
+            tr.className = "disbursement-data-row";
+            tr.style.cssText = "border-bottom: 1px solid var(--border-color);";
+
+            const fileHTML = item.expense.file ? 
+                `<a href="#" class="btn-expense-view-pdf" data-url="${item.expense.fileUrl || ''}" data-file="${item.expense.file}" title="ดูเอกสาร: ${item.expense.file}" style="color: var(--primary-blue); font-size: 14px; cursor: pointer; text-decoration: none;"><i class="fa-solid fa-file-invoice-dollar"></i> ${item.expense.file}</a>` :
+                `<span class="text-muted" style="font-size: 11px;">ไม่มีเอกสารแนบ</span>`;
+
+            tr.innerHTML = `
+                <td style="font-size:12px; font-weight:700; color:#0f52ba;">${item.expense.date}</td>
+                <td style="font-size:12px;"><strong>[${item.projectCode}]</strong> ${item.projectName}</td>
+                <td style="font-size:12px;">${item.expense.title}</td>
+                <td style="font-size:12px;"><span class="badge-status ${item.expense.type === "ค่าแรง" ? "success" : "warning"}">${item.expense.type}</span></td>
+                <td style="font-size:12px;">${fileHTML}</td>
+                <td style="font-size:12px; font-weight:600; color:var(--primary-blue); text-align:right;">${formatNumber(item.expense.amount)} บาท</td>
+                <td style="text-align:center;">
+                    <div style="display: flex; gap: 6px; justify-content: center; align-items: center; padding: 4px;">
+                        <button class="btn btn-sm" onclick="approveDisbursement('${item.projectCode}', ${item.expenseIdx})" style="font-size:10px; padding:4px 10px; background:#e6f4ea; color:#137333; border:1px solid #137333; border-radius:4px; cursor:pointer; font-family:'Prompt'; font-weight:bold;"><i class="fa-solid fa-check"></i> อนุมัติ</button>
+                        <button class="btn btn-sm" onclick="rejectDisbursement('${item.projectCode}', ${item.expenseIdx})" style="font-size:10px; padding:4px 10px; background:#fce8e6; color:#c5221f; border:1px solid #c5221f; border-radius:4px; cursor:pointer; font-family:'Prompt'; font-weight:bold;"><i class="fa-solid fa-xmark"></i> ปฏิเสธ</button>
+                    </div>
+                </td>`;
+            tbody.appendChild(tr);
+        });
+
+        tbody.querySelectorAll(".btn-expense-view-pdf").forEach(btn => {
+            btn.addEventListener("click", function(e) {
+                e.preventDefault();
+                const fileUrl = this.getAttribute("data-url");
+                const fileName = this.getAttribute("data-file");
+                if (window.openPdfInNewTab) {
+                    window.openPdfInNewTab(fileUrl, fileName);
+                }
+            });
+        });
+    };
+
+    window.approveDisbursement = function(projCode, expIdx) {
+        const proj = projectsData[projCode];
+        if (!proj || !proj.expenses || !proj.expenses[expIdx]) return;
+
+        if (confirm(`คุณต้องการอนุมัติการเบิกจ่ายงบประมาณ "${proj.expenses[expIdx].title}" จำนวน ${formatNumber(proj.expenses[expIdx].amount)} บาท ใช่หรือไม่?`)) {
+            proj.expenses[expIdx].status = "อนุมัติแล้ว";
+            
+            recalculateCostStructure(proj);
+            saveToLocalStorage();
+            
+            window.renderDisbursementPendingTable();
+            if (appState.selectedDetailProject === projCode) {
+                renderSubnavProjectWorkspace();
+            }
+            renderCostManagement();
+            renderOverallDashboard();
+            updateBellBadge();
+            
+            showToast("อนุมัติการเบิกจ่ายงบประมาณเรียบร้อยแล้ว", "success");
+        }
+    };
+
+    window.rejectDisbursement = function(projCode, expIdx) {
+        const proj = projectsData[projCode];
+        if (!proj || !proj.expenses || !proj.expenses[expIdx]) return;
+
+        const reason = prompt("กรุณาระบุเหตุผลในการปฏิเสธคำขอเบิกเงิน:", "");
+        if (reason === null) return;
+
+        const finalReason = reason.trim() || "ไม่ผ่านการอนุมัติโดยบัญชี";
+        proj.expenses[expIdx].status = "ปฏิเสธ";
+        proj.expenses[expIdx].rejectReason = finalReason;
+        
+        recalculateCostStructure(proj);
+        saveToLocalStorage();
+        
+        window.renderDisbursementPendingTable();
+        if (appState.selectedDetailProject === projCode) {
+            renderSubnavProjectWorkspace();
+        }
+        renderCostManagement();
+        renderOverallDashboard();
+        updateBellBadge();
+        
+        showToast(`ปฏิเสธคำขอเบิกจ่ายเรียบร้อยแล้ว (เหตุผล: ${finalReason})`, "warning");
+    };
+
+    function updateDisbursementNotifications() {
+        const body = document.getElementById("notif-dropdown-body");
+        if (!body) return;
+
+        body.querySelectorAll(".disbursement-notif-item").forEach(el => el.remove());
+
+        Object.keys(projectsData).forEach(code => {
+            const p = projectsData[code];
+            if (p.expenses) {
+                p.expenses.forEach((e, idx) => {
+                    if (e.status === "รออนุมัติ") {
+                        const div = document.createElement("div");
+                        div.className = "notif-item unread disbursement-notif-item";
+                        div.setAttribute("data-notif-type", "approval");
+                        
+                        const notifId = `drawdown-${code}-${idx}`;
+                        
+                        div.innerHTML = `
+                            <div class="notif-icon cost" style="background: rgba(15, 82, 186, 0.1); color: #0f52ba;"><i class="fa-solid fa-paper-plane"></i></div>
+                            <div class="notif-content">
+                                <p class="notif-text">ขออนุมัติเบิกงบ: <strong>[${code}] ${e.title}</strong> (${formatNumber(e.amount)} บาท)</p>
+                                <span class="notif-time">${e.date}</span>
+                                <button class="btn-acknowledge" onclick="acknowledgeDisbursementNotif('${notifId}', '${code}')" style="font-family:'Prompt';"><i class="fa-solid fa-arrow-right mr-1"></i>ดูรายละเอียด</button>
+                            </div>
+                        `;
+                        body.insertBefore(div, body.firstChild);
+                    }
+                });
+            }
+        });
+    }
+
+    window.acknowledgeDisbursementNotif = function(notifId, projectCode) {
+        updateSelectedCostProject(projectCode);
+        
+        const tabBtn = document.querySelector(".cost-tab-btn[data-cost-tab='approval-pending']");
+        if (tabBtn) tabBtn.click();
+        
+        const costTab = document.querySelector(".nav-item[data-tab='cost-management']");
+        if (costTab) costTab.click();
+
+        const dropdown = document.getElementById("notification-dropdown");
+        if (dropdown) dropdown.classList.remove("active");
+    };
+
     // ── Modal HTML factory ────────────────────────────────────
     function buildRowModal(title, accentColor, fields, onSave) {
         const existing = document.getElementById("dynamic-row-modal");
@@ -16721,6 +16980,11 @@ function renderPermissionsManagement() {
     function updateBellBadge() {
         const badge = document.getElementById("bell-badge-count");
         if (!badge) return;
+        
+        if (typeof updateDisbursementNotifications === "function") {
+            updateDisbursementNotifications();
+        }
+
         const unread = document.querySelectorAll(".notif-item.unread:not([style*='opacity: 0.5'])");
         const count = unread.length;
         badge.textContent = count;
@@ -16745,6 +17009,9 @@ function renderPermissionsManagement() {
     // Initial render when DOM is ready
     renderPOTable();
     renderApprovalTable();
+    if (window.renderDisbursementPendingTable) {
+        window.renderDisbursementPendingTable();
+    }
     // Apply acknowledged state from storage
     const ack = getAcknowledged();
     ack.forEach(id => {
