@@ -8558,6 +8558,7 @@ function renderSubnavActualProgress(project) {
  
             // Calculate sum for both plan and actual progress
             let currentTotal = 0;
+            const isPlanMode = currentScurveMode === 'plan';
             const vals = isPlanMode ? item.plan : item.actual;
             vals.forEach(v => currentTotal += (parseFloat(v) || 0));
             item.totalPercent = parseFloat(currentTotal.toFixed(1));
