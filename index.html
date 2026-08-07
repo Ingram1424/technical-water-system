@@ -355,6 +355,15 @@ body:not(.public-view-mode) .main-header {
 .btn-acknowledge:hover { opacity: 0.85; }
 .btn-acknowledge:disabled { background: #9ca3af; cursor: default; }
 
+.btn-drawdown-detail {
+    display: inline-flex; align-items: center; gap: 4px;
+    margin-top: 6px; padding: 4px 10px; border-radius: 4px;
+    font-size: 10.5px; font-weight: 700; font-family: 'Prompt', sans-serif;
+    background: linear-gradient(135deg, var(--primary-blue), var(--primary-blue-light));
+    color: #fff; border: none; cursor: pointer; transition: opacity 0.15s;
+}
+.btn-drawdown-detail:hover { opacity: 0.85; }
+
 .notification-dropdown {
     position: absolute;
     top: calc(100% + 8px);
@@ -16771,7 +16780,7 @@ function renderPermissionsManagement() {
                             <div class="notif-content">
                                 <p class="notif-text">ขออนุมัติเบิกงบ: <strong>[${code}] ${e.title}</strong> (${formatNumber(e.amount)} บาท)</p>
                                 <span class="notif-time">${e.date}</span>
-                                <button class="btn-acknowledge" onclick="acknowledgeDisbursementNotif('${notifId}', '${code}')" style="font-family:'Prompt';"><i class="fa-solid fa-arrow-right mr-1"></i>ดูรายละเอียด</button>
+                                <button class="btn-drawdown-detail" onclick="acknowledgeDisbursementNotif('${notifId}', '${code}')"><i class="fa-solid fa-arrow-right mr-1"></i>ตรวจสอบคำขอ</button>
                             </div>
                         `;
                         body.insertBefore(div, body.firstChild);
@@ -16782,14 +16791,27 @@ function renderPermissionsManagement() {
     }
 
     window.acknowledgeDisbursementNotif = function(notifId, projectCode) {
+        // Set selected cost project
         updateSelectedCostProject(projectCode);
         
-        const tabBtn = document.querySelector(".cost-tab-btn[data-cost-tab='approval-pending']");
-        if (tabBtn) tabBtn.click();
+        // Update cost-project-selector dropdown value
+        const costSelector = document.getElementById("cost-project-selector");
+        if (costSelector) {
+            costSelector.value = projectCode;
+        }
         
-        const costTab = document.querySelector(".nav-item[data-tab='cost-management']");
-        if (costTab) costTab.click();
+        // Navigate to the Cost view
+        if (typeof switchView === "function") {
+            switchView("cost");
+        }
+        
+        // Open the pending approvals tab in Cost Management
+        const tabBtn = document.querySelector(".cost-tab-btn[data-cost-tab='approval-pending']");
+        if (tabBtn) {
+            tabBtn.click();
+        }
 
+        // Close dropdown
         const dropdown = document.getElementById("notification-dropdown");
         if (dropdown) dropdown.classList.remove("active");
     };
