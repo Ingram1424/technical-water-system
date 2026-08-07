@@ -5791,6 +5791,25 @@ async function syncAllProjectsToSupabase() {
 }
 
 function saveToLocalStorage() {
+    const activeProj = (appState.selectedDetailProject && appState.selectedDetailProject !== "all") ? projectsData[appState.selectedDetailProject] : null;
+    if (activeProj) {
+        calculatePlanScurveFromGantt(activeProj);
+        let totalBudget = 0;
+        if (activeProj.scurveData) {
+            activeProj.scurveData.forEach(item => {
+                if (!item.isSubtask) {
+                    totalBudget += parseFloat(item.budget) || 0;
+                }
+            });
+            activeProj.scurveData.forEach(item => {
+                if (!item.isSubtask) {
+                    item.weight = totalBudget > 0 ? (item.budget / totalBudget) * 100 : 0;
+                } else {
+                    item.weight = 0;
+                }
+            });
+        }
+    }
     try {
         localStorage.setItem("technical_water_projects_data_v2", JSON.stringify(projectsData));
     } catch (e) {
@@ -7749,6 +7768,88 @@ function renderSubnavGeneralInfo(project) {
     
     // Render Yearly Comparison Chart (Planned vs Actual progress across years)
     renderSubnavYearlyComparisonChart(project.customer);
+function calculatePlanScurveFromGantt(proj) {
+    if (!proj || !proj.ganttData || !proj.ganttData.tasks || !proj.ganttData.startDate || !proj.ganttData.endDate) return;
+    if (!proj.scurveData || proj.scurveData.length === 0) return;
+    if (!proj.scurveMonths || proj.scurveMonths.length === 0) return;
+
+    const numWeeks = proj.scurveMonths.length * 4;
+
+    // Calculate dates list from Gantt chart start/end dates
+    const [sy, sm, sd] = proj.ganttData.startDate.split('-').map(Number);
+    const [ey, em, ed] = proj.ganttData.endDate.split('-').map(Number);
+    const start = new Date(sy, sm - 1, sd);
+    const end = new Date(ey, em - 1, ed);
+
+    const dateList = [];
+    let current = new Date(start);
+    let safety = 0;
+    while (current <= end && safety < 1000) {
+        dateList.push(formatDateLocal(current));
+        current.setDate(current.getDate() + 1);
+        safety++;
+    }
+    
+    const totalDays = dateList.length;
+    if (totalDays === 0) return;
+
+    const interval = totalDays / numWeeks;
+
+    // Map each scurveData item to corresponding task in Gantt by name
+    proj.scurveData.forEach(item => {
+        const task = proj.ganttData.tasks.find(t => 
+            t.rowType === 'task' && 
+            t.name && item.name && 
+            t.name.trim().toLowerCase() === item.name.trim().toLowerCase()
+        );
+
+        // Reset plan array to match numWeeks
+        item.plan = new Array(numWeeks).fill(0);
+
+        if (task && task.cells) {
+            // Count total active days
+            let activeDays = 0;
+            dateList.forEach(dStr => {
+                const val = task.cells[dStr];
+                if (val > 0) {
+                    activeDays++;
+                }
+            });
+
+            if (activeDays > 0) {
+                // Distribute progress across weeks
+                dateList.forEach((dStr, dIdx) => {
+                    const val = task.cells[dStr];
+                    if (val > 0) {
+                        let wIdx = Math.floor(dIdx / interval);
+                        if (wIdx >= numWeeks) wIdx = numWeeks - 1;
+                        item.plan[wIdx] += (1 / activeDays) * 100;
+                    }
+                });
+
+                // Round and check sums
+                let sum = 0;
+                for (let w = 0; w < numWeeks; w++) {
+                    item.plan[w] = Math.round(item.plan[w] * 10) / 10;
+                    sum += item.plan[w];
+                }
+                const diff = 100 - sum;
+                if (Math.abs(diff) > 0.01 && Math.abs(diff) < 5) {
+                    // Adjust last active week
+                    let lastActiveW = -1;
+                    for (let w = numWeeks - 1; w >= 0; w--) {
+                        if (item.plan[w] > 0) {
+                            lastActiveW = w;
+                            break;
+                        }
+                    }
+                    if (lastActiveW !== -1) {
+                        item.plan[lastActiveW] = Math.round((item.plan[lastActiveW] + diff) * 10) / 10;
+                    }
+                }
+            }
+        }
+    });
 }
 
 function syncScurveDOMToObject(proj) {
@@ -7790,22 +7891,49 @@ function updateScurveTotals(project) {
     let totalBudget = 0;
     let totalWeight = 0;
     
+    // Calculate total budget first
+    project.scurveData.forEach(item => {
+        if (!item.isSubtask) {
+            totalBudget += parseFloat(item.budget) || 0;
+        }
+    });
+
+    // Calculate and update each item's weight in real-time
+    project.scurveData.forEach((item, idx) => {
+        if (!item.isSubtask) {
+            item.weight = totalBudget > 0 ? (item.budget / totalBudget) * 100 : 0;
+            totalWeight += item.weight;
+        } else {
+            item.weight = 0;
+        }
+        
+        // Update DOM weight field if present
+        const weightInput = document.querySelector(`.scurve-weight[data-idx="${idx}"]`);
+        if (weightInput) {
+            weightInput.value = (item.weight || 0).toFixed(2);
+        }
+    });
+    
     let planWeeklySums = new Array(project.scurveMonths.length * 4).fill(0);
     let actualWeeklySums = new Array(project.scurveMonths.length * 4).fill(0);
 
     let currentParentWeight = 0;
     project.scurveData.forEach(item => {
         if (!item.isSubtask) {
-            totalBudget += parseFloat(item.budget) || 0;
-            totalWeight += parseFloat(item.weight) || 0;
             currentParentWeight = parseFloat(item.weight) || 0;
         }
         
+        let prevAVal = 0;
         for (let i = 0; i < planWeeklySums.length; i++) {
             let pVal = parseFloat(item.plan ? item.plan[i] : 0) || 0;
-            let aVal = parseFloat(item.actual ? item.actual[i] : 0) || 0;
+            
+            // Calculate actual cumulative increment
+            let aValRaw = (item.actual && item.actual[i] !== undefined && item.actual[i] !== null && item.actual[i] !== '') ? (parseFloat(item.actual[i]) || 0) : prevAVal;
+            let aValIncrement = Math.max(0, aValRaw - prevAVal);
+            prevAVal = aValRaw;
+
             planWeeklySums[i] += (currentParentWeight * pVal / 100);
-            actualWeeklySums[i] += (currentParentWeight * aVal / 100);
+            actualWeeklySums[i] += (currentParentWeight * aValIncrement / 100);
         }
     });
 
@@ -7878,13 +8006,20 @@ function renderSCurveChart(project) {
             if (!item.isSubtask) {
                 currentParentWeight = parseFloat(item.weight) || 0;
             }
+            let prevAVal = 0;
             for (let i = 0; i < planWeeklySums.length; i++) {
                 let pVal = parseFloat(item.plan ? item.plan[i] : 0) || 0;
-                let aVal = parseFloat(item.actual ? item.actual[i] : 0) || 0;
-                planWeeklySums[i] += (currentParentWeight * pVal / 100);
-                actualWeeklySums[i] += (currentParentWeight * aVal / 100);
+                
+                // Calculate actual cumulative increment
+                let hasActualData = (item.actual && item.actual[i] !== undefined && item.actual[i] !== null && item.actual[i] !== '');
+                let aValRaw = hasActualData ? (parseFloat(item.actual[i]) || 0) : prevAVal;
+                let aValIncrement = Math.max(0, aValRaw - prevAVal);
+                prevAVal = aValRaw;
 
-                if (aVal > 0 && i > lastActualIndex) {
+                planWeeklySums[i] += (currentParentWeight * pVal / 100);
+                actualWeeklySums[i] += (currentParentWeight * aValIncrement / 100);
+
+                if (hasActualData && i > lastActualIndex) {
                     lastActualIndex = i;
                 }
             }
@@ -8313,6 +8448,24 @@ function renderSubnavActualProgress(project) {
     if (!project.scurveMonths || project.scurveMonths.length === 0) project.scurveMonths = ["Month 1"];
     if (!project.scurveData) project.scurveData = [];
 
+    // Calculate plan S-curve from Gantt chart daily cells
+    calculatePlanScurveFromGantt(project);
+
+    // Calculate budget weights
+    let totalBudget = 0;
+    project.scurveData.forEach(item => {
+        if (!item.isSubtask) {
+            totalBudget += parseFloat(item.budget) || 0;
+        }
+    });
+    project.scurveData.forEach(item => {
+        if (!item.isSubtask) {
+            item.weight = totalBudget > 0 ? (item.budget / totalBudget) * 100 : 0;
+        } else {
+            item.weight = 0;
+        }
+    });
+
     const head = document.getElementById("scurve-table-head");
     const body = document.getElementById("scurve-table-body");
     if (!head || !body) return;
@@ -8384,20 +8537,34 @@ function renderSubnavActualProgress(project) {
                 </td>
                 `}
                 <td style="padding: 6px;">
-                    ${isSub ? '' : `<input type="number" class="scurve-weight" data-idx="${idx}" value="${item.weight || 0}" min="0" max="100" step="0.01" ${readonlyAttr} ${canEdit?editInputStyle:inputStyle} style="font-weight: 600;">`}
+                    ${isSub ? '' : `<input type="number" class="scurve-weight" data-idx="${idx}" value="${(item.weight || 0).toFixed(2)}" readonly style="width: 100%; font-size: 10.5px; text-align: center; padding: 3px 2px; border: 1px solid transparent; background: #f8fafc; font-weight: bold; color: var(--navy-dark);">`}
                 </td>
                 <td style="padding: 6px;">
                     ${isSub ? '' : `<input type="number" class="scurve-total-pct" data-idx="${idx}" value="${item.totalPercent}" readonly style="width: 100%; font-size: 12.5px; text-align: center; padding: 5px 2px; border: 1px solid transparent; background: #f8fafc; font-weight: bold; color: ${item.totalPercent === 100 ? '#10b981' : '#e63946'};">`}
                 </td>
             `;
  
+            // Calculate cumulative total for actual, sum for plan
+            let currentTotal = 0;
+            if (currentScurveMode === 'plan') {
+                item.plan.forEach(v => currentTotal += (parseFloat(v) || 0));
+            } else {
+                let nonZeroActuals = item.actual.map(v => parseFloat(v) || 0);
+                currentTotal = nonZeroActuals.length > 0 ? Math.max(...nonZeroActuals) : 0;
+            }
+            item.totalPercent = currentTotal;
+
+            const isPlanMode = currentScurveMode === 'plan';
+            const isEditableCell = canEdit && !isPlanMode;
+            const cellReadonlyAttr = isEditableCell ? '' : 'readonly';
+
             for (let m = 0; m < project.scurveMonths.length; m++) {
                 for (let w = 0; w < 4; w++) {
                     let wIdx = (m * 4) + w;
-                    let val = currentScurveMode === 'plan' ? item.plan[wIdx] : item.actual[wIdx];
-                    let valStr = val === 0 ? '' : val;
+                    let val = isPlanMode ? item.plan[wIdx] : item.actual[wIdx];
+                    let valStr = val === 0 ? '' : (isPlanMode ? val.toFixed(1) : val);
                     rowHtml += `<td style="padding: 6px; border-left: ${w===0 ? '1px' : '0'} solid var(--border-color); border-right: ${w===3 ? '1px' : '0'} solid var(--border-color);">
-                        <input type="number" class="scurve-cell-val" data-idx="${idx}" data-widx="${wIdx}" value="${valStr}" min="0" max="100" step="1" ${readonlyAttr} ${canEdit?editInputStyle:inputStyle} placeholder="${canEdit?'-':'0'}">
+                        <input type="number" class="scurve-cell-val" data-idx="${idx}" data-widx="${wIdx}" value="${valStr}" min="0" max="100" step="0.1" ${cellReadonlyAttr} ${isEditableCell ? editInputStyle : inputStyle} placeholder="${isEditableCell ? '-' : '0'}">
                     </td>`;
                 }
             }
@@ -8431,14 +8598,22 @@ function renderSubnavActualProgress(project) {
                         const rowIdx = e.target.getAttribute("data-idx");
                         const rowTr = document.querySelector(`tr[data-row-idx="${rowIdx}"]`);
                         if (rowTr) {
-                            let sum = 0;
-                            rowTr.querySelectorAll(".scurve-cell-val").forEach(inp => {
-                                sum += parseFloat(inp.value) || 0;
-                            });
+                            let totalVal = 0;
+                            if (currentScurveMode === 'plan') {
+                                rowTr.querySelectorAll(".scurve-cell-val").forEach(inp => {
+                                    totalVal += parseFloat(inp.value) || 0;
+                                });
+                            } else {
+                                let vals = [];
+                                rowTr.querySelectorAll(".scurve-cell-val").forEach(inp => {
+                                    vals.push(parseFloat(inp.value) || 0);
+                                });
+                                totalVal = vals.length > 0 ? Math.max(...vals) : 0;
+                            }
                             const totalEl = rowTr.querySelector(".scurve-total-pct");
                             if (totalEl) {
-                                totalEl.value = sum;
-                                totalEl.style.color = sum === 100 ? '#10b981' : '#e63946';
+                                totalEl.value = totalVal;
+                                totalEl.style.color = totalVal === 100 ? '#10b981' : '#e63946';
                             }
                         }
                     }
@@ -14472,7 +14647,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                 <td style="padding-left: ${isSub ? '20px' : '8px'}; font-weight: ${isSub ? 'normal' : '600'};">${isSub ? '- ' : ''}${item.name || ''}</td>
                                 ${isCustomer ? '' : `<td style="text-align: center;">${isSub ? '' : formatNumber(item.budget || 0)}</td>`}
                                 <td style="text-align: center;">${isSub ? '' : (item.weight || 0) + '%'}</td>
-                                <td style="text-align: center; font-weight: bold;">${isSub ? '' : (item.actual ? item.actual.reduce((a,b)=>a+(parseFloat(b)||0), 0) : 0) + '%'}</td>
+                                <td style="text-align: center; font-weight: bold;">${isSub ? '' : (item.actual && item.actual.length > 0 ? Math.max(...(item.actual.map(b=>parseFloat(b)||0)), 0) : 0) + '%'}</td>
                                 ${cells}
                             </tr>
                         `;
@@ -14485,9 +14660,13 @@ document.addEventListener("DOMContentLoaded", () => {
                         if (!item.isSubtask) {
                             currentParentWeightValAct = parseFloat(item.weight) || 0;
                         }
+                        let prevAVal = 0;
                         for (let i = 0; i < weeklyActualSums.length; i++) {
-                            let aVal = parseFloat(item.actual ? item.actual[i] : 0) || 0;
-                            weeklyActualSums[i] += (currentParentWeightValAct * aVal / 100);
+                            let aValRaw = (item.actual && item.actual[i] !== undefined && item.actual[i] !== null && item.actual[i] !== '') ? (parseFloat(item.actual[i]) || 0) : prevAVal;
+                            let aValIncrement = Math.max(0, aValRaw - prevAVal);
+                            prevAVal = aValRaw;
+
+                            weeklyActualSums[i] += (currentParentWeightValAct * aValIncrement / 100);
                         }
                     });
                     
