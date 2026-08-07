@@ -7768,6 +7768,8 @@ function renderSubnavGeneralInfo(project) {
     
     // Render Yearly Comparison Chart (Planned vs Actual progress across years)
     renderSubnavYearlyComparisonChart(project.customer);
+}
+
 function calculatePlanScurveFromGantt(proj) {
     if (!proj || !proj.ganttData || !proj.ganttData.tasks || !proj.ganttData.startDate || !proj.ganttData.endDate) return;
     if (!proj.scurveData || proj.scurveData.length === 0) return;
