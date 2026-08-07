@@ -8159,7 +8159,10 @@ function renderSCurveChart(project) {
                         max: 110,
                         ticks: {
                             font: { family: "Prompt", size: 11, weight: "600" },
-                            callback: function(value) { return value + "%"; }
+                            callback: function(value) { 
+                                if (value > 100) return "";
+                                return value + "%"; 
+                            }
                         }
                     }
                 }
