@@ -2003,6 +2003,9 @@ select.form-control {
 .role-customer .hide-customer {
     display: none !important;
 }
+.role-accounting #detail-info-hospital-card {
+    grid-column: 1 / -1;
+}
 
 .only-customer {
     display: none;
@@ -4328,7 +4331,7 @@ body.public-view-mode #public-view-header {
                                             </div>
                                         </div>
                                         <!-- Row 3: โรงพยาบาล + ผู้รับผิดชอบ -->
-                                        <div style="display: flex; align-items: center; gap: 10px; background: var(--bg-light); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                                        <div id="detail-info-hospital-card" style="display: flex; align-items: center; gap: 10px; background: var(--bg-light); padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
                                             <i class="fa-solid fa-hospital" style="font-size: 14px; color: #e11d48; width: 18px; text-align: center;"></i>
                                             <div>
                                                 <div style="font-size: 10.5px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.3px;">ชื่อโรงพยาบาล</div>
