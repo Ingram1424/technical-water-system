@@ -8506,10 +8506,14 @@ function renderSubnavActualProgress(project) {
             while(item.plan.length < project.scurveMonths.length * 4) item.plan.push(0);
             while(item.actual.length < project.scurveMonths.length * 4) item.actual.push(0);
  
-            // Calculate current total
+            // Calculate cumulative total for actual, sum for plan
             let currentTotal = 0;
-            const currentArr = currentScurveMode === 'plan' ? item.plan : item.actual;
-            currentArr.forEach(v => currentTotal += (parseFloat(v) || 0));
+            if (currentScurveMode === 'plan') {
+                item.plan.forEach(v => currentTotal += (parseFloat(v) || 0));
+            } else {
+                let nonZeroActuals = item.actual.map(v => parseFloat(v) || 0);
+                currentTotal = nonZeroActuals.length > 0 ? Math.max(...nonZeroActuals) : 0;
+            }
             item.totalPercent = currentTotal;
  
             const isSub = item.isSubtask;
@@ -8543,16 +8547,6 @@ function renderSubnavActualProgress(project) {
                     ${isSub ? '' : `<input type="number" class="scurve-total-pct" data-idx="${idx}" value="${item.totalPercent}" readonly style="width: 100%; font-size: 12.5px; text-align: center; padding: 5px 2px; border: 1px solid transparent; background: #f8fafc; font-weight: bold; color: ${item.totalPercent === 100 ? '#10b981' : '#e63946'};">`}
                 </td>
             `;
- 
-            // Calculate cumulative total for actual, sum for plan
-            let currentTotal = 0;
-            if (currentScurveMode === 'plan') {
-                item.plan.forEach(v => currentTotal += (parseFloat(v) || 0));
-            } else {
-                let nonZeroActuals = item.actual.map(v => parseFloat(v) || 0);
-                currentTotal = nonZeroActuals.length > 0 ? Math.max(...nonZeroActuals) : 0;
-            }
-            item.totalPercent = currentTotal;
 
             const isPlanMode = currentScurveMode === 'plan';
             const isEditableCell = canEdit && !isPlanMode;
