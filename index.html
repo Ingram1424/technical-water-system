@@ -11139,6 +11139,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const notifDropdown = document.getElementById("notification-dropdown");
     
     notifBtn.addEventListener("click", (e) => {
+        if (e.target.closest("#notification-dropdown")) {
+            // Clicks inside the dropdown should not toggle the dropdown itself
+            return;
+        }
         e.stopPropagation();
         notifDropdown.classList.toggle("active");
         profileDropdown.classList.remove("active");
