@@ -3289,7 +3289,7 @@ body.public-view-mode #public-view-header {
                         </div>
                         
                         <!-- Create New Project Button (Only visible for PM role) -->
-                        <button class="btn btn-sm btn-primary btn-block hide-accounting hide-customer" id="sidebar-create-project-btn" style="width: 100%; font-size: 11px; padding: 5px; height: auto; border-radius: var(--radius-sm); margin-top: 6px;">
+                        <button class="btn btn-sm btn-primary btn-block hide-customer" id="sidebar-create-project-btn" style="width: 100%; font-size: 11px; padding: 5px; height: auto; border-radius: var(--radius-sm); margin-top: 6px;">
                             <i class="fa-solid fa-plus-circle"></i> สร้างโครงการใหม่
                         </button>
                         <!-- Edit Project Button -->
@@ -3378,7 +3378,7 @@ body.public-view-mode #public-view-header {
 
                 <div class="header-actions">
                     <!-- Header Create Project Button (PM only) -->
-                    <button class="btn btn-sm btn-primary hide-accounting hide-customer" id="header-create-project-btn" style="font-size: 11.5px; padding: 6px 14px; height: auto; border-radius: var(--radius-sm); display: none; align-items: center; gap: 5px; white-space: nowrap;">
+                    <button class="btn btn-sm btn-primary hide-customer" id="header-create-project-btn" style="font-size: 11.5px; padding: 6px 14px; height: auto; border-radius: var(--radius-sm); display: none; align-items: center; gap: 5px; white-space: nowrap;">
                         <i class="fa-solid fa-plus-circle"></i> สร้างโครงการใหม่
                     </button>
                     <!-- Notification Button -->
@@ -4827,7 +4827,7 @@ body.public-view-mode #public-view-header {
                                         </table>
                                     </div>
                                     
-                                    <button class="btn btn-primary mt-3 btn-add-doc-trigger hide-accounting hide-customer" id="subtab-open-upload-modal-btn-doc">
+                                    <button class="btn btn-primary mt-3 btn-add-doc-trigger hide-customer" id="subtab-open-upload-modal-btn-doc">
                                         <i class="fa-solid fa-plus"></i> อัปโหลดเอกสาร
                                     </button>
                                 </div>
@@ -5084,14 +5084,25 @@ body.public-view-mode #public-view-header {
                         </div>
                     </div>
                     
-                    <!-- Excel/CSV Import Section -->
-                    <div id="create-proj-csv-section" style="border-top: 1px dashed var(--border-color); margin-top: 16px; padding-top: 16px;">
-                        <label class="form-label" style="font-weight: 600; color: var(--navy-medium);"><i class="fa-solid fa-file-csv text-green mr-1"></i> หรือ นำเข้าหลายโครงการพร้อมกัน (Import CSV)</label>
-                        <div style="display: flex; gap: 8px; align-items: center; margin-top: 8px;">
-                            <input type="file" id="import-projects-csv" class="form-control" accept=".csv" style="padding: 5px; height: auto; flex-grow: 1;">
-                            <button type="button" class="btn btn-outline" id="btn-import-csv" style="white-space: nowrap;"><i class="fa-solid fa-file-import"></i> นำเข้าไฟล์</button>
+                    <!-- Project Document Upload Section -->
+                    <div id="create-proj-doc-section" style="border-top: 1px dashed var(--border-color); margin-top: 16px; padding-top: 16px;">
+                        <label class="form-label" style="font-weight: 600; color: var(--navy-medium);"><i class="fa-solid fa-file-pdf text-red mr-1"></i> อัปโหลดเอกสารโครงการ (ถ้ามี)</label>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px;">
+                            <div class="form-group">
+                                <label class="form-label" for="create-proj-doc-file" style="font-size: 10.5px; margin-bottom: 2px;">เลือกไฟล์เอกสาร</label>
+                                <input type="file" id="create-proj-doc-file" class="form-control" style="padding: 4px; height: auto;">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="create-proj-doc-type" style="font-size: 10.5px; margin-bottom: 2px;">ประเภทเอกสาร</label>
+                                <select id="create-proj-doc-type" class="form-control" style="padding: 4px; height: auto; font-family: 'Prompt';">
+                                    <option value="Contract">สัญญา</option>
+                                    <option value="BOQ">BOQ</option>
+                                    <option value="PO">PO</option>
+                                    <option value="Drawings">แบบแปลน</option>
+                                </select>
+                            </div>
                         </div>
-                        <span style="font-size: 10px; color: var(--text-muted); margin-top: 4px; display: block;">รองรับไฟล์ .csv (ฟอร์แมต: รหัสโครงการ, ปี, ลูกค้า, ชื่องาน, มูลค่า, ต้นทุน)</span>
+                        <span style="font-size: 10.5px; color: var(--text-muted); margin-top: 4px; display: block;">ไฟล์เอกสารที่อัปโหลดจะถูกนำไปจัดเก็บไว้ที่แท็บเอกสารโครงการย่อยให้โดยอัตโนมัติ</span>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -13113,7 +13124,7 @@ document.addEventListener("DOMContentLoaded", () => {
         
         const codeYearRow = document.getElementById("create-proj-code-year-row");
         const valCostRow = document.getElementById("create-proj-val-cost-row");
-        const csvSection = document.getElementById("create-proj-csv-section");
+        const docSection = document.getElementById("create-proj-doc-section");
         const codeInput = document.getElementById("new-project-code");
         const valInput = document.getElementById("new-project-value");
         const costInput = document.getElementById("new-project-cost");
@@ -13131,7 +13142,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 codeInput.placeholder = "เช่น QT-385041";
             }
             if (valCostRow) valCostRow.style.display = "none";
-            if (csvSection) csvSection.style.display = "none";
+            if (docSection) docSection.style.display = "none";
             if (valInput) valInput.removeAttribute("required");
             if (costInput) costInput.removeAttribute("required");
             if (quotingFields) quotingFields.style.display = "block";
@@ -13145,7 +13156,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 codeInput.placeholder = "เช่น PRJ-2613";
             }
             if (valCostRow) valCostRow.style.display = "flex";
-            if (csvSection) csvSection.style.display = "block";
+            if (docSection) docSection.style.display = "block";
             if (valInput) valInput.setAttribute("required", "true");
             if (costInput) costInput.setAttribute("required", "true");
             if (quotingFields) quotingFields.style.display = "none";
@@ -13160,6 +13171,11 @@ document.addEventListener("DOMContentLoaded", () => {
             const managerEl = document.getElementById("new-project-manager");
             if (managerEl) managerEl.value = "";
             
+            const docFileEl = document.getElementById("create-proj-doc-file");
+            if (docFileEl) docFileEl.value = "";
+            const docTypeEl = document.getElementById("create-proj-doc-type");
+            if (docTypeEl) docTypeEl.value = "Contract";
+
             // Clear quoting fields
             const siteVisitEl = document.getElementById("new-quoting-site-visit-date");
             const boqFileEl = document.getElementById("new-quoting-boq-file");
@@ -13888,6 +13904,23 @@ document.addEventListener("DOMContentLoaded", () => {
             
             const initialStatus = isQuoting ? "งานที่กำลังเสนอราคา" : "งานที่กำลังดำเนินการ";
 
+            // Process project documents if uploaded
+            const initialDocs = [];
+            if (!isQuoting) {
+                const docFileEl = document.getElementById("create-proj-doc-file");
+                const docTypeEl = document.getElementById("create-proj-doc-type");
+                if (docFileEl && docFileEl.files && docFileEl.files.length > 0) {
+                    const file = docFileEl.files[0];
+                    const docName = file.name;
+                    const docType = docTypeEl ? docTypeEl.value : "Contract";
+                    showToast("กำลังเข้ารหัสไฟล์เอกสารโครงการ...", "info");
+                    const base64Res = await readFileAsBase64(file);
+                    const fileUrl = base64Res.dataUrl;
+                    const dateToday = new Date().toISOString().substring(0, 10);
+                    initialDocs.push({ name: docName, type: docType, uploadedAt: dateToday, fileUrl });
+                }
+            }
+
             // Build the mock database entry
             projectsData[code] = {
                 code: code,
@@ -13912,7 +13945,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     completed: [0, 0, 0, 0, 0, 0],
                     delayed: [0, 0, 0, 0, 0, 0]
                 },
-                documents: [],
+                documents: initialDocs,
                 media: [],
                 expenses: [],
                 dailyReports: [],
@@ -13947,99 +13980,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // CSV Bulk Import Listener
-    const importCsvInput = document.getElementById("import-projects-csv");
-    const importCsvBtn = document.getElementById("btn-import-csv");
-    
-    if (importCsvBtn && importCsvInput) {
-        importCsvBtn.addEventListener("click", function() {
-            const file = importCsvInput.files[0];
-            if (!file) {
-                showToast("กรุณาเลือกไฟล์ CSV ก่อนกดปุ่มนำเข้า!", "error");
-                return;
-            }
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const text = e.target.result;
-                const lines = text.split("\n");
-                let successCount = 0;
-                let duplicateCount = 0;
-                
-                // Skip header line if present (e.g. contains words like 'code', 'รหัส')
-                const startIndex = lines[0].includes("รหัส") || lines[0].toLowerCase().includes("code") ? 1 : 0;
-                
-                for (let i = startIndex; i < lines.length; i++) {
-                    const line = lines[i].trim();
-                    if (!line) continue;
-                    
-                    const cols = line.split(",").map(c => c.replace(/^["']|["']$/g, "").trim());
-                    if (cols.length < 6) continue;
-                    
-                    const code = cols[0].toUpperCase();
-                    const year = parseInt(cols[1]);
-                    const customer = cols[2];
-                    const name = cols[3];
-                    const value = parseInt(cols[4]) || 0;
-                    const cost = parseInt(cols[5]) || 0;
-                    
-                    if (projectsData[code]) {
-                        duplicateCount++;
-                        continue;
-                    }
-                    
-                    projectsData[code] = {
-                        code: code,
-                        year: year,
-                        customer: customer,
-                        name: name,
-                        description: `${name} ของสาขา ${customer} ประจำปีงบประมาณ ${year}`,
-                        manager: "วิศวกรโครงการอาวุโส (PM Team)",
-                        start: `01/01/${year}`,
-                        end: `31/12/${year}`,
-                        value: value,
-                        cost: cost,
-                        profit: value - cost,
-                        progress: 0,
-                        plannedProgress: 10,
-                        status: "กำลังดำเนินการ",
-                        jobs: { total: 10, inprogress: 10, completed: 0, delayed: 0 },
-                        workBreakdown: {
-                            inprogress: [2, 2, 2, 2, 2, 0],
-                            completed: [0, 0, 0, 0, 0, 0],
-                            delayed: [0, 0, 0, 0, 0, 0]
-                        },
-                        documents: [],
-                        media: [],
-                        expenses: [],
-                        dailyReports: [],
-                        planDocs: []
-                    };
-                    successCount++;
-                }
-                
-                if (successCount > 0) {
-                    // Save and sync all imported projects immediately
-                    saveToLocalStorage();
-                    syncAllProjectsToSupabase();
-                    
-                    showToast(`นำเข้าโครงการสำเร็จ ${successCount} โครงการ! ${duplicateCount > 0 ? `(ข้ามรหัสซ้ำ ${duplicateCount} รายการ)` : ""}`, "success");
-                    closeCreateProjectModal();
-                    
-                    // Refresh dropdowns and dashboard
-                    populateSubnavHospitals();
-                    populateSubnavProjects(document.getElementById("subnav-year-filter").value);
-                    populateCostProjects();
-                    renderOverallDashboard();
-                    renderSubnavProjectWorkspace();
-                    renderCostManagement();
-                } else {
-                    showToast("ไม่พบข้อมูลโครงการใหม่ในไฟล์ หรือรหัสโครงการซ้ำทั้งหมด!", "error");
-                }
-            };
-            reader.readAsText(file);
-        });
-    }
+
 
     // 15. MODAL: Task Progress PDF Upload
     const taskPdfModal = document.getElementById("task-pdf-upload-modal");
