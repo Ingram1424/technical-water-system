@@ -8129,18 +8129,20 @@ function updateScurveTotals(project) {
     const hideWeight = (appState.currentRole === "customer");
     const labelColspan = 2 + (hideBudget ? 0 : 1) + (hideWeight ? 0 : 1) + 1;
 
-    let footerHtml = `
-        <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid var(--border-color);">
-            <td colspan="2" style="padding: 8px 10px; text-align: right;">รวม</td>
-            ${hideBudget ? '' : `<td style="padding: 8px 4px; text-align: center;">${totalBudget.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>`}
-            ${hideWeight ? '' : `<td style="padding: 8px 4px; text-align: center; color: ${totalWeight === 100 ? '#10b981' : '#e63946'};">${totalWeight.toFixed(2)}%</td>`}
-            <td style="padding: 8px 4px; text-align: center;"></td>
-    `;
-    
-    displayWeeklySums.forEach((val, i) => {
-        footerHtml += `<td style="padding: 8px 4px; border-left: ${i%4===0 ? '1px' : '0'} solid var(--border-color);"></td>`;
-    });
-    footerHtml += `<td class="hide-accounting hide-customer"></td></tr>`;
+    let footerHtml = ``;
+    if (!hideWeight) {
+        footerHtml += `
+            <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid var(--border-color);">
+                <td colspan="2" style="padding: 8px 10px; text-align: right;">รวม</td>
+                ${hideBudget ? '' : `<td style="padding: 8px 4px; text-align: center;">${totalBudget.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>`}
+                <td style="padding: 8px 4px; text-align: center; color: ${totalWeight === 100 ? '#10b981' : '#e63946'};">${totalWeight.toFixed(2)}%</td>
+                <td style="padding: 8px 4px; text-align: center;"></td>
+        `;
+        displayWeeklySums.forEach((val, i) => {
+            footerHtml += `<td style="padding: 8px 4px; border-left: ${i%4===0 ? '1px' : '0'} solid var(--border-color);"></td>`;
+        });
+        footerHtml += `<td class="hide-accounting hide-customer"></td></tr>`;
+    }
 
     footerHtml += `
         <tr style="background: #fff; border-top: 1px solid var(--border-color);">
