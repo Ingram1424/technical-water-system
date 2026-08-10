@@ -3373,7 +3373,7 @@ body.public-view-mode #public-view-header {
                         <span class="sub-label">ค่าใช้จ่ายโครงการ</span>
                     </div>
                 </a>
-                <a href="#" class="nav-item hide-accounting hide-customer hide-pm hide-pe hide-technician" data-view="permissions-mgmt">
+                <a href="#" class="nav-item hide-accounting hide-customer hide-pe hide-technician" data-view="permissions-mgmt">
                     <i class="fa-solid fa-user-shield"></i>
                     <div class="nav-label">
                         <span class="main-label">Permissions</span>
@@ -6841,13 +6841,16 @@ function switchView(viewName) {
 
     // Check permission rules first
     const isCustOrTech = (appState.currentRole === "customer" || appState.currentRole === "technician" || appState.currentRole === "tech");
-    const isPMOrPE = (appState.currentRole === "pm" || appState.currentRole === "pe");
     
     if (isCustOrTech && (viewName === "cost" || viewName === "dashboard" || viewName === "permissions-mgmt")) {
         showToast("สิทธิ์ของคุณเข้าดูได้เฉพาะหน้าโครงการของตนเองเท่านั้น", "info");
         viewName = "projects-list";
     }
-    if (isPMOrPE && (viewName === "cost" || viewName === "permissions-mgmt")) {
+    if (appState.currentRole === "pe" && (viewName === "cost" || viewName === "permissions-mgmt")) {
+        showToast("คุณไม่มีสิทธิ์เข้าถึงหน้านี้", "warning");
+        viewName = "projects-list";
+    }
+    if (appState.currentRole === "pm" && viewName === "cost") {
         showToast("คุณไม่มีสิทธิ์เข้าถึงหน้านี้ (จำกัดเฉพาะ Admin และ Accounting)", "warning");
         viewName = "projects-list";
     }
