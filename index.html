@@ -11566,6 +11566,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // 1.1b Clickable Dashboard KPI cards setup
     const kpiTotalEl = document.getElementById("kpi-total-jobs");
     const kpiInprogressEl = document.getElementById("kpi-inprogress-jobs");
+    const kpiFinishedEl = document.getElementById("kpi-finished-jobs");
     const kpiCompletedEl = document.getElementById("kpi-completed-jobs");
     const kpiPendingEl = document.getElementById("kpi-pending-approval-jobs");
 
@@ -11595,6 +11596,23 @@ document.addEventListener("DOMContentLoaded", () => {
                 const portalStatusFilter = document.getElementById("portal-status-filter");
                 if (portalStatusFilter) {
                     portalStatusFilter.value = "งานที่กำลังดำเนินการ";
+                }
+                if (typeof window.renderProjectSelectionPortal === "function") {
+                    window.renderProjectSelectionPortal();
+                }
+            });
+        }
+    }
+
+    if (kpiFinishedEl) {
+        const card = kpiFinishedEl.closest(".kpi-card");
+        if (card) {
+            card.style.cursor = "pointer";
+            card.addEventListener("click", () => {
+                switchView("projects-list");
+                const portalStatusFilter = document.getElementById("portal-status-filter");
+                if (portalStatusFilter) {
+                    portalStatusFilter.value = "งานที่ดำเนินการเสร็จแล้ว";
                 }
                 if (typeof window.renderProjectSelectionPortal === "function") {
                     window.renderProjectSelectionPortal();
