@@ -17986,9 +17986,19 @@ function renderPermissionsManagement() {
         // Update approvals-badge-count dynamically on the Approvals tab
         const approvalBadge = document.getElementById("approvals-badge-count");
         if (approvalBadge) {
-            const approvalCount = document.querySelectorAll(".notif-item.unread.approval-notif:not([style*='opacity: 0.5']), .notif-item.unread.disbursement-notif-item:not([style*='opacity: 0.5'])").length;
-            approvalBadge.textContent = approvalCount;
-            approvalBadge.style.display = approvalCount > 0 ? "inline-block" : "none";
+            let pendingCount = 0;
+            Object.keys(projectsData).forEach(code => {
+                const p = projectsData[code];
+                if (p.expenses) {
+                    p.expenses.forEach(e => {
+                        if (e.status === "รออนุมัติ") {
+                            pendingCount++;
+                        }
+                    });
+                }
+            });
+            approvalBadge.textContent = pendingCount;
+            approvalBadge.style.display = pendingCount > 0 ? "inline-block" : "none";
         }
     }
 
