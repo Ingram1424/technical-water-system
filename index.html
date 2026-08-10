@@ -12043,14 +12043,17 @@ document.addEventListener("DOMContentLoaded", () => {
             
             let statusMatch = true;
             if (selectedStatus !== "all") {
-                if (selectedStatus === "งานเสร็จแล้วรอส่งงาน/อนุมัติ") {
-                    statusMatch = (p.status === "เสร็จสิ้น" || p.status === "เสร็จแล้ว" || p.status === "งานเสร็จแล้วรอส่งงาน" || p.status === "งานเสร็จแล้วรอส่งงาน/อนุมัติ");
+                if (selectedStatus === "งานที่ดำเนินการเสร็จแล้ว") {
+                    statusMatch = (p.status === "งานที่ดำเนินการเสร็จแล้ว" || p.status === "เสร็จสิ้น");
+                } else if (selectedStatus === "งานเสร็จแล้วรอส่งงาน/อนุมัติ") {
+                    statusMatch = (p.status === "เสร็จแล้ว" || p.status === "งานเสร็จแล้วรอส่งงาน" || p.status === "งานเสร็จแล้วรอส่งงาน/อนุมัติ");
                 } else if (selectedStatus === "งานที่รอเสนอราคา") {
                     statusMatch = (p.status === "รออนุมัติ" || p.status === "งานรออนุมัติ" || p.status === "งานที่รอเสนอราคา" || p.status === "งานที่กำลังเสนอราคา" || p.status === "กำลังเสนอราคา");
                 } else if (selectedStatus === "งานที่กำลังดำเนินการ") {
-                    const isComp = (p.status === "เสร็จสิ้น" || p.status === "เสร็จแล้ว" || p.status === "งานเสร็จแล้วรอส่งงาน" || p.status === "งานเสร็จแล้วรอส่งงาน/อนุมัติ");
+                    const isFinished = (p.status === "งานที่ดำเนินการเสร็จแล้ว" || p.status === "เสร็จสิ้น");
+                    const isComp = (p.status === "เสร็จแล้ว" || p.status === "งานเสร็จแล้วรอส่งงาน" || p.status === "งานเสร็จแล้วรอส่งงาน/อนุมัติ");
                     const isQuot = (p.status === "รออนุมัติ" || p.status === "งานรออนุมัติ" || p.status === "งานที่รอเสนอราคา" || p.status === "งานที่กำลังเสนอราคา" || p.status === "กำลังเสนอราคา");
-                    statusMatch = !isComp && !isQuot;
+                    statusMatch = !isFinished && !isComp && !isQuot;
                 }
             }
             
@@ -12239,7 +12242,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 switchView("quoting-projects-list");
                 const filter = document.getElementById("portal-status-filter");
                 if (filter) filter.value = "งานที่รอเสนอราคา";
-            } else if ((val === "งานที่กำลังดำเนินการ" || val === "งานเสร็จแล้วรอส่งงาน/อนุมัติ") && isQuotingTab) {
+            } else if ((val === "งานที่กำลังดำเนินการ" || val === "งานที่ดำเนินการเสร็จแล้ว" || val === "งานเสร็จแล้วรอส่งงาน/อนุมัติ") && isQuotingTab) {
                 switchView("projects-list");
                 const filter = document.getElementById("portal-status-filter");
                 if (filter) filter.value = val;
