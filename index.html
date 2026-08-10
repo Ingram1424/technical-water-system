@@ -4650,24 +4650,26 @@ body.public-view-mode #public-view-header {
                                         <h2 class="section-title">แผนการดำเนินงาน (Gantt Chart Scheduler)</h2>
                                         <p class="section-subtitle">กำหนดช่วงเวลาวันเริ่มต้น-สิ้นสุด และระบายสีแถบระดับเสียงดัง (แดง = เสียงดังมาก, เหลือง = เสียงดังปานกลาง, เขียว = เสียงดังน้อย)</p>
                                     </div>
-                                    <div style="display: flex; gap: 8px;" class="hide-accounting hide-customer">
-                                        <button class="btn btn-sm btn-outline" id="btn-add-gantt-phase" style="font-size: 11px; padding: 6px 12px; height: auto;">
-                                            <i class="fa-solid fa-folder-plus"></i> เพิ่ม Phase
-                                        </button>
-                                        <button class="btn btn-sm btn-outline" id="btn-add-gantt-type" style="font-size: 11px; padding: 6px 12px; height: auto;">
-                                            <i class="fa-solid fa-tags"></i> เพิ่มประเภทงาน
-                                        </button>
-                                        <button class="btn btn-sm btn-outline" id="btn-add-gantt-cat" style="font-size: 11px; padding: 6px 12px; height: auto;">
-                                            <i class="fa-solid fa-list"></i> เพิ่มหมวดงาน
-                                        </button>
-                                        <button class="btn btn-sm btn-outline" id="btn-add-gantt-task" style="font-size: 11px; padding: 6px 12px; height: auto;">
-                                            <i class="fa-solid fa-bars-staggered"></i> เพิ่มงานย่อย
-                                        </button>
-                                        <button class="btn btn-sm btn-outline" id="btn-print-gantt" style="font-size: 11px; padding: 6px 12px; height: auto; background: #f1f5f9; color: #334155;">
-                                            <i class="fa-solid fa-print"></i> พิมพ์แผนงาน
-                                        </button>
-                                        <button class="btn btn-sm btn-primary" id="btn-save-gantt" style="font-size: 11px; padding: 6px 12px; height: auto;">
-                                            <i class="fa-solid fa-floppy-disk"></i> บันทึกแผนงาน
+                                    <div style="display: flex; gap: 8px; align-items: center;">
+                                        <div style="display: flex; gap: 8px;" class="hide-accounting hide-customer">
+                                            <button class="btn btn-sm btn-outline" id="btn-add-gantt-phase" style="font-size: 11px; padding: 6px 12px; height: auto;">
+                                                <i class="fa-solid fa-folder-plus"></i> เพิ่ม Phase
+                                            </button>
+                                            <button class="btn btn-sm btn-outline" id="btn-add-gantt-type" style="font-size: 11px; padding: 6px 12px; height: auto;">
+                                                <i class="fa-solid fa-tags"></i> เพิ่มประเภทงาน
+                                            </button>
+                                            <button class="btn btn-sm btn-outline" id="btn-add-gantt-cat" style="font-size: 11px; padding: 6px 12px; height: auto;">
+                                                <i class="fa-solid fa-list"></i> เพิ่มหมวดงาน
+                                            </button>
+                                            <button class="btn btn-sm btn-outline" id="btn-add-gantt-task" style="font-size: 11px; padding: 6px 12px; height: auto;">
+                                                <i class="fa-solid fa-bars-staggered"></i> เพิ่มงานย่อย
+                                            </button>
+                                            <button class="btn btn-sm btn-primary" id="btn-save-gantt" style="font-size: 11px; padding: 6px 12px; height: auto;">
+                                                <i class="fa-solid fa-floppy-disk"></i> บันทึกแผนงาน
+                                            </button>
+                                        </div>
+                                        <button class="btn btn-sm btn-outline" id="btn-print-gantt" style="font-size: 11px; padding: 6px 12px; height: auto; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;">
+                                            <i class="fa-solid fa-print"></i> ปริ้น PDF แผนงาน
                                         </button>
                                     </div>
                                 </div>
