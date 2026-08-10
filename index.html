@@ -4076,44 +4076,60 @@ body.public-view-mode #public-view-header {
                 <!-- Tab Panel 3: รายการขออนุมัติเบิกจ่าย (Approvals View) -->
                 <div id="cost-main-panel-approvals" class="cost-main-tab-panel" style="display: none;">
                     
-                    <!-- PO Handover Approvals -->
-                    <section class="section-card hide-customer" style="margin-bottom: 16px;">
-                        <div class="section-header" style="margin-bottom: 16px; border-bottom: 2px solid var(--border-color); padding-bottom: 14px;">
-                            <div class="section-title-wrapper">
-                                <div>
-                                    <h2 class="section-title"><i class="fa-solid fa-clock-rotate-left" style="color: #7c3aed;"></i> มอบหมายงาน PO และเบิกงวดเงิน (PO Handovers)</h2>
-                                    <p class="section-subtitle">รายการงานที่ส่งหนังสือมอบงานแล้วรอการอนุมัติจากฝ่ายบัญชี</p>
-                                </div>
+                    <!-- Approvals Dashboard -->
+                    <div class="kpi-grid hide-customer" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 20px;">
+                        <!-- KPI 1: All Requests -->
+                        <div class="kpi-card blue">
+                            <div class="kpi-icon-container">
+                                <i class="fa-solid fa-file-invoice"></i>
                             </div>
-                            <button class="btn btn-sm btn-primary" id="btn-add-approval-row" style="font-family: 'Prompt'; font-size: 11px; white-space: nowrap; background: linear-gradient(135deg, #7c3aed, #6d28d9); border-color: #7c3aed;">
-                                <i class="fa-solid fa-plus mr-1"></i>เพิ่มรายการ
-                            </button>
+                            <div class="kpi-content">
+                                <span class="kpi-label">คำขออนุมัติทั้งหมด</span>
+                                <h3 class="kpi-value" id="kpi-approval-total">0</h3>
+                                <span class="kpi-unit">รายการ</span>
+                            </div>
+                            <div class="kpi-glow"></div>
                         </div>
-                        <div style="overflow-x: auto; background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 4px; box-shadow: var(--card-shadow);">
-                            <table class="transaction-table" id="approval-pending-table" style="min-width: 960px; width: 100%; border-collapse: collapse;">
-                                <thead>
-                                    <tr style="background: linear-gradient(135deg, #ede9fe, #ddd6fe);">
-                                        <th style="color: #5b21b6; font-size: 12px; font-weight: 600; padding: 10px 12px; white-space: nowrap; text-align: left;">วันที่ส่ง<br><small style="font-weight:400;">หนังสือมอบงาน</small></th>
-                                        <th style="color: #5b21b6; font-size: 12px; font-weight: 600; padding: 10px 12px; text-align: left;">โรงพยาบาล</th>
-                                        <th style="color: #5b21b6; font-size: 12px; font-weight: 600; padding: 10px 12px; text-align: left;">วันที่ PO ออก</th>
-                                        <th style="color: #5b21b6; font-size: 12px; font-weight: 600; padding: 10px 12px; text-align: left;">เลขที่ใบเสนอราคา</th>
-                                        <th style="color: #5b21b6; font-size: 12px; font-weight: 600; padding: 10px 12px; text-align: left;">เลขที่ใบสั่งซื้อ / PO</th>
-                                        <th style="color: #5b21b6; font-size: 12px; font-weight: 600; padding: 10px 12px; text-align: left;">ชื่องาน</th>
-                                        <th style="color: #5b21b6; font-size: 12px; font-weight: 600; padding: 10px 12px; text-align: left;">สถานที่</th>
-                                        <th style="text-align: center; color: #5b21b6; font-size: 12px; font-weight: 600; padding: 10px 12px; width: 80px;">จัดการ</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="approval-pending-tbody">
-                                    <tr id="approval-empty-row">
-                                        <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 32px; font-style: italic;">
-                                            <i class="fa-solid fa-inbox" style="font-size: 24px; display: block; margin-bottom: 8px; opacity: 0.4;"></i>
-                                            ยังไม่มีงานรออนุมัติ — กดปุ่ม "เพิ่มรายการ" เพื่อเพิ่มข้อมูล
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                        
+                        <!-- KPI 2: Approved -->
+                        <div class="kpi-card green">
+                            <div class="kpi-icon-container">
+                                <i class="fa-solid fa-circle-check"></i>
+                            </div>
+                            <div class="kpi-content">
+                                <span class="kpi-label">อนุมัติแล้ว</span>
+                                <h3 class="kpi-value" id="kpi-approval-approved">0</h3>
+                                <span class="kpi-unit">รายการ</span>
+                            </div>
+                            <div class="kpi-glow"></div>
                         </div>
-                    </section>
+                        
+                        <!-- KPI 3: Pending -->
+                        <div class="kpi-card orange">
+                            <div class="kpi-icon-container">
+                                <i class="fa-solid fa-clock"></i>
+                            </div>
+                            <div class="kpi-content">
+                                <span class="kpi-label">รออนุมัติ</span>
+                                <h3 class="kpi-value" id="kpi-approval-pending">0</h3>
+                                <span class="kpi-unit">รายการ</span>
+                            </div>
+                            <div class="kpi-glow"></div>
+                        </div>
+                        
+                        <!-- KPI 4: Rejected -->
+                        <div class="kpi-card red">
+                            <div class="kpi-icon-container">
+                                <i class="fa-solid fa-circle-xmark"></i>
+                            </div>
+                            <div class="kpi-content">
+                                <span class="kpi-label">ไม่อนุมัติ</span>
+                                <h3 class="kpi-value" id="kpi-approval-rejected">0</h3>
+                                <span class="kpi-unit">รายการ</span>
+                            </div>
+                            <div class="kpi-glow"></div>
+                        </div>
+                    </div>
 
                     <!-- Budget Disbursement Approvals -->
                     <section class="section-card hide-customer">
@@ -17497,8 +17513,46 @@ function renderPermissionsManagement() {
         });
     }
 
+    function updateApprovalsDashboard() {
+        let total = 0;
+        let approved = 0;
+        let pending = 0;
+        let rejected = 0;
+        
+        Object.keys(projectsData).forEach(code => {
+            const p = projectsData[code];
+            if (p.expenses) {
+                p.expenses.forEach(e => {
+                    if (e.status === "รออนุมัติ") {
+                        pending++;
+                        total++;
+                    } else if (e.status === "อนุมัติแล้ว") {
+                        approved++;
+                        total++;
+                    } else if (e.status === "ปฏิเสธ") {
+                        rejected++;
+                        total++;
+                    }
+                });
+            }
+        });
+        
+        const totalEl = document.getElementById("kpi-approval-total");
+        const approvedEl = document.getElementById("kpi-approval-approved");
+        const pendingEl = document.getElementById("kpi-approval-pending");
+        const rejectedEl = document.getElementById("kpi-approval-rejected");
+        
+        if (totalEl) totalEl.textContent = formatNumber(total);
+        if (approvedEl) approvedEl.textContent = formatNumber(approved);
+        if (pendingEl) pendingEl.textContent = formatNumber(pending);
+        if (rejectedEl) rejectedEl.textContent = formatNumber(rejected);
+    }
+
     // ── Render Disbursement Pending table ───────────────────────
     window.renderDisbursementPendingTable = function() {
+        // Update Approvals Dashboard
+        updateApprovalsDashboard();
+
         const tbody = document.getElementById("disbursement-pending-tbody");
         if (!tbody) return;
         
