@@ -4461,14 +4461,26 @@ body.public-view-mode #public-view-header {
 
                                 <!-- Project Access Permissions Management Card -->
                                 <div class="project-permissions-card hide-accounting hide-customer hide-pe hide-technician" style="background: var(--bg-white); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 20px; box-shadow: var(--shadow-sm);">
-                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 10px;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 12px;">
                                         <div style="display: flex; align-items: center; gap: 8px;">
                                             <i class="fa-solid fa-user-shield" style="font-size: 16px; color: var(--primary-blue);"></i>
                                             <h4 style="margin: 0; font-size: 14px; font-weight: 700; color: var(--navy-dark);">สิทธิ์การเข้าถึงโครงการนี้ (PE, ช่าง, ลูกค้า)</h4>
                                         </div>
-                                        <button type="button" class="btn btn-xs btn-outline-blue" onclick="window.openCreateUserFromProjectDetail()" style="font-family: 'Prompt'; font-size: 11px; padding: 6px 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px; border-radius: var(--radius-sm); border: 1px solid var(--primary-blue); background: #ffffff; color: var(--primary-blue); transition: all 0.2s;">
-                                            <i class="fa-solid fa-user-plus"></i> เจนบัญชีผู้ใช้ใหม่มอบสิทธิ์ทันที
-                                        </button>
+                                        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                            <!-- Select Existing User Dropdown -->
+                                            <div style="display: flex; align-items: center; gap: 6px; background: #f8fafc; border: 1px solid var(--border-color); border-radius: 4px; padding: 3px 8px; height: 32px; box-sizing: border-box;">
+                                                <select id="project-detail-add-user-selector" style="font-family: 'Prompt'; font-size: 11.5px; padding: 0; border: none; background: transparent; outline: none; width: 180px; font-weight: 600; color: var(--navy-dark); cursor: pointer; height: 100%;">
+                                                    <!-- Filled dynamically -->
+                                                </select>
+                                                <button type="button" onclick="window.addExistingUserToProject()" style="background: var(--primary-blue); color: #fff; border: none; padding: 2px 10px; border-radius: 4px; font-family: 'Prompt'; font-size: 11px; font-weight: 700; cursor: pointer; height: 22px; display: flex; align-items: center; justify-content: center; box-sizing: border-box; transition: opacity 0.15s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+                                                    <i class="fa-solid fa-user-check" style="margin-right: 4px; font-size: 10px;"></i>มอบสิทธิ์
+                                                </button>
+                                            </div>
+                                            <!-- Create New User Button -->
+                                            <button type="button" class="btn btn-xs btn-outline-blue" onclick="window.openCreateUserFromProjectDetail()" style="font-family: 'Prompt'; font-size: 11px; padding: 6px 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px; border-radius: var(--radius-sm); border: 1px solid var(--primary-blue); background: #ffffff; color: var(--primary-blue); transition: all 0.2s; height: 32px; box-sizing: border-box;">
+                                                <i class="fa-solid fa-user-plus"></i> เจนบัญชีผู้ใช้ใหม่มอบสิทธิ์ทันที
+                                            </button>
+                                        </div>
                                     </div>
                                     <div style="overflow-x: auto; max-height: 250px; scrollbar-width: thin;">
                                         <table class="transaction-table" style="width: 100%; border-collapse: collapse; min-width: 500px;">
@@ -8064,22 +8076,72 @@ function renderSubnavGeneralInfo(project) {
 
 function renderProjectPermissions(project) {
     const tbody = document.getElementById("project-detail-permissions-tbody");
+    const userSelector = document.getElementById("project-detail-add-user-selector");
     if (!tbody) return;
     tbody.innerHTML = "";
 
     const accounts = appState.customerAccounts || {};
     const projectCode = project.code;
 
-    // Filter accounts to show target roles: customer, pe, technician, tech
+    // Filter accounts to target roles: customer, pe, technician, tech (defaulting undefined role to "customer")
     const targetRoles = ["customer", "pe", "technician", "tech"];
-    const filteredAccounts = Object.values(accounts).filter(acc => targetRoles.includes(acc.role));
+    const allTargetAccounts = Object.values(accounts).filter(acc => targetRoles.includes(acc.role || "customer"));
 
-    if (filteredAccounts.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 24px; font-style: italic;">ยังไม่มีบัญชีผู้ใช้ PE, ช่าง หรือลูกค้า ในระบบ</td></tr>`;
+    // Accounts that currently have access (either via project or hospital)
+    const accessAccounts = allTargetAccounts.filter(acc => {
+        const userKey = acc.userKey;
+        const perms = appState.userPermissions[userKey] || { hospitals: [], projects: [] };
+        const hasProjectPerm = perms.projects && perms.projects.includes(projectCode);
+        const hasHospitalPerm = perms.hospitals && perms.hospitals.includes(project.customer);
+        return hasProjectPerm || hasHospitalPerm;
+    });
+
+    // Accounts that DO NOT have access yet (to populate dropdown)
+    const nonAccessAccounts = allTargetAccounts.filter(acc => {
+        const userKey = acc.userKey;
+        const perms = appState.userPermissions[userKey] || { hospitals: [], projects: [] };
+        const hasProjectPerm = perms.projects && perms.projects.includes(projectCode);
+        const hasHospitalPerm = perms.hospitals && perms.hospitals.includes(project.customer);
+        return !hasProjectPerm && !hasHospitalPerm;
+    });
+
+    // 1. Populate Dropdown Select
+    if (userSelector) {
+        userSelector.innerHTML = "";
+        if (nonAccessAccounts.length === 0) {
+            const opt = document.createElement("option");
+            opt.value = "";
+            opt.textContent = "ไม่มีผู้ใช้ให้เลือก";
+            userSelector.appendChild(opt);
+            userSelector.disabled = true;
+        } else {
+            userSelector.disabled = false;
+            const defaultOpt = document.createElement("option");
+            defaultOpt.value = "";
+            defaultOpt.textContent = "-- เลือกผู้ใช้ที่มีอยู่เพื่อมอบสิทธิ์ --";
+            userSelector.appendChild(defaultOpt);
+
+            nonAccessAccounts.forEach(acc => {
+                const opt = document.createElement("option");
+                opt.value = acc.userKey;
+                let roleLabel = "";
+                const r = acc.role || "customer";
+                if (r === "customer") roleLabel = "ลูกค้า";
+                else if (r === "pe") roleLabel = "PE";
+                else roleLabel = "ช่าง";
+                opt.textContent = `${acc.name || acc.username} (${roleLabel} - @${acc.username})`;
+                userSelector.appendChild(opt);
+            });
+        }
+    }
+
+    // 2. Render Table rows
+    if (accessAccounts.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 24px; font-style: italic;">ยังไม่มีผู้ได้รับสิทธิ์เข้าถึงโครงการนี้</td></tr>`;
         return;
     }
 
-    filteredAccounts.forEach(acc => {
+    accessAccounts.forEach(acc => {
         const userKey = acc.userKey;
         const perms = appState.userPermissions[userKey] || { hospitals: [], projects: [] };
         
@@ -8089,12 +8151,13 @@ function renderProjectPermissions(project) {
         let roleLabel = "";
         let roleColor = "";
         let roleIcon = "";
+        const roleStr = acc.role || "customer";
         
-        if (acc.role === "customer") {
+        if (roleStr === "customer") {
             roleLabel = "ลูกค้า (Customer)";
             roleColor = "#0284c7";
             roleIcon = "fa-user-tie";
-        } else if (acc.role === "pe") {
+        } else if (roleStr === "pe") {
             roleLabel = "วิศวกร (PE)";
             roleColor = "#16a34a";
             roleIcon = "fa-helmet-safety";
@@ -8139,7 +8202,7 @@ function renderProjectPermissions(project) {
         tbody.appendChild(tr);
     });
 
-    // Add event listeners to toggles
+    // Add event listeners to toggles (if they toggle it off, it will remove access and re-render)
     tbody.querySelectorAll(".project-perm-toggle").forEach(toggle => {
         toggle.addEventListener("change", async function() {
             const userKey = this.getAttribute("data-userkey");
@@ -8164,13 +8227,50 @@ function renderProjectPermissions(project) {
             await saveUserPermissions();
             showToast("อัปเดตสิทธิ์การเข้าถึงโครงการสำเร็จ", "success");
             
-            // Re-render permissions page if active
+            // Re-render
+            renderProjectPermissions(project);
             if (appState.currentView === "permissions-mgmt") {
                 renderPermissionsManagement();
             }
         });
     });
 }
+
+// Function to add an existing user selected from the dropdown to this project
+window.addExistingUserToProject = async function() {
+    const selector = document.getElementById("project-detail-add-user-selector");
+    if (!selector) return;
+    
+    const userKey = selector.value;
+    if (!userKey) {
+        showToast("กรุณาเลือกผู้ใช้จากในรายการก่อนมอบสิทธิ์", "warning");
+        return;
+    }
+
+    const project = projectsData[appState.selectedDetailProject];
+    if (!project) return;
+    const projectCode = project.code;
+
+    if (!appState.userPermissions) appState.userPermissions = {};
+    if (!appState.userPermissions[userKey]) {
+        appState.userPermissions[userKey] = { hospitals: [], projects: [] };
+    }
+
+    let projects = appState.userPermissions[userKey].projects || [];
+    if (!projects.includes(projectCode)) {
+        projects.push(projectCode);
+    }
+    appState.userPermissions[userKey].projects = projects;
+
+    await saveUserPermissions();
+    showToast("มอบสิทธิ์การเข้าถึงให้ผู้ใช้ที่เลือกเรียบร้อยแล้ว", "success");
+
+    // Re-render
+    renderProjectPermissions(project);
+    if (appState.currentView === "permissions-mgmt") {
+        renderPermissionsManagement();
+    }
+};
 
 function calculatePlanScurveFromGantt(proj) {
     if (!proj || !proj.ganttData || !proj.ganttData.tasks || !proj.ganttData.startDate || !proj.ganttData.endDate) return;
