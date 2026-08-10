@@ -11458,8 +11458,8 @@ document.addEventListener("DOMContentLoaded", () => {
             return hospitalMatch && yearMatch && quotingMatch && statusMatch && searchMatch;
         });
 
-        // Customer role permissions restriction
-        if (appState.currentRole === "customer") {
+        // Customer / PE / Tech role permissions restriction
+        if (appState.currentRole === "customer" || appState.currentRole === "pe" || appState.currentRole === "technician" || appState.currentRole === "tech") {
             const cUserKey = appState.currentCustomerUser || "user1";
             const perms = appState.userPermissions[cUserKey] || { hospitals: [], projects: [] };
             projects = projects.filter(p => isProjectAllowedForCustomer(p, perms));
