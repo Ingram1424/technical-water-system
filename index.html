@@ -596,6 +596,25 @@ body:not(.public-view-mode) .main-header {
     margin-top: 1px;
 }
 
+/* Custom Toggle Switch Slider */
+.switch-container input:checked + .slider {
+    background-color: var(--primary-blue) !important;
+}
+.switch-container .slider:before {
+    position: absolute;
+    content: "";
+    height: 14px;
+    width: 14px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .3s;
+    border-radius: 50%;
+}
+.switch-container input:checked + .slider:before {
+    transform: translateX(14px);
+}
+
 /* ----------------------------------------------------
    VIEW PANELS & CARDS (Clean White Theme)
    ---------------------------------------------------- */
@@ -4440,6 +4459,34 @@ body.public-view-mode #public-view-header {
                                     </div>
                                 </div>
 
+                                <!-- Project Access Permissions Management Card -->
+                                <div class="project-permissions-card hide-accounting hide-customer hide-pe hide-technician" style="background: var(--bg-white); border: 1px solid var(--border-color); border-radius: var(--radius-lg); padding: 24px; margin-bottom: 20px; box-shadow: var(--shadow-sm);">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 10px;">
+                                        <div style="display: flex; align-items: center; gap: 8px;">
+                                            <i class="fa-solid fa-user-shield" style="font-size: 16px; color: var(--primary-blue);"></i>
+                                            <h4 style="margin: 0; font-size: 14px; font-weight: 700; color: var(--navy-dark);">สิทธิ์การเข้าถึงโครงการนี้ (PE, ช่าง, ลูกค้า)</h4>
+                                        </div>
+                                        <button type="button" class="btn btn-xs btn-outline-blue" onclick="window.openCreateUserFromProjectDetail()" style="font-family: 'Prompt'; font-size: 11px; padding: 6px 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px; border-radius: var(--radius-sm); border: 1px solid var(--primary-blue); background: #ffffff; color: var(--primary-blue); transition: all 0.2s;">
+                                            <i class="fa-solid fa-user-plus"></i> เจนบัญชีผู้ใช้ใหม่มอบสิทธิ์ทันที
+                                        </button>
+                                    </div>
+                                    <div style="overflow-x: auto; max-height: 250px; scrollbar-width: thin;">
+                                        <table class="transaction-table" style="width: 100%; border-collapse: collapse; min-width: 500px;">
+                                            <thead style="position: sticky; top: 0; z-index: 2; background: #f8fafc; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                                                <tr style="text-align: left; font-size: 11.5px; border-bottom: 1px solid var(--border-color);">
+                                                    <th style="padding: 8px; font-weight: 600; color: var(--text-muted);">ชื่อผู้ใช้ / บริษัท</th>
+                                                    <th style="padding: 8px; font-weight: 600; color: var(--text-muted);">Username</th>
+                                                    <th style="padding: 8px; font-weight: 600; color: var(--text-muted);">ประเภท (Role)</th>
+                                                    <th style="padding: 8px; font-weight: 600; color: var(--text-muted); text-align: center; width: 150px;">สิทธิ์เข้าถึงโครงการ</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="project-detail-permissions-tbody">
+                                                <!-- Populated dynamically via JS -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
                                 <!-- Project charts -->
                                 <div class="project-charts-row">
                                     <div class="chart-container-card hide-customer">
@@ -8003,6 +8050,126 @@ function renderSubnavGeneralInfo(project) {
     
     // Render Yearly Comparison Chart (Planned vs Actual progress across years)
     renderSubnavYearlyComparisonChart(project.customer);
+
+    // Render Project Detail Permissions
+    if (appState.currentRole === "pm" || appState.currentRole === "admin") {
+        const card = document.querySelector(".project-permissions-card");
+        if (card) card.style.display = "block";
+        renderProjectPermissions(project);
+    } else {
+        const card = document.querySelector(".project-permissions-card");
+        if (card) card.style.display = "none";
+    }
+}
+
+function renderProjectPermissions(project) {
+    const tbody = document.getElementById("project-detail-permissions-tbody");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+
+    const accounts = appState.customerAccounts || {};
+    const projectCode = project.code;
+
+    // Filter accounts to show target roles: customer, pe, technician, tech
+    const targetRoles = ["customer", "pe", "technician", "tech"];
+    const filteredAccounts = Object.values(accounts).filter(acc => targetRoles.includes(acc.role));
+
+    if (filteredAccounts.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 24px; font-style: italic;">ยังไม่มีบัญชีผู้ใช้ PE, ช่าง หรือลูกค้า ในระบบ</td></tr>`;
+        return;
+    }
+
+    filteredAccounts.forEach(acc => {
+        const userKey = acc.userKey;
+        const perms = appState.userPermissions[userKey] || { hospitals: [], projects: [] };
+        
+        const hasProjectPerm = perms.projects && perms.projects.includes(projectCode);
+        const hasHospitalPerm = perms.hospitals && perms.hospitals.includes(project.customer);
+
+        let roleLabel = "";
+        let roleColor = "";
+        let roleIcon = "";
+        
+        if (acc.role === "customer") {
+            roleLabel = "ลูกค้า (Customer)";
+            roleColor = "#0284c7";
+            roleIcon = "fa-user-tie";
+        } else if (acc.role === "pe") {
+            roleLabel = "วิศวกร (PE)";
+            roleColor = "#16a34a";
+            roleIcon = "fa-helmet-safety";
+        } else {
+            roleLabel = "ช่าง (Technician)";
+            roleColor = "#ea580c";
+            roleIcon = "fa-screwdriver-wrench";
+        }
+
+        const tr = document.createElement("tr");
+        tr.style.borderBottom = "1px solid var(--border-color)";
+        
+        let accessControlHTML = "";
+        if (hasHospitalPerm) {
+            accessControlHTML = `
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                    <input type="checkbox" checked disabled style="width: 16px; height: 16px; cursor: not-allowed;">
+                    <span style="font-size: 9.5px; color: #15803d; font-weight: 700; background: #dcfce7; padding: 2px 8px; border-radius: 4px;">ได้สิทธิ์ผ่านโรงพยาบาล</span>
+                </div>
+            `;
+        } else {
+            accessControlHTML = `
+                <div style="display: flex; justify-content: center; align-items: center;">
+                    <label class="switch-container" style="position: relative; display: inline-block; width: 34px; height: 20px;">
+                        <input type="checkbox" class="project-perm-toggle" data-userkey="${userKey}" ${hasProjectPerm ? 'checked' : ''} style="opacity: 0; width: 0; height: 0;">
+                        <span class="slider" style="position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .3s; border-radius: 20px;"></span>
+                    </label>
+                </div>
+            `;
+        }
+
+        tr.innerHTML = `
+            <td style="padding: 10px 12px; font-weight: 600; color: var(--navy-dark);">${acc.name || acc.username}</td>
+            <td style="padding: 10px 12px; font-family: monospace; font-weight: 600; color: #475569;">${acc.username}</td>
+            <td style="padding: 10px 12px;">
+                <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; color: ${roleColor}; background: ${roleColor}15; padding: 4px 10px; border-radius: 20px;">
+                    <i class="fa-solid ${roleIcon}"></i> ${roleLabel}
+                </span>
+            </td>
+            <td style="padding: 10px 12px; text-align: center;">${accessControlHTML}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    // Add event listeners to toggles
+    tbody.querySelectorAll(".project-perm-toggle").forEach(toggle => {
+        toggle.addEventListener("change", async function() {
+            const userKey = this.getAttribute("data-userkey");
+            const isChecked = this.checked;
+            
+            if (!appState.userPermissions) appState.userPermissions = {};
+            if (!appState.userPermissions[userKey]) {
+                appState.userPermissions[userKey] = { hospitals: [], projects: [] };
+            }
+            
+            let projects = appState.userPermissions[userKey].projects || [];
+            if (isChecked) {
+                if (!projects.includes(projectCode)) {
+                    projects.push(projectCode);
+                }
+            } else {
+                projects = projects.filter(code => code !== projectCode);
+            }
+            appState.userPermissions[userKey].projects = projects;
+
+            // Save to localStorage & Supabase
+            await saveUserPermissions();
+            showToast("อัปเดตสิทธิ์การเข้าถึงโครงการสำเร็จ", "success");
+            
+            // Re-render permissions page if active
+            if (appState.currentView === "permissions-mgmt") {
+                renderPermissionsManagement();
+            }
+        });
+    });
 }
 
 function calculatePlanScurveFromGantt(proj) {
@@ -12872,12 +13039,24 @@ document.addEventListener("DOMContentLoaded", () => {
             };
 
             if (!appState.userPermissions) appState.userPermissions = {};
-            appState.userPermissions[newKey] = { hospitals: [], projects: [] };
+            
+            const specProject = window.createUserForSpecificProject;
+            const projectPermList = specProject ? [specProject] : [];
+            appState.userPermissions[newKey] = { hospitals: [], projects: projectPermList };
 
             saveCustomerAccounts();
             saveUserPermissions();
 
-            showToast(`🎉 สร้างบัญชีลูกค้า "${name}" เรียบร้อยแล้ว!`, "success");
+            if (specProject) {
+                showToast(`🎉 สร้างบัญชีผู้ใช้ "${name}" และมอบสิทธิ์เข้าถึงโครงการ ${specProject} เรียบร้อยแล้ว!`, "success");
+                window.createUserForSpecificProject = null;
+                const activeProj = projectsData[appState.selectedDetailProject];
+                if (activeProj) {
+                    renderProjectPermissions(activeProj);
+                }
+            } else {
+                showToast(`🎉 สร้างบัญชีลูกค้า "${name}" เรียบร้อยแล้ว!`, "success");
+            }
             window.closeCreateCustomerModal();
 
             // Copy login info automatically
@@ -12887,6 +13066,12 @@ document.addEventListener("DOMContentLoaded", () => {
             renderPermissionsManagement();
         });
     }
+
+    // Project-detail helper to open Create Customer modal with a pre-filled target project
+    window.openCreateUserFromProjectDetail = function() {
+        window.createUserForSpecificProject = appState.selectedDetailProject;
+        window.openCreateCustomerModal();
+    };
 
     // ============================================================
     // CUSTOMER DAILY REPORT SIGN-OFF SYSTEM
