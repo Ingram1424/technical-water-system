@@ -2020,6 +2020,9 @@ select.form-control {
    ROLE ACCESSIBILITY TOGGLES
    ---------------------------------------------------- */
 .role-pm .hide-pm,
+.role-pe .hide-pe,
+.role-technician .hide-technician,
+.role-tech .hide-tech,
 .role-accounting .hide-accounting,
 .role-customer .hide-customer {
     display: none !important;
@@ -3313,7 +3316,7 @@ body.public-view-mode #public-view-header {
                         </div>
                         
                         <!-- Create New Project Button (Only visible for PM role) -->
-                        <button class="btn btn-sm btn-primary btn-block hide-customer" id="sidebar-create-project-btn" style="width: 100%; font-size: 11px; padding: 5px; height: auto; border-radius: var(--radius-sm); margin-top: 6px;">
+                        <button class="btn btn-sm btn-primary btn-block hide-customer hide-pe hide-technician" id="sidebar-create-project-btn" style="width: 100%; font-size: 11px; padding: 5px; height: auto; border-radius: var(--radius-sm); margin-top: 6px;">
                             <i class="fa-solid fa-plus-circle"></i> สร้างโครงการใหม่
                         </button>
                         <!-- Edit Project Button -->
@@ -3363,14 +3366,14 @@ body.public-view-mode #public-view-header {
                     </nav>
                 </div>
                 
-                <a href="#" class="nav-item hide-customer" data-view="cost">
+                <a href="#" class="nav-item hide-customer hide-pm hide-pe hide-technician" data-view="cost">
                     <i class="fa-solid fa-hand-holding-dollar"></i>
                     <div class="nav-label">
                         <span class="main-label">Cost Management</span>
                         <span class="sub-label">ค่าใช้จ่ายโครงการ</span>
                     </div>
                 </a>
-                <a href="#" class="nav-item hide-accounting hide-customer hide-pm" data-view="permissions-mgmt">
+                <a href="#" class="nav-item hide-accounting hide-customer hide-pm hide-pe hide-technician" data-view="permissions-mgmt">
                     <i class="fa-solid fa-user-shield"></i>
                     <div class="nav-label">
                         <span class="main-label">Permissions</span>
@@ -3402,7 +3405,7 @@ body.public-view-mode #public-view-header {
 
                 <div class="header-actions">
                     <!-- Header Create Project Button (PM only) -->
-                    <button class="btn btn-sm btn-primary hide-customer" id="header-create-project-btn" style="font-size: 11.5px; padding: 6px 14px; height: auto; border-radius: var(--radius-sm); display: none; align-items: center; gap: 5px; white-space: nowrap;">
+                    <button class="btn btn-sm btn-primary hide-customer hide-pe hide-technician" id="header-create-project-btn" style="font-size: 11.5px; padding: 6px 14px; height: auto; border-radius: var(--radius-sm); display: none; align-items: center; gap: 5px; white-space: nowrap;">
                         <i class="fa-solid fa-plus-circle"></i> สร้างโครงการใหม่
                     </button>
                     <!-- Notification Button -->
@@ -5508,13 +5511,15 @@ body.public-view-mode #public-view-header {
                         <label class="form-label" for="new-cust-role">ประเภทบัญชีผู้ใช้ (Role) <span class="required">*</span></label>
                         <select id="new-cust-role" class="form-control" style="font-family: 'Prompt'; font-weight: 600; border-radius: 6px; padding: 6px 10px;">
                             <option value="customer" selected>Customer View (ลูกค้า - สิทธิ์ดูเฉพาะโครงการที่ระบุ)</option>
+                            <option value="pe">Project Engineer (PE - สิทธิ์แก้ไขเฉพาะโครงการที่ระบุ)</option>
+                            <option value="technician">Technician (ช่าง/หน้างาน - สิทธิ์ดูอย่างเดียวเฉพาะโครงการที่ระบุ)</option>
                             <option value="pm">Project Manager (PM - จัดการงาน/แผนงาน/รายงานประจำวัน)</option>
                             <option value="accounting">Accounting (AC - ฝ่ายบัญชี/บันทึกค่าใช้จ่ายโครงการ)</option>
                             <option value="admin">Admin (ผู้ดูแลระบบสูงสุด - จัดการข้อมูล/บัญชีผู้ใช้งานได้ทุกส่วน)</option>
                         </select>
                     </div>
                     <div class="form-group mt-3" style="background: var(--bg-light); border: 1px solid var(--border-color); padding: 12px; border-radius: var(--radius-sm);">
-                        <span style="font-size: 11px; color: var(--text-muted); display: block;"><i class="fa-solid fa-circle-info text-blue mr-1"></i> หากเลือกบทบาท PM/AC/Admin บัญชีนั้นจะสามารถเข้าถึงได้ทุกงานโดยไม่ต้องระบุสิทธิ์โครงการย่อยเพิ่ม</span>
+                        <span style="font-size: 11px; color: var(--text-muted); display: block;"><i class="fa-solid fa-circle-info text-blue mr-1"></i> บทบาท Customer, PE และ Technician จะถูกจำกัดการเข้าถึงเฉพาะโครงการที่ระบุสิทธิ์ไว้เท่านั้น โดย PE จะสามารถแก้ไขได้ และ Technician/Customer จะดูได้เพียงอย่างเดียว</span>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -5997,9 +6002,9 @@ function populateSubnavHospitals() {
         "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4"
     ];
 
-    // For customer role: filter to allowed hospitals only
+    // For customer/pe/tech role: filter to allowed hospitals only
     let hospitals = allHospitals;
-    if (appState.currentRole === "customer") {
+    if (appState.currentRole === "customer" || appState.currentRole === "pe" || appState.currentRole === "technician" || appState.currentRole === "tech") {
         const cUserKey = appState.currentCustomerUser || "user1";
         const perms = appState.userPermissions[cUserKey] || { hospitals: [], projects: [] };
         const effectiveHospitals = Object.values(projectsData)
@@ -6051,8 +6056,8 @@ function populateSubnavProjects(yearFilter) {
         return hospitalMatch && yearMatch && quotingMatch;
     });
 
-    // For customer role: further filter strictly by permissions
-    if (appState.currentRole === "customer") {
+    // For customer/pe/tech role: further filter strictly by permissions
+    if (appState.currentRole === "customer" || appState.currentRole === "pe" || appState.currentRole === "technician" || appState.currentRole === "tech") {
         const cUserKey = appState.currentCustomerUser || "user1";
         const perms = appState.userPermissions[cUserKey] || { hospitals: [], projects: [] };
         projects = projects.filter(p => isProjectAllowedForCustomer(p, perms));
@@ -6835,11 +6840,14 @@ function switchView(viewName) {
     }
 
     // Check permission rules first
-    if (appState.currentRole === "customer" && (viewName === "cost" || viewName === "dashboard" || viewName === "permissions-mgmt")) {
-        showToast("สิทธิ์ลูกค้าเข้าดูได้เฉพาะหน้าโครงการของตนเองเท่านั้น", "info");
+    const isCustOrTech = (appState.currentRole === "customer" || appState.currentRole === "technician" || appState.currentRole === "tech");
+    const isPMOrPE = (appState.currentRole === "pm" || appState.currentRole === "pe");
+    
+    if (isCustOrTech && (viewName === "cost" || viewName === "dashboard" || viewName === "permissions-mgmt")) {
+        showToast("สิทธิ์ของคุณเข้าดูได้เฉพาะหน้าโครงการของตนเองเท่านั้น", "info");
         viewName = "projects-list";
     }
-    if (appState.currentRole === "pm" && (viewName === "cost" || viewName === "permissions-mgmt")) {
+    if (isPMOrPE && (viewName === "cost" || viewName === "permissions-mgmt")) {
         showToast("คุณไม่มีสิทธิ์เข้าถึงหน้านี้ (จำกัดเฉพาะ Admin และ Accounting)", "warning");
         viewName = "projects-list";
     }
@@ -6871,16 +6879,22 @@ function switchView(viewName) {
             sidebarSubnav.style.display = "block";
             const sidebarCreateBtn = document.getElementById("sidebar-create-project-btn");
             const headerCreateBtn = document.getElementById("header-create-project-btn");
+            
+            const showCreate = (appState.currentRole === "pm" || appState.currentRole === "admin" || appState.currentRole === "accounting");
+            
             if (viewName === "quoting-projects-list") {
                 if (navItemQuoting && sidebarSubnav.previousElementSibling !== navItemQuoting) {
                     navItemQuoting.insertAdjacentElement("afterend", sidebarSubnav);
                 }
                 if (subnavHeaderIcon) subnavHeaderIcon.className = "fa-solid fa-file-invoice sidebar-proj-icon";
                 if (subnavHeaderTitle) subnavHeaderTitle.textContent = "Quotation Detail";
-                if (sidebarCreateBtn) sidebarCreateBtn.innerHTML = `<i class="fa-solid fa-plus-circle"></i> สร้างรายการเสนอราคาใหม่`;
+                if (sidebarCreateBtn) {
+                    sidebarCreateBtn.innerHTML = `<i class="fa-solid fa-plus-circle"></i> สร้างรายการเสนอราคาใหม่`;
+                    sidebarCreateBtn.style.display = showCreate ? "block" : "none";
+                }
                 if (headerCreateBtn) {
                     headerCreateBtn.innerHTML = `<i class="fa-solid fa-plus-circle"></i> เพิ่มรายการเสนอราคา`;
-                    headerCreateBtn.style.display = "inline-flex";
+                    headerCreateBtn.style.display = showCreate ? "inline-flex" : "none";
                 }
             } else {
                 if (navItemProjects && sidebarSubnav.previousElementSibling !== navItemProjects) {
@@ -6888,10 +6902,13 @@ function switchView(viewName) {
                 }
                 if (subnavHeaderIcon) subnavHeaderIcon.className = "fa-solid fa-folder-open sidebar-proj-icon";
                 if (subnavHeaderTitle) subnavHeaderTitle.textContent = "Project Detail";
-                if (sidebarCreateBtn) sidebarCreateBtn.innerHTML = `<i class="fa-solid fa-plus-circle"></i> สร้างโครงการใหม่`;
+                if (sidebarCreateBtn) {
+                    sidebarCreateBtn.innerHTML = `<i class="fa-solid fa-plus-circle"></i> สร้างโครงการใหม่`;
+                    sidebarCreateBtn.style.display = showCreate ? "block" : "none";
+                }
                 if (headerCreateBtn) {
                     headerCreateBtn.innerHTML = `<i class="fa-solid fa-plus-circle"></i> สร้างโครงการใหม่`;
-                    headerCreateBtn.style.display = "inline-flex";
+                    headerCreateBtn.style.display = showCreate ? "inline-flex" : "none";
                 }
             }
         } else {
@@ -6978,17 +6995,27 @@ function switchRole(roleName) {
         const acc = appState.customerAccounts[cUserKey];
         const dispName = acc ? acc.name : "Customer View";
         
-        roleBadge.innerHTML = `<i class="fa-solid fa-user-tie"></i> CS (${dispName})`;
-        roleDisplay.textContent = "Customer View";
+        if (roleName === "customer") {
+            roleBadge.innerHTML = `<i class="fa-solid fa-user-tie"></i> CS (${dispName})`;
+            roleDisplay.textContent = "Customer View";
+            showToast(`สลับบทบาทเป็น: ${dispName} — สิทธิ์จำกัดตาม PM กำหนด`, "info");
+        } else if (roleName === "pe") {
+            roleBadge.innerHTML = `<i class="fa-solid fa-helmet-safety"></i> PE (${dispName})`;
+            roleDisplay.textContent = "Project Engineer";
+            showToast(`สลับบทบาทเป็น: PE: ${dispName} — แก้ไขเฉพาะโครงการที่ได้รับสิทธิ์`, "info");
+        } else {
+            roleBadge.innerHTML = `<i class="fa-solid fa-screwdriver-wrench"></i> Tech (${dispName})`;
+            roleDisplay.textContent = "Technician View";
+            showToast(`สลับบทบาทเป็น: Tech: ${dispName} — ดูอย่างเดียวเฉพาะโครงการที่ได้รับสิทธิ์`, "info");
+        }
         usernameDisplay.textContent = dispName;
-        showToast(`สลับบทบาทเป็น: ${dispName} — สิทธิ์จำกัดตาม PM กำหนด`, "info");
 
         // Get allowed hospitals and projects for this user
         const perms = appState.userPermissions[cUserKey] || { hospitals: [], projects: [] };
         const allowedHospitals = perms.hospitals || [];
         const allowedProjects = perms.projects || [];
 
-        // Find accessible projects for this customer user
+        // Find accessible projects for this customer/pe/tech user
         const accessibleProjects = Object.values(projectsData).filter(p => isProjectAllowedForCustomer(p, perms));
         
         const firstProj = accessibleProjects[0] || null;
@@ -7195,7 +7222,7 @@ function renderHospitalsGrid(activeProjects) {
                 totalProfit += (p.value || 0) - (p.cost || 0);
             });
             
-            const hideCost = (appState.currentRole === "customer");
+            const hideCost = (appState.currentRole === "customer" || appState.currentRole === "technician" || appState.currentRole === "tech");
             
             const financialsHTML = hideCost 
                 ? `<div style="font-size: 11px; color: var(--text-muted); font-style: italic; margin-top: 12px; padding: 10px; background: var(--bg-light); border-radius: var(--radius-sm); text-align: center; border: 1px solid var(--border-color);">
@@ -7656,7 +7683,7 @@ function renderSubnavProjectWorkspace() {
     document.getElementById("subnav-doc-value").textContent = `${formatNumber(project.value)} บาท`;
     document.getElementById("subnav-doc-desc").textContent = project.description;
     
-    const isCustomer = appState.currentRole === "customer";
+    const isCustomer = (appState.currentRole === "customer" || appState.currentRole === "technician" || appState.currentRole === "tech");
     
     // Toggle sidebar subnav tabs container visibility
     const subnavTabsEl = document.querySelector(".subnav-tabs");
@@ -8094,7 +8121,7 @@ function updateScurveTotals(project) {
 
     let displayWeeklySums = actualWeeklySums; // Always display actual weekly sums
     
-    const isCustomer = appState.currentRole === "customer";
+    const isCustomer = (appState.currentRole === "customer" || appState.currentRole === "technician" || appState.currentRole === "tech");
     let footerHtml = `
         <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid var(--border-color);">
             <td colspan="2" style="padding: 8px 10px; text-align: right;">รวม</td>
@@ -8129,7 +8156,7 @@ function updateScurveTotals(project) {
     footerHtml += `<td class="hide-accounting hide-customer"></td></tr>`;
 
     // Add manually editable cumulative plan progress row
-    const canEditPlan = (appState.currentRole === "pm" || appState.currentRole === "admin") && appState.selectedDetailProject !== "all";
+    const canEditPlan = (appState.currentRole === "pm" || appState.currentRole === "admin" || appState.currentRole === "pe") && appState.selectedDetailProject !== "all";
     const planReadonlyAttr = canEditPlan ? '' : 'readonly';
     const planEditInputStyle = `style="width: 100%; font-size: 10px; text-align: center; padding: 3px 2px; border: 1px solid var(--border-color); border-radius: 4px; background: #fff; color: #1e40af; font-weight: bold;"`;
     const planInputStyle = `style="width: 100%; font-size: 10px; text-align: center; padding: 3px 2px; border: 1px solid transparent; background: transparent; color: #1e40af; font-weight: bold;"`;
@@ -8416,7 +8443,7 @@ function renderSubnavPhotosFiles(project) {
         const folderLabel = formatSortKeyToThai(selectedKey);
         const folderItems = groups[selectedKey] || [];
         
-        const canEdit = (appState.currentRole === "pm" || appState.currentRole === "admin") && appState.selectedDetailProject !== "all";
+        const canEdit = (appState.currentRole === "pm" || appState.currentRole === "admin" || appState.currentRole === "pe") && appState.selectedDetailProject !== "all";
 
         // 1. Back button header
         const header = document.createElement("div");
@@ -8665,10 +8692,10 @@ function renderSubnavActualProgress(project) {
     const body = document.getElementById("scurve-table-body");
     if (!head || !body) return;
 
-    const canEdit = (appState.currentRole === "pm" || appState.currentRole === "admin") && appState.selectedDetailProject !== "all";
+    const canEdit = (appState.currentRole === "pm" || appState.currentRole === "admin" || appState.currentRole === "pe") && appState.selectedDetailProject !== "all";
 
     // Build Headers
-    const isCustomer = appState.currentRole === "customer";
+    const isCustomer = (appState.currentRole === "customer" || appState.currentRole === "technician" || appState.currentRole === "tech");
     let headerRow1 = `<tr style="background: #e0e7ff; border-bottom: 1px solid var(--border-color); text-align: center; font-size: 13.5px; font-weight: 700;">
         <th rowspan="2" style="padding: 10px; width: 55px; border: 1px solid var(--border-color);">Items</th>
         <th rowspan="2" style="padding: 10px; text-align: left; width: 240px; border: 1px solid var(--border-color);">Description</th>
@@ -9189,7 +9216,7 @@ function renderSubnavDocumentsTab(project) {
     filteredDocs.forEach((d, idx) => {
         const tr = document.createElement("tr");
         
-        const canDelete = (appState.currentRole === "pm" || appState.currentRole === "admin");
+        const canDelete = (appState.currentRole === "pm" || appState.currentRole === "admin" || appState.currentRole === "pe");
         const deleteButtonHTML = canDelete 
             ? `<button class="btn-delete-row" data-idx="${idx}" title="ลบเอกสาร" style="background:none; border:none; color:#e63946; cursor:pointer; padding: 4px; font-size:14px;"><i class="fa-solid fa-trash-can"></i></button>`
             : `<button class="btn-delete-row" disabled style="opacity:0.3; cursor:not-allowed;" title="ไม่มีสิทธิ์ลบข้อมูล" style="background:none; border:none; color:#cbd5e1; cursor:not-allowed; padding: 4px; font-size:14px;"><i class="fa-solid fa-trash-can"></i></button>`;
@@ -9292,7 +9319,7 @@ function renderSubnavPlanWork(project) {
     const docToInput = document.getElementById("gantt-doc-to");
     const docRefInput = document.getElementById("gantt-doc-ref");
 
-    const canEdit = (appState.currentRole === "pm" || appState.currentRole === "admin") && appState.selectedDetailProject !== "all";
+    const canEdit = (appState.currentRole === "pm" || appState.currentRole === "admin" || appState.currentRole === "pe") && appState.selectedDetailProject !== "all";
 
     if (startDateInput) {
         startDateInput.value = project.ganttData.startDate;
@@ -9959,8 +9986,8 @@ function renderSubnavDailyReports(project) {
         return;
     }
     
-    const isPM = (appState.currentRole === "pm" || appState.currentRole === "admin");
-    const isCustomer = appState.currentRole === "customer";
+    const isPM = (appState.currentRole === "pm" || appState.currentRole === "admin" || appState.currentRole === "pe");
+    const isCustomer = (appState.currentRole === "customer" || appState.currentRole === "technician" || appState.currentRole === "tech");
     
     filteredReports.forEach((rep) => {
         const idx = reports.indexOf(rep);
@@ -11500,7 +11527,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 displayStatus = "งานที่รอเสนอราคา";
             }
 
-            const isPM = (appState.currentRole === "pm" || appState.currentRole === "admin");
+            const isPM = (appState.currentRole === "pm" || appState.currentRole === "admin" || appState.currentRole === "pe");
             const infoText = isPM ? `มูลค่าโครงการ: <strong style="color: var(--navy-dark);">${p.value.toLocaleString()} บาท</strong>` : `รหัส PO: <strong>${p.code}</strong>`;
 
             card.innerHTML = `
@@ -14798,7 +14825,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         showToast("กำลังจัดเตรียมข้อมูลและรูปภาพสำหรับเอกสาร PDF...", "info");
 
-        const isCustomer = appState.currentRole === "customer";
+        const isCustomer = (appState.currentRole === "customer" || appState.currentRole === "technician" || appState.currentRole === "tech");
         const scurveCanvas = document.getElementById("scurve-chart-canvas");
         const scurveChartImg = scurveCanvas ? scurveCanvas.toDataURL("image/png") : null;
 
@@ -15783,6 +15810,10 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("edit-project-boq").value = proj.boq || "";
         }
 
+        const delBtn = document.getElementById("btn-delete-project");
+        if (delBtn) {
+            delBtn.style.display = (appState.currentRole === "pe") ? "none" : "";
+        }
         if (editProjectModal) editProjectModal.classList.add("active");
     };
 
@@ -16010,6 +16041,8 @@ window.getUserDetails = function(username) {
             if (r === "admin") lbl = "Admin Manager";
             else if (r === "pm") lbl = "Project Manager";
             else if (r === "accounting") lbl = "Accountant";
+            else if (r === "pe") lbl = "Project Engineer";
+            else if (r === "technician" || r === "tech") lbl = "Technician View";
             return {
                 username: lowerUser,
                 password: found.password,
@@ -16031,7 +16064,7 @@ function applyLoginSuccess(username, role, userKey = null) {
 
     const user = window.getUserDetails(username);
     if (user) {
-        if (role === "customer" && user.userKey) {
+        if ((role === "customer" || role === "pe" || role === "technician" || role === "tech") && user.userKey) {
             appState.currentCustomerUser = user.userKey;
             localStorage.setItem("technical_water_current_customer_user", user.userKey);
         }
@@ -16053,6 +16086,10 @@ function applyLoginSuccess(username, role, userKey = null) {
                 activeRoleBadge.innerHTML = `<i class="fa-solid fa-user-lock"></i> PM (Project Manager)`;
             } else if (role === "accounting") {
                 activeRoleBadge.innerHTML = `<i class="fa-solid fa-file-invoice-dollar"></i> AC (Accounting)`;
+            } else if (role === "pe") {
+                activeRoleBadge.innerHTML = `<i class="fa-solid fa-helmet-safety"></i> PE (Project Engineer)`;
+            } else if (role === "technician" || role === "tech") {
+                activeRoleBadge.innerHTML = `<i class="fa-solid fa-screwdriver-wrench"></i> Tech (Technician View)`;
             } else {
                 activeRoleBadge.innerHTML = `<i class="fa-solid fa-user-tie"></i> CS (Customer View)`;
             }
@@ -16451,6 +16488,12 @@ function renderPermissionsManagement() {
             } else if (role === "accounting") {
                 roleBadgeHTML = `<span style="font-size: 10.5px; font-weight: 700; padding: 2.5px 8px; border-radius: 12px; background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-file-invoice-dollar"></i> AC (Account)</span>`;
                 permBtnHTML = `<button type="button" class="btn btn-xs btn-outline" style="font-size: 10.5px; padding: 4px 8px; opacity: 0.5; cursor: not-allowed;" disabled><i class="fa-solid fa-sliders"></i> จัดการสิทธิ์ไม่ได้</button>`;
+            } else if (role === "pe") {
+                roleBadgeHTML = `<span style="font-size: 10.5px; font-weight: 700; padding: 2.5px 8px; border-radius: 12px; background: #fef3c7; color: #d97706; border: 1px solid #fcd34d; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-helmet-safety"></i> PE (${hCount} รพ. / ${pCount} งาน)</span>`;
+                permBtnHTML = `<button type="button" class="btn btn-xs btn-outline" onclick="window.selectUserForPermission('${key}')" title="เลือกบัญชีนี้เพื่อปรับสิทธิ์" style="font-size: 10.5px; padding: 4px 8px;"><i class="fa-solid fa-sliders"></i> จัดการสิทธิ์</button>`;
+            } else if (role === "technician" || role === "tech") {
+                roleBadgeHTML = `<span style="font-size: 10.5px; font-weight: 700; padding: 2.5px 8px; border-radius: 12px; background: #fae8ff; color: #a21caf; border: 1px solid #f5d0fe; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-screwdriver-wrench"></i> Tech (${hCount} รพ. / ${pCount} งาน)</span>`;
+                permBtnHTML = `<button type="button" class="btn btn-xs btn-outline" onclick="window.selectUserForPermission('${key}')" title="เลือกบัญชีนี้เพื่อปรับสิทธิ์" style="font-size: 10.5px; padding: 4px 8px;"><i class="fa-solid fa-sliders"></i> จัดการสิทธิ์</button>`;
             } else {
                 roleBadgeHTML = `<span style="font-size: 10.5px; font-weight: 700; padding: 2.5px 8px; border-radius: 12px; background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-user-tie"></i> Customer (${hCount} รพ. / ${pCount} งาน)</span>`;
                 permBtnHTML = `<button type="button" class="btn btn-xs btn-outline" onclick="window.selectUserForPermission('${key}')" title="เลือกบัญชีนี้เพื่อปรับสิทธิ์" style="font-size: 10.5px; padding: 4px 8px;"><i class="fa-solid fa-sliders"></i> จัดการสิทธิ์</button>`;
