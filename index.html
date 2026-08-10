@@ -8125,12 +8125,15 @@ function updateScurveTotals(project) {
 
     let displayWeeklySums = actualWeeklySums; // Always display actual weekly sums
     
-    const isCustomer = (appState.currentRole === "pe" || appState.currentRole === "customer" || appState.currentRole === "technician" || appState.currentRole === "tech");
+    const hideBudget = (appState.currentRole === "pe" || appState.currentRole === "customer" || appState.currentRole === "technician" || appState.currentRole === "tech");
+    const hideWeight = (appState.currentRole === "customer");
+    const labelColspan = 2 + (hideBudget ? 0 : 1) + (hideWeight ? 0 : 1) + 1;
+
     let footerHtml = `
         <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid var(--border-color);">
             <td colspan="2" style="padding: 8px 10px; text-align: right;">รวม</td>
-            ${isCustomer ? '' : `<td style="padding: 8px 4px; text-align: center;">${totalBudget.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>`}
-            <td style="padding: 8px 4px; text-align: center; color: ${totalWeight === 100 ? '#10b981' : '#e63946'};">${totalWeight.toFixed(2)}%</td>
+            ${hideBudget ? '' : `<td style="padding: 8px 4px; text-align: center;">${totalBudget.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>`}
+            ${hideWeight ? '' : `<td style="padding: 8px 4px; text-align: center; color: ${totalWeight === 100 ? '#10b981' : '#e63946'};">${totalWeight.toFixed(2)}%</td>`}
             <td style="padding: 8px 4px; text-align: center;"></td>
     `;
     
@@ -8141,7 +8144,7 @@ function updateScurveTotals(project) {
 
     footerHtml += `
         <tr style="background: #fff; border-top: 1px solid var(--border-color);">
-            <td colspan="${isCustomer ? 4 : 5}" style="padding: 8px 10px; text-align: right; font-weight: 600;">ปริมาณงานต่อสัปดาห์ (%)</td>
+            <td colspan="${labelColspan}" style="padding: 8px 10px; text-align: right; font-weight: 600;">ปริมาณงานต่อสัปดาห์ (%)</td>
     `;
     displayWeeklySums.forEach((val, i) => {
         footerHtml += `<td style="padding: 8px 4px; text-align: center; font-size: 10px; border-left: ${i%4===0 ? '1px' : '0'} solid var(--border-color);">${val === 0 ? '0.00%' : val.toFixed(2)+'%'}</td>`;
@@ -8150,7 +8153,7 @@ function updateScurveTotals(project) {
     
     footerHtml += `
         <tr style="background: #f1f5f9; border-top: 1px solid var(--border-color); font-weight: 700;">
-            <td colspan="${isCustomer ? 4 : 5}" style="padding: 8px 10px; text-align: right;">สะสมปริมาณงาน (%)</td>
+            <td colspan="${labelColspan}" style="padding: 8px 10px; text-align: right;">สะสมปริมาณงาน (%)</td>
     `;
     let cumSum = 0;
     displayWeeklySums.forEach((val, i) => {
@@ -8167,7 +8170,7 @@ function updateScurveTotals(project) {
 
     footerHtml += `
         <tr style="background: #eef2f6; border-top: 1px solid var(--border-color); font-weight: 700;">
-            <td colspan="${isCustomer ? 4 : 5}" style="padding: 8px 10px; text-align: right; color: #1e40af;">สะสมแผนงาน (%)</td>
+            <td colspan="${labelColspan}" style="padding: 8px 10px; text-align: right; color: #1e40af;">สะสมแผนงาน (%)</td>
     `;
     
     if (!project.scurvePlanCum) project.scurvePlanCum = new Array(project.scurveMonths.length * 4).fill(0);
@@ -8700,11 +8703,12 @@ function renderSubnavActualProgress(project) {
 
     // Build Headers
     const hideBudget = (appState.currentRole === "pe" || appState.currentRole === "customer" || appState.currentRole === "technician" || appState.currentRole === "tech");
+    const hideWeight = (appState.currentRole === "customer");
     let headerRow1 = `<tr style="background: #e0e7ff; border-bottom: 1px solid var(--border-color); text-align: center; font-size: 13.5px; font-weight: 700;">
         <th rowspan="2" style="padding: 10px; width: 55px; border: 1px solid var(--border-color);">Items</th>
         <th rowspan="2" style="padding: 10px; text-align: left; width: 240px; border: 1px solid var(--border-color);">Description</th>
         ${hideBudget ? '' : '<th rowspan="2" style="padding: 10px; width: 90px; border: 1px solid var(--border-color);">Budget</th>'}
-        <th rowspan="2" style="padding: 10px; width: 65px; border: 1px solid var(--border-color);">%</th>
+        ${hideWeight ? '' : '<th rowspan="2" style="padding: 10px; width: 65px; border: 1px solid var(--border-color);">%</th>'}
         <th rowspan="2" style="padding: 10px; width: 65px; border: 1px solid var(--border-color);">% (รวม)</th>`;
     let headerRow2 = `<tr style="background: #f1f5f9; border-bottom: 2px solid var(--border-color); text-align: center;">`;
  
@@ -8763,9 +8767,11 @@ function renderSubnavActualProgress(project) {
                     ${isSub ? '' : `<input type="number" class="scurve-budget" data-idx="${idx}" value="${item.budget || 0}" step="1000" ${readonlyAttr} ${canEdit?editInputStyle:inputStyle}>`}
                 </td>
                 `}
+                ${hideWeight ? '' : `
                 <td style="padding: 6px;">
                     ${isSub ? '' : `<input type="number" class="scurve-weight" data-idx="${idx}" value="${(item.weight || 0).toFixed(2)}" readonly style="width: 100%; font-size: 10.5px; text-align: center; padding: 3px 2px; border: 1px solid transparent; background: #f8fafc; font-weight: bold; color: var(--navy-dark);">`}
                 </td>
+                `}
                 <td style="padding: 6px;">
                     ${isSub ? '' : `<input type="number" class="scurve-total-pct" data-idx="${idx}" value="${item.totalPercent}" readonly style="width: 100%; font-size: 12.5px; text-align: center; padding: 5px 2px; border: 1px solid transparent; background: #f8fafc; font-weight: bold; color: ${item.totalPercent === 100 ? '#10b981' : '#e63946'};">`}
                 </td>
