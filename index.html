@@ -14350,6 +14350,16 @@ document.addEventListener("DOMContentLoaded", () => {
             const proj = getActiveProj();
             if (!proj) return showToast("กรุณาเลือกโครงการเฉพาะก่อน", "warning");
 
+            const formatYmdToTh = (ymdStr) => {
+                if (!ymdStr) return '-';
+                const parts = ymdStr.split('-');
+                if (parts.length !== 3) return ymdStr;
+                const y = parseInt(parts[0]) + 543;
+                const m = parseInt(parts[1]);
+                const d = parseInt(parts[2]);
+                return `${d}/${m}/${y}`;
+            };
+
             // Gather headers and dates list based on viewMode
             const dateList = [];
             const viewMode = proj.ganttData.viewMode || "daily";
@@ -14679,7 +14689,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     <div class="company-header">
                         <img src="${window.location.origin}/logo.png" style="height: 65px; width: auto; object-fit: contain;" alt="TECHNICAL WATER Logo">
                         <div class="company-info">
-                            <h1>บริษัท เทคนิคอน วอเตอร์ จำกัด (TECHNICAL WATER CO., LTD.)</h1>
+                            <h1>บริษัท เทคนิคอล วอเตอร์ จำกัด (TECHNICAL WATER CO., LTD.)</h1>
                             <p>301/856 ซอยรามคำแหง 68 ถนนรามคำแหง แขวงหัวหมาก เขตบางกะปิ กรุงเทพฯ 10240</p>
                             <p>เบอร์โทร (Tel): 02-735-3022 | E-mail: technicalwater2015@gmail.com</p>
                         </div>
@@ -14690,6 +14700,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         <div class="doc-meta-item"><span class="doc-meta-label">เรียน:</span> <span>${proj.ganttData.header.to || '-'}</span></div>
                         <div class="doc-meta-item"><span class="doc-meta-label">เรื่อง:</span> <span>${proj.ganttData.header.subject || '-'}</span></div>
                         <div class="doc-meta-item"><span class="doc-meta-label">เอกสารอ้างอิง:</span> <span>${proj.ganttData.header.refPo || '-'}</span></div>
+                        <div class="doc-meta-item" style="grid-column: span 2;"><span class="doc-meta-label">ระยะเวลาแผนงาน:</span> <span>${formatYmdToTh(proj.ganttData.startDate)} ถึง ${formatYmdToTh(proj.ganttData.endDate)}</span></div>
                     </div>
 
                     <div class="gantt-title">แผนงานปรับปรุงโครงการ: ${proj.name}</div>
