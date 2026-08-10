@@ -707,7 +707,7 @@ select.form-control {
    ---------------------------------------------------- */
 .kpi-grid {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(6, 1fr);
     gap: 16px;
     margin-bottom: 20px;
 }
@@ -789,6 +789,10 @@ select.form-control {
 .kpi-card.orange { border-top: 4px solid #f59e0b; }
 .kpi-card.orange .kpi-icon-container { background-color: rgba(245, 158, 11, 0.08); color: #f59e0b; }
 .kpi-card.orange .kpi-value { color: #f59e0b; }
+
+.kpi-card.emerald { border-top: 4px solid #10b981; }
+.kpi-card.emerald .kpi-icon-container { background-color: rgba(16, 185, 129, 0.08); color: #10b981; }
+.kpi-card.emerald .kpi-value { color: #10b981; }
 
 .kpi-card.purple { 
     border-top: 4px solid var(--color-branches); 
@@ -3310,6 +3314,7 @@ body.public-view-mode #public-view-header {
                             </label>
                             <select id="subnav-project-status-selector" class="form-control" style="font-size: 11.5px; padding: 6px; height: auto; font-weight: 600; border-radius: var(--radius-sm); background-color: #f8fafc;">
                                 <option value="งานที่กำลังดำเนินการ">🟢 งานที่กำลังดำเนินการ</option>
+                                <option value="งานที่ดำเนินการเสร็จแล้ว">✅ งานที่ดำเนินการเสร็จแล้ว</option>
                                 <option value="งานเสร็จแล้วรอส่งงาน/อนุมัติ">🔵 งานเสร็จแล้วรอส่งงาน/อนุมัติ</option>
                                 <option value="งานที่รอเสนอราคา">🟠 งานที่รอเสนอราคา</option>
                             </select>
@@ -3558,6 +3563,18 @@ body.public-view-mode #public-view-header {
                             <div class="kpi-content">
                                 <span class="kpi-label">งานที่กำลังดำเนินการ</span>
                                 <h3 class="kpi-value" id="kpi-inprogress-jobs">0</h3>
+                                <span class="kpi-unit">รายการ</span>
+                            </div>
+                            <div class="kpi-glow"></div>
+                        </div>
+                        <!-- KPI 2.5: งานที่ดำเนินการเสร็จแล้ว -->
+                        <div class="kpi-card emerald">
+                            <div class="kpi-icon-container">
+                                <i class="fa-solid fa-circle-check"></i>
+                            </div>
+                            <div class="kpi-content">
+                                <span class="kpi-label">งานที่ดำเนินการเสร็จแล้ว</span>
+                                <h3 class="kpi-value" id="kpi-finished-jobs">0</h3>
                                 <span class="kpi-unit">รายการ</span>
                             </div>
                             <div class="kpi-glow"></div>
@@ -4276,6 +4293,7 @@ body.public-view-mode #public-view-header {
                                 <select id="portal-status-filter" class="form-control" style="font-size: 13px; padding: 10px; height: 42px; border-radius: var(--radius-md); border: 1px solid var(--border-color); width: 100%;">
                                     <option value="all" selected>ทั้งหมดทุกสถานะ</option>
                                     <option value="งานที่กำลังดำเนินการ">🟢 งานที่กำลังดำเนินการ</option>
+                                    <option value="งานที่ดำเนินการเสร็จแล้ว">✅ งานที่ดำเนินการเสร็จแล้ว</option>
                                     <option value="งานเสร็จแล้วรอส่งงาน/อนุมัติ">🔵 งานเสร็จแล้วรอส่งงาน/อนุมัติ</option>
                                     <option value="งานที่รอเสนอราคา">🟠 งานที่รอเสนอราคา</option>
                                 </select>
@@ -4329,6 +4347,7 @@ body.public-view-mode #public-view-header {
                                         <span style="font-size: 12px; font-weight: 700; color: var(--navy-dark); white-space: nowrap;">สถานะโครงการ:</span>
                                         <select id="subnav-project-status-selector-inline" class="form-control" style="font-size: 12px; padding: 6px 12px; height: 36px; font-weight: 600; background-color: #ffffff; border: 1px solid var(--border-color); border-radius: 6px; width: 180px;">
                                             <option value="งานที่กำลังดำเนินการ">🟢 งานที่กำลังดำเนินการ</option>
+                                            <option value="งานที่ดำเนินการเสร็จแล้ว">✅ งานที่ดำเนินการเสร็จแล้ว</option>
                                             <option value="งานเสร็จแล้วรอส่งงาน/อนุมัติ">🔵 งานเสร็จแล้วรอส่งงาน/อนุมัติ</option>
                                             <option value="งานที่รอเสนอราคา">🟠 งานที่รอเสนอราคา</option>
                                         </select>
@@ -5431,6 +5450,7 @@ body.public-view-mode #public-view-header {
                         <label class="form-label" for="edit-project-status">สถานะโครงการ</label>
                         <select id="edit-project-status" class="form-control">
                             <option value="งานที่กำลังดำเนินการ">งานที่กำลังดำเนินการ</option>
+                            <option value="งานที่ดำเนินการเสร็จแล้ว">งานที่ดำเนินการเสร็จแล้ว</option>
                             <option value="งานเสร็จแล้วรอส่งงาน/อนุมัติ">งานเสร็จแล้วรอส่งงาน/อนุมัติ</option>
                             <option value="งานที่รอเสนอราคา">งานที่รอเสนอราคา</option>
                         </select>
@@ -6249,12 +6269,15 @@ function renderOverallDashboard() {
     
     let totalJobs = combinedProjects.length;
     let inprogressJobs = 0;
+    let finishedJobs = 0;
     let completedJobs = 0;
     let pendingApprovalJobs = 0;
     
     combinedProjects.forEach(p => {
         // Count projects by status
-        if (p.status === "เสร็จสิ้น" || p.status === "เสร็จแล้ว" || p.status === "งานเสร็จแล้วรอส่งงาน" || p.status === "งานเสร็จแล้วรอส่งงาน/อนุมัติ") {
+        if (p.status === "งานที่ดำเนินการเสร็จแล้ว" || p.status === "เสร็จสิ้น") {
+            finishedJobs++;
+        } else if (p.status === "เสร็จแล้ว" || p.status === "งานเสร็จแล้วรอส่งงาน" || p.status === "งานเสร็จแล้วรอส่งงาน/อนุมัติ") {
             completedJobs++;
         } else if (p.status === "รออนุมัติ" || p.status === "งานรออนุมัติ" || p.status === "งานที่รอเสนอราคา" || p.status === "งานที่กำลังเสนอราคา" || p.status === "กำลังเสนอราคา") {
             pendingApprovalJobs++;
@@ -6266,6 +6289,9 @@ function renderOverallDashboard() {
     // Bind KPI values
     document.getElementById("kpi-total-jobs").textContent = totalJobs;
     document.getElementById("kpi-inprogress-jobs").textContent = inprogressJobs;
+    if (document.getElementById("kpi-finished-jobs")) {
+        document.getElementById("kpi-finished-jobs").textContent = finishedJobs;
+    }
     document.getElementById("kpi-completed-jobs").textContent = completedJobs;
     document.getElementById("kpi-pending-approval-jobs").textContent = pendingApprovalJobs;
     document.getElementById("kpi-total-branches").textContent = 12; // Always show total branches (12)
@@ -6284,6 +6310,7 @@ function renderOverallDashboard() {
     ];
     
     const inprogressCounts = Array(12).fill(0);
+    const finishedCounts = Array(12).fill(0);
     const completedCounts = Array(12).fill(0);
     const pendingApprovalCounts = Array(12).fill(0);
     
@@ -6291,7 +6318,9 @@ function renderOverallDashboard() {
         const idx = hospitalsList.indexOf(p.customer);
         if (idx === -1) return;
         
-        if (p.status === "เสร็จสิ้น" || p.status === "เสร็จแล้ว" || p.status === "งานเสร็จแล้วรอส่งงาน" || p.status === "งานเสร็จแล้วรอส่งงาน/อนุมัติ") {
+        if (p.status === "งานที่ดำเนินการเสร็จแล้ว" || p.status === "เสร็จสิ้น") {
+            finishedCounts[idx]++;
+        } else if (p.status === "เสร็จแล้ว" || p.status === "งานเสร็จแล้วรอส่งงาน" || p.status === "งานเสร็จแล้วรอส่งงาน/อนุมัติ") {
             completedCounts[idx]++;
         } else if (p.status === "รออนุมัติ" || p.status === "งานรออนุมัติ" || p.status === "งานที่รอเสนอราคา" || p.status === "งานที่กำลังเสนอราคา" || p.status === "กำลังเสนอราคา") {
             pendingApprovalCounts[idx]++;
@@ -6300,15 +6329,15 @@ function renderOverallDashboard() {
         }
     });
     
-    renderOverallBarChart(hospitalsList, inprogressCounts, completedCounts, pendingApprovalCounts);
-    renderOverallDonutChart(inprogressJobs, completedJobs, pendingApprovalJobs);
+    renderOverallBarChart(hospitalsList, inprogressCounts, finishedCounts, completedCounts, pendingApprovalCounts);
+    renderOverallDonutChart(inprogressJobs, finishedJobs, completedJobs, pendingApprovalJobs);
     
     // Populate dropdowns & update progress/financials
     populateDashboardKpiProjects();
     updateDashboardProgressAndFinancials();
 }
 
-function renderOverallBarChart(labels, inprogress, completed, pendingApproval) {
+function renderOverallBarChart(labels, inprogress, finished, completed, pendingApproval) {
     if (typeof Chart === "undefined") {
         console.warn("Chart.js is not loaded.");
         return;
@@ -6325,6 +6354,12 @@ function renderOverallBarChart(labels, inprogress, completed, pendingApproval) {
                 label: 'งานที่กำลังดำเนินการ',
                 data: inprogress,
                 backgroundColor: '#059669', // Green (matches KPI card)
+                borderRadius: 4
+            },
+            {
+                label: 'งานที่ดำเนินการเสร็จแล้ว',
+                data: finished,
+                backgroundColor: '#10b981', // Emerald (matches KPI card)
                 borderRadius: 4
             },
             {
@@ -6721,6 +6756,8 @@ window.getStatusBadgeHTML = function(status) {
         return `<span style="font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; background: #e0f2fe; color: #0369a1; border: 1.5px solid #7dd3fc; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);"><i class="fa-solid fa-circle-check"></i> ${st}</span>`;
     } else if (st.includes("อนุมัติ")) {
         return `<span style="font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; background: #fef3c7; color: #b45309; border: 1.5px solid #fde68a; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);"><i class="fa-solid fa-clock-rotate-left"></i> ${st}</span>`;
+    } else if (st.includes("ดำเนินการเสร็จแล้ว")) {
+        return `<span style="font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; background: #e6fdf5; color: #10b981; border: 1.5px solid #a7f3d0; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);"><i class="fa-solid fa-circle-check"></i> ${st}</span>`;
     } else {
         // งานที่กำลังดำเนินการ - Flashing / Pulsing animation badge!
         return `<span class="status-badge-inprogress" style="font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; background: #dcfce7; color: #15803d; border: 1.5px solid #86efac; display: inline-flex; align-items: center; gap: 5px;"><i class="fa-solid fa-circle-play status-icon-blink" style="color: #16a34a;"></i> ${st}</span>`;
@@ -7138,7 +7175,7 @@ function switchRole(roleName) {
 // --- RENDERING FUNCTIONS ---
 
 // 1. Overall Dashboard (Section 1)
-function renderOverallDonutChart(inprogress, completed, pendingApproval) {
+function renderOverallDonutChart(inprogress, finished, completed, pendingApproval) {
     if (typeof Chart === "undefined") {
         console.warn("Chart.js is not loaded.");
         return;
@@ -7150,22 +7187,24 @@ function renderOverallDonutChart(inprogress, completed, pendingApproval) {
             overallDonutChart.destroy();
         }
         
-        const total = inprogress + completed + pendingApproval;
+        const total = inprogress + finished + completed + pendingApproval;
         const ipPercent = total > 0 ? Math.round((inprogress / total) * 100) : 0;
+        const finishPercent = total > 0 ? Math.round((finished / total) * 100) : 0;
         const compPercent = total > 0 ? Math.round((completed / total) * 100) : 0;
-        const pendingPercent = total > 0 ? 100 - ipPercent - compPercent : 0;
+        const pendingPercent = total > 0 ? 100 - ipPercent - finishPercent - compPercent : 0;
 
         overallDonutChart = new Chart(ctx, {
             type: 'doughnut',
             data: {
                 labels: [
                     `งานที่กำลังดำเนินการ ${ipPercent}%`, 
+                    `งานที่ดำเนินการเสร็จแล้ว ${finishPercent}%`,
                     `งานเสร็จแล้วรอส่งงาน/อนุมัติ ${compPercent}%`, 
                     `งานที่รอเสนอราคา ${pendingPercent}%`
                 ],
                 datasets: [{
-                    data: [inprogress, completed, pendingApproval],
-                    backgroundColor: ['#059669', '#0284c7', '#f59e0b'],
+                    data: [inprogress, finished, completed, pendingApproval],
+                    backgroundColor: ['#059669', '#10b981', '#0284c7', '#f59e0b'],
                     borderWidth: 2,
                     hoverOffset: 4
                 }]
