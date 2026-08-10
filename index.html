@@ -6793,8 +6793,48 @@ function recalculateJobsFromTasks(project) {
         delayed: wbDelayed
     };
 
-    // Recalculate average progress if tasks exist; otherwise preserve manual override
-    if (total > 0) {
+    // Calculate S-Curve cumulative actual progress if it exists
+    let scurveProgress = null;
+    if (project.scurveData && project.scurveData.length > 0 && project.scurveMonths && project.scurveMonths.length > 0) {
+        let totalBudget = 0;
+        project.scurveData.forEach(item => {
+            if (!item.isSubtask) {
+                totalBudget += parseFloat(item.budget) || 0;
+            }
+        });
+        
+        let parentWeights = [];
+        project.scurveData.forEach((item) => {
+            if (!item.isSubtask) {
+                const w = totalBudget > 0 ? (item.budget / totalBudget) * 100 : 0;
+                parentWeights.push(w);
+            } else {
+                parentWeights.push(0);
+            }
+        });
+
+        let actualWeeklySums = new Array(project.scurveMonths.length * 4).fill(0);
+        let currentParentWeight = 0;
+        project.scurveData.forEach((item, idx) => {
+            if (!item.isSubtask) {
+                currentParentWeight = parentWeights[idx];
+            }
+            for (let i = 0; i < actualWeeklySums.length; i++) {
+                let aVal = (item.actual && item.actual[i] !== undefined && item.actual[i] !== null && item.actual[i] !== '') ? (parseFloat(item.actual[i]) || 0) : 0;
+                actualWeeklySums[i] += (currentParentWeight * aVal / 100);
+            }
+        });
+
+        let overall = 0;
+        actualWeeklySums.forEach(val => {
+            overall += val;
+        });
+        scurveProgress = Math.min(100, Math.round(overall));
+    }
+
+    if (scurveProgress !== null) {
+        project.progress = scurveProgress;
+    } else if (total > 0) {
         project.progress = Math.round(project.tasks.reduce((s, t) => s + (t.progress || 0), 0) / total);
     } else {
         if (project.progress === undefined || project.progress === null) {
@@ -13562,6 +13602,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     proj.scurvePlanCum[wIdx] = val;
                 });
             }
+            recalculateJobsFromTasks(proj);
             saveToLocalStorage();
             renderSubnavActualProgress(proj);
             showToast("บันทึกข้อมูลแผนงาน S-Curve เรียบร้อยแล้ว!", "success");
