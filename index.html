@@ -4652,7 +4652,7 @@ body.public-view-mode #public-view-header {
                                 </div>
                                 
                                 <!-- Gantt settings -->
-                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 20px; padding: 12px; background: #f8fafc; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 20px; padding: 12px; background: #f8fafc; border-radius: var(--radius-md); border: 1px solid var(--border-color);">
                                     <div>
                                         <label style="font-size: 11px; font-weight: 600; color: var(--navy-dark); display: block; margin-bottom: 4px;">วันเริ่มต้นแผนงาน:</label>
                                         <input type="date" id="gantt-start-date" class="form-control" style="font-size: 11.5px; padding: 5px 10px; height: auto;">
@@ -4661,7 +4661,15 @@ body.public-view-mode #public-view-header {
                                         <label style="font-size: 11px; font-weight: 600; color: var(--navy-dark); display: block; margin-bottom: 4px;">วันสิ้นสุดแผนงาน:</label>
                                         <input type="date" id="gantt-end-date" class="form-control" style="font-size: 11.5px; padding: 5px 10px; height: auto;">
                                     </div>
-                                    <div class="hide-accounting hide-customer" style="display: flex; flex-direction: column; justify-content: flex-end; grid-column: span 2;">
+                                    <div>
+                                        <label style="font-size: 11px; font-weight: 600; color: var(--navy-dark); display: block; margin-bottom: 4px;">มุมมองตารางเวลา:</label>
+                                        <select id="gantt-view-mode" class="form-control" style="font-family: 'Prompt'; font-size: 11.5px; padding: 5px 10px; height: 32px; font-weight: 600; color: var(--navy-dark); cursor: pointer; background-color: #ffffff; border: 1px solid var(--border-color); border-radius: 4px;">
+                                            <option value="daily">รายวัน (Daily)</option>
+                                            <option value="weekly">รายสัปดาห์ (Weekly)</option>
+                                            <option value="monthly">รายเดือน (Monthly)</option>
+                                        </select>
+                                    </div>
+                                    <div class="hide-accounting hide-customer" style="display: flex; flex-direction: column; justify-content: flex-end; grid-column: span 1;">
                                         <span style="font-size: 11px; font-weight: 600; color: var(--navy-dark); display: block; margin-bottom: 4px;">เครื่องมือระบายสี (Brush):</span>
                                         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; max-width: 500px;">
                                             <button id="brush-red" class="btn btn-sm active" style="font-size: 10.5px; padding: 5px 10px; background: #f87171; color: #7f1d1d; border: 2px solid #b91c1c; font-weight: 800; cursor: pointer; border-radius: 4px; border-style: solid;">เสียงดังมาก (แดง)</button>
@@ -8990,7 +8998,8 @@ function syncScurveMonthsWithGantt(project) {
 
         let current = new Date(start);
         let count = 0;
-        while (current <= end && count < 100) {
+        // Support up to 750 days (approx. 2 years) for S-Curve calculations
+        while (current <= end && count < 750) {
             dateList.push(new Date(current));
             current.setDate(current.getDate() + 1);
             count++;
@@ -9716,7 +9725,20 @@ function renderSubnavPlanWork(project) {
         docRefInput.oninput = function() { project.ganttData.header.refPo = this.value.trim(); window.ganttIsDirty = true; };
     }
 
-    // Calculate dates array
+    // Bind and set View Mode
+    const viewModeSelect = document.getElementById("gantt-view-mode");
+    if (viewModeSelect) {
+        viewModeSelect.value = project.ganttData.viewMode || "daily";
+        viewModeSelect.onchange = function() {
+            project.ganttData.viewMode = this.value;
+            if (canEdit) {
+                window.ganttIsDirty = true;
+            }
+            renderSubnavPlanWork(project);
+        };
+    }
+
+    // Calculate dates array based on viewMode
     const dateList = [];
     if (project.ganttData.startDate && project.ganttData.endDate) {
         const [sy, sm, sd] = project.ganttData.startDate.split('-').map(Number);
@@ -9724,13 +9746,36 @@ function renderSubnavPlanWork(project) {
         const start = new Date(sy, sm - 1, sd);
         const end = new Date(ey, em - 1, ed);
 
-        let current = new Date(start);
-        // Safety guard: max 100 days to prevent browser crash
-        let count = 0;
-        while (current <= end && count < 100) {
-            dateList.push(new Date(current));
-            current.setDate(current.getDate() + 1);
-            count++;
+        const viewMode = project.ganttData.viewMode || "daily";
+
+        if (viewMode === "daily") {
+            let current = new Date(start);
+            let count = 0;
+            // Limit daily view to 150 days max
+            while (current <= end && count < 150) {
+                dateList.push(new Date(current));
+                current.setDate(current.getDate() + 1);
+                count++;
+            }
+        } else if (viewMode === "weekly") {
+            let current = new Date(start);
+            let count = 0;
+            // Limit weekly view to 104 weeks (2 years)
+            while (current <= end && count < 104) {
+                dateList.push(new Date(current));
+                current.setDate(current.getDate() + 7);
+                count++;
+            }
+        } else if (viewMode === "monthly") {
+            // First day of each month starting from start month
+            let current = new Date(start.getFullYear(), start.getMonth(), 1);
+            let count = 0;
+            // Limit monthly view to 60 months (5 years)
+            while (current <= end && count < 60) {
+                dateList.push(new Date(current));
+                current.setMonth(current.getMonth() + 1);
+                count++;
+            }
         }
     }
 
@@ -9745,20 +9790,38 @@ function renderSubnavPlanWork(project) {
         if (dateList.length === 0) {
             tableBody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding: 30px; color: var(--text-muted);">กรุณากำหนดวันเริ่มต้นและวันสิ้นสุดแผนงานด้านบน</td></tr>`;
         } else {
-            // Group by Thai Month name
+            const viewMode = project.ganttData.viewMode || "daily";
+
+            // Grouping by Month or Year
             const monthGroups = [];
             const monthThaiNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
-            dateList.forEach(d => {
-                const mIdx = d.getMonth();
-                const yTh = d.getFullYear() + 543;
-                const mName = monthThaiNames[mIdx] + " " + yTh;
-                let grp = monthGroups.find(g => g.name === mName);
-                if (!grp) {
-                    grp = { name: mName, colspan: 0 };
-                    monthGroups.push(grp);
-                }
-                grp.colspan++;
-            });
+            
+            if (viewMode === "monthly") {
+                // Group by Thai Year name
+                dateList.forEach(d => {
+                    const yTh = d.getFullYear() + 543;
+                    const yName = "ปี พ.ศ. " + yTh;
+                    let grp = monthGroups.find(g => g.name === yName);
+                    if (!grp) {
+                        grp = { name: yName, colspan: 0 };
+                        monthGroups.push(grp);
+                    }
+                    grp.colspan++;
+                });
+            } else {
+                // Group by Thai Month name (Daily & Weekly)
+                dateList.forEach(d => {
+                    const mIdx = d.getMonth();
+                    const yTh = d.getFullYear() + 543;
+                    const mName = monthThaiNames[mIdx] + " " + yTh;
+                    let grp = monthGroups.find(g => g.name === mName);
+                    if (!grp) {
+                        grp = { name: mName, colspan: 0 };
+                        monthGroups.push(grp);
+                    }
+                    grp.colspan++;
+                });
+            }
 
             // Head Row 1: Columns (Font size increased & bolded)
             let tr1 = `<tr style="background: #e0e7ff; border: 1px solid var(--border-color); text-align: center;">
@@ -9769,10 +9832,21 @@ function renderSubnavPlanWork(project) {
             });
             tr1 += `<th rowspan="2" class="hide-accounting hide-customer" style="padding: 10px; width: 50px; border: 1px solid var(--border-color); font-size: 13px; font-weight: 700;">ลบ</th></tr>`;
 
-            // Head Row 2: Days (Narrowed from 22px to 18px, styled bold and clear)
+            // Head Row 2: Days / Weeks / Months
             let tr2 = `<tr style="background: #f1f5f9; text-align: center;">`;
-            dateList.forEach(d => {
-                tr2 += `<th style="padding: 4px 2px; border: 1px solid var(--border-color); font-weight: 700; font-size: 10.5px; width: 18px; min-width: 18px; max-width: 18px; text-align: center;">${d.getDate()}</th>`;
+            dateList.forEach((d, i) => {
+                let label = "";
+                let cellWidthStyle = "width: 18px; min-width: 18px; max-width: 18px;";
+                if (viewMode === "daily") {
+                    label = d.getDate();
+                } else if (viewMode === "weekly") {
+                    label = `W${i + 1} (${d.getDate()})`;
+                    cellWidthStyle = "min-width: 50px;";
+                } else if (viewMode === "monthly") {
+                    label = monthThaiNames[d.getMonth()].substring(0, 3);
+                    cellWidthStyle = "min-width: 55px;";
+                }
+                tr2 += `<th style="padding: 4px 2px; border: 1px solid var(--border-color); font-weight: 700; font-size: 10.5px; ${cellWidthStyle} text-align: center;">${label}</th>`;
             });
             tr2 += `</tr>`;
 
@@ -9846,7 +9920,7 @@ function renderSubnavPlanWork(project) {
                             </td>
                         `;
                     } else {
-                        // Level 4: งานย่อย (Daily Grid Row)
+                        // Level 4: งานย่อย (Daily/Weekly/Monthly Grid Row)
                         const indent = task.isSubtask ? "padding-left: 20px;" : "";
                         const nameWeight = task.isSubtask ? "600" : "700";
                         
@@ -9862,7 +9936,7 @@ function renderSubnavPlanWork(project) {
                             </td>
                         `;
 
-                        // Render timeline grid cells (18px fixed width with 32px height)
+                        // Render timeline grid cells
                         dateList.forEach(d => {
                             const dStr = formatDateLocal(d);
                             const val = task.cells ? (task.cells[dStr] || 0) : 0;
@@ -9878,9 +9952,9 @@ function renderSubnavPlanWork(project) {
                             }
                             
                             let cellBg = "";
-                            if (noise === 1) cellBg = "background-color: #fcd34d;"; // Yellow (เสียงดังปานกลาง)
-                            else if (noise === 2) cellBg = "background-color: #22c55e;"; // Green (เสียงดังน้อย)
-                            else if (noise === 3) cellBg = "background-color: #f87171;"; // Red (เสียงดังมาก)
+                            if (noise === 1) cellBg = "background-color: #fcd34d;"; // Yellow
+                            else if (noise === 2) cellBg = "background-color: #22c55e;"; // Green
+                            else if (noise === 3) cellBg = "background-color: #f87171;"; // Red
 
                             let triangleHtml = "";
                             if (shift === 'day') {
@@ -9889,8 +9963,15 @@ function renderSubnavPlanWork(project) {
                                 triangleHtml = `<div style="position: absolute; top: 0; left: 0; width: 0; height: 0; border-top: 11px solid #000000; border-right: 11px solid transparent; pointer-events: none;"></div>`;
                             }
                             
+                            let cellWidthStyle = "width: 18px; min-width: 18px; max-width: 18px;";
+                            if (viewMode === "weekly") {
+                                cellWidthStyle = "min-width: 50px;";
+                            } else if (viewMode === "monthly") {
+                                cellWidthStyle = "min-width: 55px;";
+                            }
+
                             rowHtml += `
-                                <td class="gantt-cell" data-row-idx="${idx}" data-date="${dStr}" style="position: relative; border: 1px solid var(--border-color); ${cellBg} cursor: ${canEdit ? 'crosshair' : 'default'}; user-select: none; width: 18px; min-width: 18px; max-width: 18px; height: 32px;">
+                                <td class="gantt-cell" data-row-idx="${idx}" data-date="${dStr}" style="position: relative; border: 1px solid var(--border-color); ${cellBg} cursor: ${canEdit ? 'crosshair' : 'default'}; user-select: none; ${cellWidthStyle} height: 32px;">
                                     ${triangleHtml}
                                 </td>
                             `;
@@ -14118,20 +14199,40 @@ document.addEventListener("DOMContentLoaded", () => {
             const proj = getActiveProj();
             if (!proj) return showToast("กรุณาเลือกโครงการเฉพาะก่อน", "warning");
 
-            // Gather headers and dates list
+            // Gather headers and dates list based on viewMode
             const dateList = [];
+            const viewMode = proj.ganttData.viewMode || "daily";
+
             if (proj.ganttData.startDate && proj.ganttData.endDate) {
                 const [sy, sm, sd] = proj.ganttData.startDate.split('-').map(Number);
                 const [ey, em, ed] = proj.ganttData.endDate.split('-').map(Number);
                 const start = new Date(sy, sm - 1, sd);
                 const end = new Date(ey, em - 1, ed);
 
-                let current = new Date(start);
-                let count = 0;
-                while (current <= end && count < 100) {
-                    dateList.push(new Date(current));
-                    current.setDate(current.getDate() + 1);
-                    count++;
+                if (viewMode === "daily") {
+                    let current = new Date(start);
+                    let count = 0;
+                    while (current <= end && count < 150) {
+                        dateList.push(new Date(current));
+                        current.setDate(current.getDate() + 1);
+                        count++;
+                    }
+                } else if (viewMode === "weekly") {
+                    let current = new Date(start);
+                    let count = 0;
+                    while (current <= end && count < 104) {
+                        dateList.push(new Date(current));
+                        current.setDate(current.getDate() + 7);
+                        count++;
+                    }
+                } else if (viewMode === "monthly") {
+                    let current = new Date(start.getFullYear(), start.getMonth(), 1);
+                    let count = 0;
+                    while (current <= end && count < 60) {
+                        dateList.push(new Date(current));
+                        current.setMonth(current.getMonth() + 1);
+                        count++;
+                    }
                 }
             }
 
@@ -14141,17 +14242,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const monthGroups = [];
             const monthThaiNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
-            dateList.forEach(d => {
-                const mIdx = d.getMonth();
-                const yTh = d.getFullYear() + 543;
-                const mName = monthThaiNames[mIdx] + " " + yTh;
-                let grp = monthGroups.find(g => g.name === mName);
-                if (!grp) {
-                    grp = { name: mName, colspan: 0 };
-                    monthGroups.push(grp);
-                }
-                grp.colspan++;
-            });
+            
+            if (viewMode === "monthly") {
+                // Group by Thai Year name
+                dateList.forEach(d => {
+                    const yTh = d.getFullYear() + 543;
+                    const yName = "ปี พ.ศ. " + yTh;
+                    let grp = monthGroups.find(g => g.name === yName);
+                    if (!grp) {
+                        grp = { name: yName, colspan: 0 };
+                        monthGroups.push(grp);
+                    }
+                    grp.colspan++;
+                });
+            } else {
+                // Group by Thai Month name (Daily & Weekly)
+                dateList.forEach(d => {
+                    const mIdx = d.getMonth();
+                    const yTh = d.getFullYear() + 543;
+                    const mName = monthThaiNames[mIdx] + " " + yTh;
+                    let grp = monthGroups.find(g => g.name === mName);
+                    if (!grp) {
+                        grp = { name: mName, colspan: 0 };
+                        monthGroups.push(grp);
+                    }
+                    grp.colspan++;
+                });
+            }
 
             // Build print layout
             const printWindow = window.open("", "_blank");
@@ -14219,7 +14336,14 @@ document.addEventListener("DOMContentLoaded", () => {
                             triangleHtml = `<div style="position: absolute; top: 0; left: 0; width: 0; height: 0; border-top: 11px solid #000000 !important; border-right: 11px solid transparent !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; pointer-events: none;"></div>`;
                         }
 
-                        gridCellsHtml += `<td ${cellBg} style="position: relative; border: 1px solid #94a3b8; width: 18px; min-width: 18px; max-width: 18px; height: 28px;">${triangleHtml}</td>`;
+                        let cellWidthStyle = "width: 18px; min-width: 18px; max-width: 18px;";
+                        if (viewMode === "weekly") {
+                            cellWidthStyle = "min-width: 50px;";
+                        } else if (viewMode === "monthly") {
+                            cellWidthStyle = "min-width: 55px;";
+                        }
+
+                        gridCellsHtml += `<td ${cellBg} style="position: relative; border: 1px solid #94a3b8; ${cellWidthStyle} height: 28px;">${triangleHtml}</td>`;
                     });
 
                     rowsHtml += `
@@ -14238,8 +14362,19 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             let daysHeaderHtml = "";
-            dateList.forEach(d => {
-                daysHeaderHtml += `<th style="border: 1px solid #94a3b8; font-size: 10px; font-weight: bold; width: 18px; min-width: 18px; max-width: 18px; padding: 4px 2px; text-align: center;">${d.getDate()}</th>`;
+            dateList.forEach((d, i) => {
+                let label = "";
+                let cellWidthStyle = "width: 18px; min-width: 18px; max-width: 18px;";
+                if (viewMode === "daily") {
+                    label = d.getDate();
+                } else if (viewMode === "weekly") {
+                    label = `W${i + 1} (${d.getDate()})`;
+                    cellWidthStyle = "min-width: 50px;";
+                } else if (viewMode === "monthly") {
+                    label = monthThaiNames[d.getMonth()].substring(0, 3);
+                    cellWidthStyle = "min-width: 55px;";
+                }
+                daysHeaderHtml += `<th style="border: 1px solid #94a3b8; font-size: 10px; font-weight: bold; ${cellWidthStyle} padding: 4px 2px; text-align: center;">${label}</th>`;
             });
 
             printWindow.document.write(`
