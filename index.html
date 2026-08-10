@@ -4709,7 +4709,7 @@ body.public-view-mode #public-view-header {
 
                                 <!-- Gantt Grid Table Container -->
                                 <div style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-md); background: #fff; margin-bottom: 12px;">
-                                    <table id="gantt-grid-table" style="width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; min-width: 950px;">
+                                    <table id="gantt-grid-table" style="width: max-content; border-collapse: collapse; font-size: 13px; text-align: left;">
                                         <thead id="gantt-grid-head" style="background: #f1f5f9; text-align: center; font-weight: 600;">
                                             <!-- Dynamically rendered -->
                                         </thead>
@@ -9925,12 +9925,12 @@ function renderSubnavPlanWork(project) {
 
             // Head Row 1: Columns (Font size increased & bolded)
             let tr1 = `<tr style="background: #e0e7ff; border: 1px solid var(--border-color); text-align: center;">
-                <th rowspan="2" style="padding: 10px; width: 65px; border: 1px solid var(--border-color); font-size: 13.5px; font-weight: 700;">Items</th>
-                <th rowspan="2" style="padding: 10px; min-width: 250px; text-align: left; border: 1px solid var(--border-color); font-size: 13.5px; font-weight: 700;">Description</th>`;
+                <th rowspan="2" style="padding: 10px; width: 65px; min-width: 65px; max-width: 65px; border: 1px solid var(--border-color); font-size: 13.5px; font-weight: 700;">Items</th>
+                <th rowspan="2" style="padding: 10px; width: 250px; min-width: 250px; max-width: 250px; text-align: left; border: 1px solid var(--border-color); font-size: 13.5px; font-weight: 700;">Description</th>`;
             monthGroups.forEach(grp => {
                 tr1 += `<th colspan="${grp.colspan}" style="padding: 8px; border: 1px solid var(--border-color); font-size: 13px; font-weight: 700; color: var(--navy-dark);">${grp.name}</th>`;
             });
-            tr1 += `<th rowspan="2" class="hide-accounting hide-customer" style="padding: 10px; width: 50px; border: 1px solid var(--border-color); font-size: 13px; font-weight: 700;">ลบ</th></tr>`;
+            tr1 += `<th rowspan="2" class="hide-accounting hide-customer" style="padding: 10px; width: 50px; min-width: 50px; max-width: 50px; border: 1px solid var(--border-color); font-size: 13px; font-weight: 700;">ลบ</th></tr>`;
 
             // Head Row 2: Days / Weeks / Months
             let tr2 = `<tr style="background: #f1f5f9; text-align: center;">`;
@@ -9941,10 +9941,10 @@ function renderSubnavPlanWork(project) {
                     label = d.getDate();
                 } else if (viewMode === "weekly") {
                     label = `W${i + 1} (${d.getDate()})`;
-                    cellWidthStyle = "min-width: 50px;";
+                    cellWidthStyle = "width: 50px; min-width: 50px; max-width: 50px;";
                 } else if (viewMode === "monthly") {
                     label = monthThaiNames[d.getMonth()].substring(0, 3);
-                    cellWidthStyle = "min-width: 55px;";
+                    cellWidthStyle = "width: 55px; min-width: 55px; max-width: 55px;";
                 }
                 tr2 += `<th style="padding: 4px 2px; border: 1px solid var(--border-color); font-weight: 700; font-size: 10.5px; ${cellWidthStyle} text-align: center;">${label}</th>`;
             });
@@ -10025,10 +10025,10 @@ function renderSubnavPlanWork(project) {
                         const nameWeight = task.isSubtask ? "600" : "700";
                         
                         let rowHtml = `
-                            <td style="padding: 6px; text-align: center; border: 1px solid var(--border-color); width: 65px;">
+                            <td style="padding: 6px; text-align: center; border: 1px solid var(--border-color); width: 65px; min-width: 65px; max-width: 65px;">
                                 <input type="text" class="gantt-item-num" data-idx="${idx}" value="${task.itemNum || ''}" ${readonlyAttr} ${canEdit ? editStyle : inputStyle} placeholder="-">
                             </td>
-                            <td style="padding: 6px; border: 1px solid var(--border-color); min-width: 250px;">
+                            <td style="padding: 6px; border: 1px solid var(--border-color); width: 250px; min-width: 250px; max-width: 250px;">
                                 <div style="display: flex; align-items: center; gap: 4px; ${indent}">
                                     ${canEdit ? `<input type="checkbox" class="gantt-subtask-toggle" data-idx="${idx}" ${task.isSubtask ? 'checked' : ''} title="ย่อหน้าเป็นงานย่อย" style="margin-right: 4px;">` : (task.isSubtask ? '<span style="color:#64748b; margin-right:4px;">-</span>' : '')}
                                     <input type="text" class="gantt-item-name" data-idx="${idx}" value="${task.name || ''}" ${readonlyAttr} style="width: 100%; font-size: 12.5px; padding: 6px 8px; border: 1px solid ${canEdit ? 'var(--border-color)' : 'transparent'}; border-radius: 4px; background: ${canEdit ? '#fff' : 'transparent'}; font-weight: ${nameWeight}; color: #334155;" placeholder="ชื่องานย่อย/รายการงาน">
@@ -10065,9 +10065,9 @@ function renderSubnavPlanWork(project) {
                             
                             let cellWidthStyle = "width: 18px; min-width: 18px; max-width: 18px;";
                             if (viewMode === "weekly") {
-                                cellWidthStyle = "min-width: 50px;";
+                                cellWidthStyle = "width: 50px; min-width: 50px; max-width: 50px;";
                             } else if (viewMode === "monthly") {
-                                cellWidthStyle = "min-width: 55px;";
+                                cellWidthStyle = "width: 55px; min-width: 55px; max-width: 55px;";
                             }
 
                             rowHtml += `
