@@ -5401,6 +5401,10 @@ body.public-view-mode #public-view-header {
                         <input type="text" id="plan-doc-title" class="form-control" placeholder="เช่น หนังสือขอเข้าทำงานอาคาร A ชั้น 15" required>
                     </div>
                     <div class="form-group mt-3">
+                        <label class="form-label" for="plan-doc-date">วันที่ระบุในหนังสือขอเข้างาน <span class="required">*</span></label>
+                        <input type="date" id="plan-doc-date" class="form-control" required>
+                    </div>
+                    <div class="form-group mt-3">
                         <label class="form-label" for="plan-doc-file">เลือกไฟล์เอกสาร (PDF, Excel, หรือรูปภาพ) <span class="required">*</span></label>
                         <input type="file" id="plan-doc-file" class="form-control" accept=".pdf,.xlsx,.xls,.png,.jpg,.jpeg" required>
                         <p style="font-size: 10px; color: var(--text-muted); margin-top: 4px;">รองรับไฟล์สกุล PDF, XLSX, XLS, PNG, JPG, JPEG ขนาดไม่เกิน 50MB</p>
@@ -10267,7 +10271,7 @@ function renderSubnavPlanWork(project) {
         if (project.planDocs.length === 0) {
             docsContainer.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); font-style: italic; padding: 20px; font-size: 13px;">ยังไม่มีหนังสือขอเข้างานสำหรับโครงการนี้</div>`;
         } else {
-            // Sort planDocs (Work Permit Letters) by date chronologically (older first)
+            // Sort planDocs (Work Permit Letters) by date (newest first)
             const sortedDocs = project.planDocs
                 .map((doc, originalIdx) => ({ ...doc, originalIdx }))
                 .sort((a, b) => {
@@ -10283,7 +10287,7 @@ function renderSubnavPlanWork(project) {
                         }
                         return new Date(dStr);
                     };
-                    return parseDate(a.date) - parseDate(b.date);
+                    return parseDate(b.date) - parseDate(a.date);
                 });
 
             sortedDocs.forEach((doc) => {
@@ -15081,6 +15085,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const openPlanDocModal = () => {
         document.getElementById("plan-doc-title").value = "";
         document.getElementById("plan-doc-file").value = "";
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        document.getElementById("plan-doc-date").value = `${yyyy}-${mm}-${dd}`;
         if (planDocModal) planDocModal.classList.add("active");
     };
 
@@ -15103,6 +15112,7 @@ document.addEventListener("DOMContentLoaded", () => {
             
             const title = document.getElementById("plan-doc-title").value.trim();
             const fileInput = document.getElementById("plan-doc-file");
+            const customDateVal = document.getElementById("plan-doc-date").value;
             
             if (!fileInput || !fileInput.files || fileInput.files.length === 0) return;
             
@@ -15127,8 +15137,14 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             const fileUrl = fileKey; // Store reference key!
             
-            const d = new Date();
-            const dateStr = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+            let dateStr = "";
+            if (customDateVal) {
+                const [y, m, d] = customDateVal.split("-");
+                dateStr = `${d}/${m}/${y}`;
+            } else {
+                const d = new Date();
+                dateStr = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+            }
             
             const project = projectsData[appState.selectedDetailProject];
             if (project) {
