@@ -4467,12 +4467,17 @@ body.public-view-mode #public-view-header {
                                             <h4 style="margin: 0; font-size: 14px; font-weight: 700; color: var(--navy-dark);">สิทธิ์การเข้าถึงโครงการนี้ (PE, ช่าง, ลูกค้า)</h4>
                                         </div>
                                         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                                            <!-- Select Existing User Dropdown -->
-                                            <div style="display: flex; align-items: center; gap: 6px; background: #f8fafc; border: 1px solid var(--border-color); border-radius: 4px; padding: 3px 8px; height: 32px; box-sizing: border-box;">
-                                                <select id="project-detail-add-user-selector" style="font-family: 'Prompt'; font-size: 11.5px; padding: 0; border: none; background: transparent; outline: none; width: 180px; font-weight: 600; color: var(--navy-dark); cursor: pointer; height: 100%;">
-                                                    <!-- Filled dynamically -->
-                                                </select>
-                                                <button type="button" onclick="window.addExistingUserToProject()" style="background: var(--primary-blue); color: #fff; border: none; padding: 2px 10px; border-radius: 4px; font-family: 'Prompt'; font-size: 11px; font-weight: 700; cursor: pointer; height: 22px; display: flex; align-items: center; justify-content: center; box-sizing: border-box; transition: opacity 0.15s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
+                                            <!-- Select Existing User Dropdown with Search -->
+                                            <div style="position: relative; display: flex; align-items: center; gap: 6px; background: #ffffff; border: 1px solid var(--border-color); border-radius: 6px; padding: 2px 4px; height: 32px; box-sizing: border-box;">
+                                                <input type="text" id="project-detail-user-search-input" placeholder="พิมพ์ค้นหาบัญชีผู้ใช้..." style="font-family: 'Prompt'; font-size: 11.5px; border: none; background: transparent; outline: none; width: 180px; font-weight: 600; color: var(--navy-dark); padding: 0 6px; height: 100%;" autocomplete="off">
+                                                <i class="fa-solid fa-chevron-down" style="font-size: 10px; color: #64748b; margin-right: 4px; cursor: pointer;" id="project-detail-user-search-chevron"></i>
+                                                
+                                                <!-- Dropdown List Container -->
+                                                <div id="project-detail-user-search-dropdown" style="display: none; position: absolute; top: 100%; left: 0; right: 0; margin-top: 4px; background: #ffffff; border: 1px solid var(--border-color); border-radius: 6px; box-shadow: var(--shadow-lg); z-index: 1000; max-height: 200px; overflow-y: auto; scrollbar-width: thin;">
+                                                    <!-- List items populated dynamically -->
+                                                </div>
+                                                
+                                                <button type="button" onclick="window.addExistingUserToProject()" style="background: var(--primary-blue); color: #fff; border: none; padding: 2px 10px; border-radius: 4px; font-family: 'Prompt'; font-size: 11px; font-weight: 700; cursor: pointer; height: 24px; display: flex; align-items: center; justify-content: center; box-sizing: border-box; transition: opacity 0.15s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">
                                                     <i class="fa-solid fa-user-check" style="margin-right: 4px; font-size: 10px;"></i>มอบสิทธิ์
                                                 </button>
                                             </div>
@@ -8085,7 +8090,6 @@ function renderSubnavGeneralInfo(project) {
 
 function renderProjectPermissions(project) {
     const tbody = document.getElementById("project-detail-permissions-tbody");
-    const userSelector = document.getElementById("project-detail-add-user-selector");
     if (!tbody) return;
     tbody.innerHTML = "";
 
@@ -8114,32 +8118,126 @@ function renderProjectPermissions(project) {
         return !hasProjectPerm && !hasHospitalPerm;
     });
 
-    // 1. Populate Dropdown Select
-    if (userSelector) {
-        userSelector.innerHTML = "";
-        if (nonAccessAccounts.length === 0) {
-            const opt = document.createElement("option");
-            opt.value = "";
-            opt.textContent = "ไม่มีผู้ใช้ให้เลือก";
-            userSelector.appendChild(opt);
-            userSelector.disabled = true;
-        } else {
-            userSelector.disabled = false;
-            const defaultOpt = document.createElement("option");
-            defaultOpt.value = "";
-            defaultOpt.textContent = "-- เลือกผู้ใช้ที่มีอยู่เพื่อมอบสิทธิ์ --";
-            userSelector.appendChild(defaultOpt);
+    // 1. Populate Dropdown Select (Searchable Dropdown)
+    const searchInput = document.getElementById("project-detail-user-search-input");
+    const dropdownContainer = document.getElementById("project-detail-user-search-dropdown");
+    const chevronIcon = document.getElementById("project-detail-user-search-chevron");
 
-            nonAccessAccounts.forEach(acc => {
-                const opt = document.createElement("option");
-                opt.value = acc.userKey;
+    if (searchInput && dropdownContainer) {
+        // Reset state on project change
+        if (!window.projectDetailSearchInitted) {
+            window.projectDetailSearchInitted = true;
+            
+            // Toggle dropdown open on focus / click
+            searchInput.addEventListener("focus", () => {
+                renderSearchDropdownItems();
+                dropdownContainer.style.display = "block";
+            });
+
+            // Input event for live filter
+            searchInput.addEventListener("input", () => {
+                renderSearchDropdownItems(searchInput.value.trim());
+                dropdownContainer.style.display = "block";
+            });
+
+            // Toggle dropdown on chevron click
+            if (chevronIcon) {
+                chevronIcon.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    const isVisible = dropdownContainer.style.display === "block";
+                    if (isVisible) {
+                        dropdownContainer.style.display = "none";
+                    } else {
+                        renderSearchDropdownItems();
+                        dropdownContainer.style.display = "block";
+                        searchInput.focus();
+                    }
+                });
+            }
+
+            // Close when clicking outside
+            document.addEventListener("click", (e) => {
+                if (!e.target.closest("#project-detail-user-search-input") && 
+                    !e.target.closest("#project-detail-user-search-dropdown") &&
+                    !e.target.closest("#project-detail-user-search-chevron")) {
+                    dropdownContainer.style.display = "none";
+                }
+            });
+        }
+
+        // Store non-access accounts in window variable for the event listeners to access
+        window.activeNonAccessAccounts = nonAccessAccounts;
+
+        if (nonAccessAccounts.length === 0) {
+            searchInput.disabled = true;
+            searchInput.value = "";
+            searchInput.placeholder = "ไม่มีผู้ใช้ให้เลือก";
+            window.selectedUserKeyToAssign = null;
+        } else {
+            searchInput.disabled = false;
+            searchInput.placeholder = "พิมพ์ค้นหาบัญชีผู้ใช้...";
+            // Clear current input value only if we changed to a different project or if no user is selected yet
+            if (window.lastDetailProjectCode !== projectCode) {
+                searchInput.value = "";
+                window.selectedUserKeyToAssign = null;
+                window.lastDetailProjectCode = projectCode;
+            }
+        }
+    }
+
+    // Helper to render items dynamically
+    function renderSearchDropdownItems(filterText = "") {
+        dropdownContainer.innerHTML = "";
+        const list = window.activeNonAccessAccounts || [];
+        
+        const filtered = list.filter(acc => {
+            const name = (acc.name || "").toLowerCase();
+            const username = (acc.username || "").toLowerCase();
+            const term = filterText.toLowerCase();
+            return name.includes(term) || username.includes(term);
+        });
+
+        if (filtered.length === 0) {
+            const div = document.createElement("div");
+            div.style.padding = "8px 12px";
+            div.style.fontSize = "11.5px";
+            div.style.color = "var(--text-muted)";
+            div.style.fontStyle = "italic";
+            div.textContent = "ไม่พบผู้ใช้ที่ค้นหา";
+            dropdownContainer.appendChild(div);
+        } else {
+            filtered.forEach(acc => {
+                const item = document.createElement("div");
+                item.style.padding = "8px 12px";
+                item.style.fontSize = "11.5px";
+                item.style.cursor = "pointer";
+                item.style.borderBottom = "1px solid var(--border-color)";
+                item.style.fontFamily = "'Prompt'";
+                item.style.fontWeight = "600";
+                item.style.color = "var(--navy-dark)";
+                item.style.transition = "background 0.15s";
+                
+                // Hover effect
+                item.onmouseover = () => item.style.background = "#f1f5f9";
+                item.onmouseout = () => item.style.background = "transparent";
+
                 let roleLabel = "";
                 const r = acc.role || "customer";
                 if (r === "customer") roleLabel = "ลูกค้า";
                 else if (r === "pe") roleLabel = "PE";
                 else roleLabel = "ช่าง";
-                opt.textContent = `${acc.name || acc.username} (${roleLabel} - @${acc.username})`;
-                userSelector.appendChild(opt);
+                
+                const labelText = `${acc.name || acc.username} (${roleLabel} - @${acc.username})`;
+                item.textContent = labelText;
+                
+                // Click handler to select
+                item.addEventListener("click", () => {
+                    searchInput.value = labelText;
+                    window.selectedUserKeyToAssign = acc.userKey;
+                    dropdownContainer.style.display = "none";
+                });
+                
+                dropdownContainer.appendChild(item);
             });
         }
     }
@@ -8223,10 +8321,7 @@ function renderProjectPermissions(project) {
 
 // Function to add an existing user selected from the dropdown to this project
 window.addExistingUserToProject = async function() {
-    const selector = document.getElementById("project-detail-add-user-selector");
-    if (!selector) return;
-    
-    const userKey = selector.value;
+    const userKey = window.selectedUserKeyToAssign;
     if (!userKey) {
         showToast("กรุณาเลือกผู้ใช้จากในรายการก่อนมอบสิทธิ์", "warning");
         return;
@@ -8249,6 +8344,11 @@ window.addExistingUserToProject = async function() {
 
     await saveUserPermissions();
     showToast("มอบสิทธิ์การเข้าถึงให้ผู้ใช้ที่เลือกเรียบร้อยแล้ว", "success");
+
+    // Clear search and selection state
+    window.selectedUserKeyToAssign = null;
+    const searchInput = document.getElementById("project-detail-user-search-input");
+    if (searchInput) searchInput.value = "";
 
     // Re-render
     renderProjectPermissions(project);
