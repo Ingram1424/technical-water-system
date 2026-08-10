@@ -3740,7 +3740,7 @@ body.public-view-mode #public-view-header {
                         <i class="fa-solid fa-folder-open"></i> งบประมาณรายโครงการ
                     </button>
                     <button class="cost-main-tab-btn" id="btn-cost-main-approvals" data-main-tab="approvals" style="padding: 10px 20px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-family: 'Prompt'; font-size: 13px; font-weight: 600; cursor: pointer; background: #ffffff; color: var(--navy-dark); display: flex; align-items: center; gap: 6px; transition: all 0.2s ease;">
-                        <i class="fa-solid fa-clock-rotate-left" style="color: #7c3aed;"></i> รายการขออนุมัติเบิกจ่าย
+                        <i class="fa-solid fa-clock-rotate-left" style="color: #7c3aed;"></i> รายการขออนุมัติเบิกจ่าย <span id="approvals-badge-count" style="display: none; background: #ef4444; color: white; border-radius: 9999px; padding: 2px 6px; font-size: 10px; font-weight: bold; margin-left: 4px; vertical-align: middle; line-height: 1;">0</span>
                     </button>
                 </div>
 
@@ -17296,6 +17296,14 @@ function renderPermissionsManagement() {
         const count = unread.length;
         badge.textContent = count;
         badge.style.display = count > 0 ? "" : "none";
+
+        // Update approvals-badge-count dynamically on the Approvals tab
+        const approvalBadge = document.getElementById("approvals-badge-count");
+        if (approvalBadge) {
+            const approvalCount = document.querySelectorAll(".notif-item.unread.approval-notif:not([style*='opacity: 0.5']), .notif-item.unread.disbursement-notif-item:not([style*='opacity: 0.5'])").length;
+            approvalBadge.textContent = approvalCount;
+            approvalBadge.style.display = approvalCount > 0 ? "inline-block" : "none";
+        }
     }
 
     // ── Role-based notification filtering ─────────────────────
