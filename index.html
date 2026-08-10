@@ -4631,11 +4631,11 @@ body.public-view-mode #public-view-header {
                             <section class="section-card">
                                 <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                                     <div>
-                                        <h2 class="section-title">เอกสารแผนงานอ้างอิง (Master Plan Reference Files)</h2>
-                                        <p class="section-subtitle">อัปโหลดไฟล์แผนงานหลักในรูปแบบ PDF, Excel (XLSX) หรือรูปภาพ</p>
+                                        <h2 class="section-title">หนังสือขอเข้างาน (Work Permit Letters)</h2>
+                                        <p class="section-subtitle">อัปโหลดและจัดเก็บหนังสือขอเข้างานหรือใบอนุญาตปฏิบัติงานหน้างาน</p>
                                     </div>
                                     <button class="btn btn-sm btn-outline hide-accounting hide-customer" id="open-plan-doc-modal-btn" style="font-size: 11px; padding: 6px 12px; height: auto;">
-                                        <i class="fa-solid fa-cloud-arrow-up"></i> อัปโหลดไฟล์แผนงาน
+                                        <i class="fa-solid fa-cloud-arrow-up"></i> อัปโหลดหนังสือขอเข้างาน
                                     </button>
                                 </div>
                                 <div class="plan-docs-grid" id="plan-docs-container" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; margin-top: 15px;">
@@ -5296,14 +5296,14 @@ body.public-view-mode #public-view-header {
     <div class="modal-overlay" id="plan-doc-modal">
         <div class="modal-card">
             <div class="modal-header">
-                <h3 class="modal-title"><i class="fa-solid fa-file-arrow-up"></i> อัปโหลดไฟล์แผนงานหลัก</h3>
+                <h3 class="modal-title"><i class="fa-solid fa-file-arrow-up"></i> อัปโหลดหนังสือขอเข้างาน</h3>
                 <button class="modal-close-btn" id="close-plan-doc-modal">&times;</button>
             </div>
             <form id="add-plan-doc-form">
                 <div class="modal-body">
                     <div class="form-group">
-                        <label class="form-label" for="plan-doc-title">ชื่อเอกสาร / รายละเอียดแผนงาน <span class="required">*</span></label>
-                        <input type="text" id="plan-doc-title" class="form-control" placeholder="เช่น แผนการดำเนินงานหลักฉบับสมบูรณ์ Rev.0" required>
+                        <label class="form-label" for="plan-doc-title">ชื่อเอกสาร / รายละเอียดหนังสือขอเข้างาน <span class="required">*</span></label>
+                        <input type="text" id="plan-doc-title" class="form-control" placeholder="เช่น หนังสือขอเข้าทำงานอาคาร A ชั้น 15" required>
                     </div>
                     <div class="form-group mt-3">
                         <label class="form-label" for="plan-doc-file">เลือกไฟล์เอกสาร (PDF, Excel, หรือรูปภาพ) <span class="required">*</span></label>
@@ -9719,19 +9719,38 @@ function renderSubnavPlanWork(project) {
         if (!project.planDocs) project.planDocs = [];
         
         if (project.planDocs.length === 0) {
-            docsContainer.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); font-style: italic; padding: 20px; font-size: 13px;">ยังไม่มีเอกสารแผนงานหลักสำหรับโครงการนี้</div>`;
+            docsContainer.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); font-style: italic; padding: 20px; font-size: 13px;">ยังไม่มีหนังสือขอเข้างานสำหรับโครงการนี้</div>`;
         } else {
-            project.planDocs.forEach((doc, idx) => {
+            // Sort planDocs (Work Permit Letters) by date chronologically (older first)
+            const sortedDocs = project.planDocs
+                .map((doc, originalIdx) => ({ ...doc, originalIdx }))
+                .sort((a, b) => {
+                    const parseDate = (dStr) => {
+                        if (!dStr) return new Date(0);
+                        const parts = dStr.split('/');
+                        if (parts.length === 3) {
+                            const d = parseInt(parts[0]);
+                            const m = parseInt(parts[1]) - 1;
+                            let y = parseInt(parts[2]);
+                            if (y > 2500) y -= 543;
+                            return new Date(y, m, d);
+                        }
+                        return new Date(dStr);
+                    };
+                    return parseDate(a.date) - parseDate(b.date);
+                });
+
+            sortedDocs.forEach((doc) => {
                 const ext = doc.file.split('.').pop().toLowerCase();
                 let iconClass = "fa-solid fa-file-lines";
                 let iconColor = "var(--text-muted)";
                 let fileTypeLabel = "เอกสาร";
-                if (ext === "pdf") { iconClass = "fa-solid fa-file-pdf"; iconColor = "#e63946"; fileTypeLabel = "PDF Plan"; }
-                else if (ext === "xlsx" || ext === "xls") { iconClass = "fa-solid fa-file-excel"; iconColor = "#2a9d8f"; fileTypeLabel = "Excel Plan"; }
-                else if (["png","jpg","jpeg"].includes(ext)) { iconClass = "fa-solid fa-file-image"; iconColor = "#457b9d"; fileTypeLabel = "รูปภาพแผน"; }
+                if (ext === "pdf") { iconClass = "fa-solid fa-file-pdf"; iconColor = "#e63946"; fileTypeLabel = "PDF"; }
+                else if (ext === "xlsx" || ext === "xls") { iconClass = "fa-solid fa-file-excel"; iconColor = "#2a9d8f"; fileTypeLabel = "Excel"; }
+                else if (["png","jpg","jpeg"].includes(ext)) { iconClass = "fa-solid fa-file-image"; iconColor = "#457b9d"; fileTypeLabel = "รูปภาพ"; }
                 
                 const canDel = (appState.currentRole === "pm" || appState.currentRole === "admin") && appState.selectedDetailProject !== "all";
-                const deleteBtn = canDel ? `<button class="btn-delete-plan-doc" data-idx="${idx}" title="ลบไฟล์" style="background:none;border:none;color:#e63946;cursor:pointer;padding:4px;font-size:14px;"><i class="fa-solid fa-trash-can"></i></button>` : '';
+                const deleteBtn = canDel ? `<button class="btn-delete-plan-doc" data-idx="${doc.originalIdx}" title="ลบไฟล์" style="background:none;border:none;color:#e63946;cursor:pointer;padding:4px;font-size:14px;"><i class="fa-solid fa-trash-can"></i></button>` : '';
                 
                 const card = document.createElement("div");
                 card.className = "plan-doc-card";
@@ -14477,7 +14496,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const projectCode = appState.selectedDetailProject;
             const fileKey = `FILE:${projectCode}:PLANDOC:${Date.now()}:${file}`;
             
-            showToast("กำลังบันทึกไฟล์แผนงานขึ้นคลาวด์...", "info");
+            showToast("กำลังบันทึกหนังสือขอเข้างานขึ้นคลาวด์...", "info");
             const { error: fileErr } = await supabaseClient.from('projects').upsert({
                 code: fileKey,
                 data: { fileUrl: result.dataUrl },
