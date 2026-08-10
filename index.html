@@ -5827,6 +5827,12 @@ async function loadFromSupabase() {
             // Re-render UI
             renderOverallDashboard();
             renderSubnavProjectWorkspace();
+            if (typeof updateBellBadge === "function") {
+                updateBellBadge();
+            }
+            if (typeof applyNotifRoleFilter === "function") {
+                applyNotifRoleFilter(appState.currentRole);
+            }
             console.log("Loaded data from Supabase successfully!");
 
             // One-off cleanup for PO 22026005032 media images
