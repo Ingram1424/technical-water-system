@@ -6064,6 +6064,9 @@ async function syncAllProjectsToSupabase() {
 }
 
 function saveToLocalStorage() {
+    // Recalculate jobs and progress from tasks for all projects before saving
+    Object.values(projectsData).forEach(p => recalculateJobsFromTasks(p));
+    
     const activeProj = (appState.selectedDetailProject && appState.selectedDetailProject !== "all") ? projectsData[appState.selectedDetailProject] : null;
     if (activeProj) {
         calculatePlanScurveFromGantt(activeProj);
@@ -7025,7 +7028,18 @@ function recalculateJobsFromTasks(project) {
     
     // Auto-update status to completed if progress is 100%
     if (project.progress === 100) {
-        project.status = "งานที่ดำเนินการเสร็จแล้ว";
+        const cur = project.status || "";
+        if (cur === "งานที่กำลังดำเนินการ" || cur === "กำลังดำเนินการ" || cur === "กำลังเสนอราคา" || !cur) {
+            project.status = "งานที่ดำเนินการเสร็จแล้ว";
+            // Sync this project back to Supabase if we are online and this is a real project code
+            if (project.code && !project.code.startsWith("SHARE:") && !project.code.startsWith("FILE:")) {
+                setTimeout(() => {
+                    if (typeof queueSyncActiveProject === "function") {
+                        queueSyncActiveProject(project.code);
+                    }
+                }, 100);
+            }
+        }
     }
 }
 
@@ -7807,6 +7821,9 @@ function renderSubnavProjectWorkspace() {
         };
     } else {
         project = projectsData[activeCode];
+        if (project) {
+            recalculateJobsFromTasks(project);
+        }
     }
     
     if (!project) return;
