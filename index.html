@@ -2073,9 +2073,7 @@ select.form-control {
 .role-customer #project-selection-portal {
     padding-top: 16px !important;
 }
-.role-customer .sidebar-project-subnav .subnav-tabs {
-    display: none !important;
-}
+
 
 /* ----------------------------------------------------
    TOAST NOTIFICATION (White Clean Style)
@@ -3075,7 +3073,6 @@ select.form-control {
 }
 
 /* ===== PUBLIC VIEW MODE ===== */
-body.public-view-mode .sidebar,
 body.public-view-mode .topbar .profile-area,
 body.public-view-mode #role-switcher-wrapper,
 body.public-view-mode .hide-pm, body.public-view-mode .hide-customer,
@@ -3094,9 +3091,13 @@ body.public-view-mode .action-btn-delete {
     display: none !important;
 }
 
-body.public-view-mode .main-content {
-    margin-left: 0 !important;
-    padding-top: 0 !important;
+body.public-view-mode #sidebar-back-to-portal-wrapper,
+body.public-view-mode #btn-back-to-portal-inline {
+    display: none !important;
+}
+
+body.public-view-mode #public-view-header {
+    display: none !important;
 }
 
 body.public-view-mode #detail-info-manager {
@@ -7925,7 +7926,7 @@ function renderSubnavProjectWorkspace() {
     // Toggle sidebar subnav tabs container visibility
     const subnavTabsEl = document.querySelector(".subnav-tabs");
     if (subnavTabsEl) {
-        subnavTabsEl.style.display = (appState.currentRole === "customer") ? "none" : "";
+        subnavTabsEl.style.display = "";
     }
     
     if (isCustomer) {
