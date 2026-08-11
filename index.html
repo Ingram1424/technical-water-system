@@ -7925,7 +7925,7 @@ function renderSubnavProjectWorkspace() {
     // Toggle sidebar subnav tabs container visibility
     const subnavTabsEl = document.querySelector(".subnav-tabs");
     if (subnavTabsEl) {
-        subnavTabsEl.style.display = isCustomer ? "none" : "";
+        subnavTabsEl.style.display = (appState.currentRole === "customer") ? "none" : "";
     }
     
     if (isCustomer) {
@@ -12502,12 +12502,72 @@ document.addEventListener("DOMContentLoaded", () => {
         btn.addEventListener("click", function(e) {
             e.preventDefault();
             const tabName = this.getAttribute("data-subtab");
-            appState.activeProjectTab = tabName;
-            appState.selectedGalleryFolder = null;
-            renderSubnavProjectWorkspace();
+            
+            // Check if we are in stacked view (Customer / Technician / Tech)
+            const isCustOrTech = (appState.currentRole === "customer" || appState.currentRole === "technician" || appState.currentRole === "tech");
+            if (isCustOrTech) {
+                const targetPanel = document.getElementById(`subtab-${tabName}-view`);
+                if (targetPanel && targetPanel.classList.contains("active")) {
+                    appState.activeProjectTab = tabName;
+                    appState.selectedGalleryFolder = null;
+                    
+                    // Update active class on tab buttons for visual feedback
+                    document.querySelectorAll(".subnav-tab-item").forEach(b => b.classList.remove("active"));
+                    this.classList.add("active");
+                    
+                    targetPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+                }
+            } else {
+                appState.activeProjectTab = tabName;
+                appState.selectedGalleryFolder = null;
+                renderSubnavProjectWorkspace();
+            }
             closeMobileSidebar();
         });
     });
+
+    // 8.5 Scroll-Spy for Stacked View (automatically update active sidebar tab as user scrolls)
+    const projectsListView = document.getElementById("projects-list-view");
+    if (projectsListView) {
+        let isSpyScrolling = false;
+        projectsListView.addEventListener("scroll", function() {
+            const isCustOrTech = (appState.currentRole === "customer" || appState.currentRole === "technician" || appState.currentRole === "tech");
+            if (!isCustOrTech) return;
+            
+            if (isSpyScrolling) return;
+            isSpyScrolling = true;
+            
+            setTimeout(() => {
+                isSpyScrolling = false;
+                
+                const panels = projectsListView.querySelectorAll(".subtab-panel.active");
+                let activeTab = null;
+                let minDiff = Infinity;
+                const containerRect = projectsListView.getBoundingClientRect();
+                
+                panels.forEach(panel => {
+                    const rect = panel.getBoundingClientRect();
+                    // We want the panel closest to the top container edge, but still visible
+                    const diff = Math.abs(rect.top - containerRect.top);
+                    if (diff < minDiff && rect.bottom > containerRect.top + 50) {
+                        minDiff = diff;
+                        activeTab = panel.id.replace("subtab-", "").replace("-view", "");
+                    }
+                });
+                
+                if (activeTab) {
+                    document.querySelectorAll(".subnav-tab-item").forEach(btn => {
+                        if (btn.getAttribute("data-subtab") === activeTab) {
+                            btn.classList.add("active");
+                        } else {
+                            btn.classList.remove("active");
+                        }
+                    });
+                    appState.activeProjectTab = activeTab;
+                }
+            }, 80);
+        });
+    }
 
     // 9. Document filter tabs inside subnav Documents view
     const subtabDocFilters = document.getElementById("subtab-doc-tab-filters");
