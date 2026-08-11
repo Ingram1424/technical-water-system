@@ -7991,6 +7991,18 @@ function renderSubnavProjectWorkspace() {
             renderSubnavPlanWork(project);
         }
     }
+
+    // Auto-scroll on initial load if specified by share link
+    if (window.shouldScrollToTab) {
+        const tabToScroll = window.shouldScrollToTab;
+        window.shouldScrollToTab = null; // Clear so it only triggers once
+        setTimeout(() => {
+            const targetPanel = document.getElementById(`subtab-${tabToScroll}-view`);
+            if (targetPanel && targetPanel.classList.contains("active")) {
+                targetPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+            }
+        }, 600); // 600ms to allow all rendering (Gantt, S-Curve, daily reports) to complete
+    }
 }
 
 function renderQuotingStorageView(project) {
@@ -17175,6 +17187,7 @@ function initPublicView(projectCode) {
     const tabParam = publicUrlParams.get("tab");
     if (tabParam) {
         appState.activeProjectTab = tabParam;
+        window.shouldScrollToTab = tabParam;
     }
 
     // Navigate to projects-list view (which shows project detail workspace)
@@ -17283,7 +17296,8 @@ function initPublicView(projectCode) {
                 showToast("กรุณาเลือกโครงการก่อนคัดลอกลิงก์", "error");
                 return;
             }
-            const shareUrl = `${window.location.origin}${window.location.pathname}?project=${encodeURIComponent(code)}`;
+            const tabName = appState.activeProjectTab || "general-info";
+            const shareUrl = `${window.location.origin}${window.location.pathname}?project=${encodeURIComponent(code)}&tab=${encodeURIComponent(tabName)}`;
             navigator.clipboard.writeText(shareUrl).then(() => {
                 showToast(`✅ คัดลอกลิงก์แชร์โครงการ ${code} เรียบร้อยแล้ว!`, "success");
             }).catch(() => {
