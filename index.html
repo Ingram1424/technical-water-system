@@ -10573,8 +10573,10 @@ function renderSubnavDailyReports(project) {
     const reports = project.dailyReports || [];
     
     // Compute badge counts
+    const isReportSigned = (rep) => rep.signatures && (rep.signatures.length >= 2 || rep.signatures.some(sig => sig.image && sig.image.includes(":customer:")));
+    
     const allCount = reports.length;
-    const signedCount = reports.filter(rep => rep.signatures && rep.signatures.some(sig => sig.image && sig.image.includes(":customer:"))).length;
+    const signedCount = reports.filter(isReportSigned).length;
     const unsignedCount = allCount - signedCount;
     
     const countAllEl = document.getElementById("dr-count-all");
@@ -10614,9 +10616,9 @@ function renderSubnavDailyReports(project) {
     // Filter reports list based on active filter
     let filteredReports = reports;
     if (activeFilter === "signed") {
-        filteredReports = reports.filter(rep => rep.signatures && rep.signatures.some(sig => sig.image && sig.image.includes(":customer:")));
+        filteredReports = reports.filter(isReportSigned);
     } else if (activeFilter === "unsigned") {
-        filteredReports = reports.filter(rep => !(rep.signatures && rep.signatures.some(sig => sig.image && sig.image.includes(":customer:"))));
+        filteredReports = reports.filter(rep => !isReportSigned(rep));
     }
     
     if (filteredReports.length === 0) {
