@@ -7022,6 +7022,11 @@ function recalculateJobsFromTasks(project) {
             project.progress = 0;
         }
     }
+    
+    // Auto-update status to completed if progress is 100%
+    if (project.progress === 100) {
+        project.status = "งานที่ดำเนินการเสร็จแล้ว";
+    }
 }
 
 function showToast(message, type = "success") {
