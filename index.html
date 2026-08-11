@@ -823,7 +823,7 @@ select.form-control {
 
 /* Premium Tooltip for branches card */
 .kpi-card.purple::after {
-    content: "• โรงพยาบาลพญาไท 1\n• โรงพยาบาลพญาไท 2\n• โรงพยาบาลพญาไท 3\n• โรงพยาบาลพญาไท นวมินทร์\n• โรงพยาบาลพญาไท บ่อวิน\n• โรงพยาบาลพญาไท พหลโยธิน\n• โรงพยาบาลพญาไท ศรีราชา\n• โรงพยาบาลเปาโล พระประแดง\n• โรงพยาบาลเปาโล รังสิต\n• โรงพยาบาลเปาโล สมุทรปราการ\n• โรงพยาบาลเปาโล เกษตร\n• โรงพยาบาลเปาโล โชคชัย 4";
+    content: "• โรงพยาบาลพญาไท 1\n• โรงพยาบาลพญาไท 2\n• โรงพยาบาลพญาไท 3\n• โรงพยาบาลพญาไท นวมินทร์\n• โรงพยาบาลพญาไท บ่อวิน\n• โรงพยาบาลพญาไท พหลโยธิน\n• โรงพยาบาลพญาไท ศรีราชา\n• โรงพยาบาลเปาโล พระประแดง\n• โรงพยาบาลเปาโล รังสิต\n• โรงพยาบาลเปาโล สมุทรปราการ\n• โรงพยาบาลเปาโล เกษตร\n• โรงพยาบาลเปาโล โชคชัย 4\n• อื่นๆ";
     white-space: pre-line;
     position: absolute;
     bottom: 110%;
@@ -3674,6 +3674,7 @@ body.public-view-mode #public-view-header {
                                             <option value="โรงพยาบาลเปาโล สมุทรปราการ">โรงพยาบาลเปาโล สมุทรปราการ</option>
                                             <option value="โรงพยาบาลเปาโล เกษตร">โรงพยาบาลเปาโล เกษตร</option>
                                             <option value="โรงพยาบาลเปาโล โชคชัย 4">โรงพยาบาลเปาโล โชคชัย 4</option>
+                                            <option value="อื่นๆ">อื่นๆ</option>
                                         </select>
                                     </div>
                                     <div class="form-group">
@@ -5216,6 +5217,7 @@ body.public-view-mode #public-view-header {
                             <option value="โรงพยาบาลเปาโล สมุทรปราการ">โรงพยาบาลเปาโล สมุทรปราการ</option>
                             <option value="โรงพยาบาลเปาโล เกษตร">โรงพยาบาลเปาโล เกษตร</option>
                             <option value="โรงพยาบาลเปาโล โชคชัย 4">โรงพยาบาลเปาโล โชคชัย 4</option>
+                            <option value="อื่นๆ">อื่นๆ</option>
                         </select>
                     </div>
                     <div class="form-group mt-3" id="create-proj-manager-group">
@@ -5503,6 +5505,7 @@ body.public-view-mode #public-view-header {
                             <option value="โรงพยาบาลเปาโล สมุทรปราการ">โรงพยาบาลเปาโล สมุทรปราการ</option>
                             <option value="โรงพยาบาลเปาโล เกษตร">โรงพยาบาลเปาโล เกษตร</option>
                             <option value="โรงพยาบาลเปาโล โชคชัย 4">โรงพยาบาลเปาโล โชคชัย 4</option>
+                            <option value="อื่นๆ">อื่นๆ</option>
                         </select>
                     </div>
                     <div class="form-group mt-3" id="edit-proj-manager-group">
@@ -5769,6 +5772,7 @@ body.public-view-mode #public-view-header {
         <option value="โรงพยาบาลเปาโล สมุทรปราการ"></option>
         <option value="โรงพยาบาลเปาโล เกษตร"></option>
         <option value="โรงพยาบาลเปาโล โชคชัย 4"></option>
+        <option value="อื่นๆ"></option>
     </datalist>
 
     <script>
@@ -6123,7 +6127,8 @@ function populateSubnavHospitals() {
     const allHospitals = [
         "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
         "โรงพยาบาลพญาไท บ่อวิน", "โรงพยาบาลพญาไท พหลโยธิน", "โรงพยาบาลพญาไท ศรีราชา", "โรงพยาบาลเปาโล พระประแดง",
-        "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4"
+        "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4",
+        "อื่นๆ"
     ];
 
     // For customer/pe/tech role: filter to allowed hospitals only
@@ -6405,17 +6410,18 @@ function renderOverallDashboard() {
     );
     renderHospitalsGrid(gridProjects);
     
-    // Prepare bar chart data for all 12 hospitals
+    // Prepare bar chart data for all hospitals
     const hospitalsList = [
         "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
         "โรงพยาบาลพญาไท บ่อวิน", "โรงพยาบาลพญาไท พหลโยธิน", "โรงพยาบาลพญาไท ศรีราชา", "โรงพยาบาลเปาโล พระประแดง",
-        "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4"
+        "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4",
+        "อื่นๆ"
     ];
     
-    const inprogressCounts = Array(12).fill(0);
-    const finishedCounts = Array(12).fill(0);
-    const completedCounts = Array(12).fill(0);
-    const pendingApprovalCounts = Array(12).fill(0);
+    const inprogressCounts = Array(hospitalsList.length).fill(0);
+    const finishedCounts = Array(hospitalsList.length).fill(0);
+    const completedCounts = Array(hospitalsList.length).fill(0);
+    const pendingApprovalCounts = Array(hospitalsList.length).fill(0);
     
     combinedProjects.forEach(p => {
         const idx = hospitalsList.indexOf(p.customer);
@@ -6544,7 +6550,8 @@ function populateCostHospitals() {
     const hospitals = [
         "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
         "โรงพยาบาลพญาไท บ่อวิน", "โรงพยาบาลพญาไท พหลโยธิน", "โรงพยาบาลพญาไท ศรีราชา", "โรงพยาบาลเปาโล พระประแดง",
-        "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4"
+        "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4",
+        "อื่นๆ"
     ];
     
     hospitals.forEach(h => {
@@ -7350,7 +7357,8 @@ function renderHospitalsGrid(activeProjects) {
         "โรงพยาบาลเปาโล รังสิต",
         "โรงพยาบาลเปาโล สมุทรปราการ",
         "โรงพยาบาลเปาโล เกษตร",
-        "โรงพยาบาลเปาโล โชคชัย 4"
+        "โรงพยาบาลเปาโล โชคชัย 4",
+        "อื่นๆ"
     ];
     
     allHospitalsList.forEach(hospital => {
@@ -10855,13 +10863,14 @@ function renderCostOverallBarChart(projectsList) {
         const hospitals = [
             "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
             "โรงพยาบาลพญาไท บ่อวิน", "โรงพยาบาลพญาไท พหลโยธิน", "โรงพยาบาลพญาไท ศรีราชา", "โรงพยาบาลเปาโล พระประแดง",
-            "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4"
+            "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4",
+            "อื่นๆ"
         ];
         
         const labels = hospitals.map(h => h.replace("โรงพยาบาล", ""));
-        const values = new Array(12).fill(0);
-        const costs = new Array(12).fill(0);
-        const profits = new Array(12).fill(0);
+        const values = new Array(hospitals.length).fill(0);
+        const costs = new Array(hospitals.length).fill(0);
+        const profits = new Array(hospitals.length).fill(0);
         
         projectsList.forEach(p => {
             const index = hospitals.indexOf(p.customer);
@@ -11394,6 +11403,9 @@ function deleteExpense(index) {
         renderOverallDashboard(); // Update main dashboard financial values as well
         if (appState.selectedDetailProject !== "all") {
             renderSubnavProjectWorkspace();
+        }
+        if (typeof updateBellBadge === "function") {
+            updateBellBadge();
         }
     }
 }
@@ -12015,16 +12027,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (!portalProjectsGrid) return;
 
-        // 1. Sync & populate portal hospital select if empty or has only the default option
-        if (portalHospitalSelector && (portalHospitalSelector.options.length <= 1 || portalHospitalSelector.innerHTML.trim() === "")) {
+        // 1. Sync & populate portal hospital select from subnav-hospital-selector to keep options in sync
+        if (portalHospitalSelector) {
             const subnavHosp = document.getElementById("subnav-hospital-selector");
             if (subnavHosp) {
+                const currentVal = portalHospitalSelector.value || subnavHosp.value;
                 portalHospitalSelector.innerHTML = subnavHosp.innerHTML;
-                // Match current selection value
-                portalHospitalSelector.value = subnavHosp.value;
-            } else {
-                portalHospitalSelector.innerHTML = `<option value="all">ทั้งหมดทุกโรงพยาบาล</option>`;
-                portalHospitalSelector.value = "all";
+                if ([...portalHospitalSelector.options].some(opt => opt.value === currentVal)) {
+                    portalHospitalSelector.value = currentVal;
+                } else {
+                    portalHospitalSelector.value = "all";
+                }
             }
         }
 
@@ -12624,6 +12637,9 @@ document.addEventListener("DOMContentLoaded", () => {
             renderSubnavProjectWorkspace();
             renderCostManagement();
             renderOverallDashboard();
+            if (typeof updateBellBadge === "function") {
+                updateBellBadge();
+            }
         }
     });
 
@@ -13631,7 +13647,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const allHospitals = [
                 "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
                 "โรงพยาบาลพญาไท บ่อวิน", "โรงพยาบาลพญาไท พหลโยธิน", "โรงพยาบาลพญาไท ศรีราชา", "โรงพยาบาลเปาโล พระประแดง",
-                "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4"
+                "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4",
+                "อื่นๆ"
             ];
             
             allHospitals.forEach(hosp => {
@@ -17248,7 +17265,8 @@ function renderPermissionsManagement() {
     const allHospitals = [
         "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
         "โรงพยาบาลพญาไท บ่อวิน", "โรงพยาบาลพญาไท พหลโยธิน", "โรงพยาบาลพญาไท ศรีราชา", "โรงพยาบาลเปาโล พระประแดง",
-        "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4"
+        "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4",
+        "อื่นๆ"
     ];
 
     let currentAllowedProjects = new Set();
@@ -18006,16 +18024,16 @@ function renderPermissionsManagement() {
 
     function updateBellBadge() {
         const badge = document.getElementById("bell-badge-count");
-        if (!badge) return;
-        
-        if (typeof updateDisbursementNotifications === "function") {
-            updateDisbursementNotifications();
-        }
+        if (badge) {
+            if (typeof updateDisbursementNotifications === "function") {
+                updateDisbursementNotifications();
+            }
 
-        const unread = document.querySelectorAll(".notif-item.unread:not([style*='opacity: 0.5'])");
-        const count = unread.length;
-        badge.textContent = count;
-        badge.style.display = count > 0 ? "" : "none";
+            const unread = document.querySelectorAll(".notif-item.unread:not([style*='opacity: 0.5'])");
+            const count = unread.length;
+            badge.textContent = count;
+            badge.style.display = count > 0 ? "" : "none";
+        }
 
         // Update approvals-badge-count dynamically on the Approvals tab
         const approvalBadge = document.getElementById("approvals-badge-count");
