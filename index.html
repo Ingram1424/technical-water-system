@@ -7231,7 +7231,7 @@ function switchRole(roleName) {
         roleDisplay.textContent = "Accountant";
         usernameDisplay.textContent = "Account System";
         showToast("สลับบทบาทเป็น: Accounting (บัญชี) ห้ามลบข้อมูลหลัก", "info");
-    } else if (roleName === "customer") {
+    } else if (roleName === "customer" || roleName === "pe" || roleName === "technician" || roleName === "tech") {
         // Determine which customer user and their permissions
         const cUserKey = appState.currentCustomerUser || "user1";
         localStorage.setItem("technical_water_current_customer_user", cUserKey);
@@ -7321,13 +7321,7 @@ function switchRole(roleName) {
     }
 
     // Refresh current view to apply role restrictions
-    if (appState.currentView === "dashboard") {
-        renderOverallDashboard();
-    } else if (appState.currentView === "cost") {
-        renderCostManagement();
-    } else if (appState.currentView === "projects-list" || appState.currentView === "quoting-projects-list") {
-        renderSubnavProjectWorkspace();
-    }
+    switchView(appState.currentView || "dashboard");
 
     // Apply notification role filter (accounting sees only approval notifs)
     if (typeof window.applyNotifRoleFilter === "function") {
@@ -17207,6 +17201,7 @@ function initPublicView(projectCode) {
             }
             if (confirm("คุณต้องการออกจากระบบใช่ไหม?")) {
                 clearSession();
+                switchView("dashboard");
                 const overlay = document.getElementById("login-overlay");
                 if (overlay) overlay.style.display = "flex";
                 document.getElementById("profile-dropdown").classList.remove("active");
