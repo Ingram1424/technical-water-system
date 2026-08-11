@@ -6183,9 +6183,22 @@ function populateSubnavProjects(yearFilter) {
     const selectedHospital = hospitalSelector.value;
     projectSelector.innerHTML = "";
     
+    const standardHospitals = [
+        "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
+        "โรงพยาบาลพญาไท บ่อวิน", "โรงพยาบาลพญาไท พหลโยธิน", "โรงพยาบาลพญาไท ศรีราชา", "โรงพยาบาลเปาโล พระประแดง",
+        "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4"
+    ];
+    
     // Filter projects based on hospital and year
     let projects = Object.values(projectsData).filter(p => {
-        const hospitalMatch = selectedHospital === "all" || p.customer === selectedHospital;
+        let hospitalMatch = false;
+        if (selectedHospital === "all") {
+            hospitalMatch = true;
+        } else if (selectedHospital === "อื่นๆ") {
+            hospitalMatch = !standardHospitals.includes(p.customer);
+        } else {
+            hospitalMatch = p.customer === selectedHospital;
+        }
         const yearMatch = yearFilter === "all" || p.year === parseInt(yearFilter);
         const isQuotingTab = appState.currentView === "quoting-projects-list";
         const isQuotingStatus = (p.status === "งานที่กำลังเสนอราคา" || p.status === "กำลังเสนอราคา" || p.status === "งานที่รอเสนอราคา");
@@ -6587,8 +6600,21 @@ function populateCostProjects() {
     
     projectSelector.innerHTML = "";
     
+    const standardHospitals = [
+        "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
+        "โรงพยาบาลพญาไท บ่อวิน", "โรงพยาบาลพญาไท พหลโยธิน", "โรงพยาบาลพญาไท ศรีราชา", "โรงพยาบาลเปาโล พระประแดง",
+        "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4"
+    ];
+    
     const projects = Object.values(projectsData).filter(p => {
-        const hospitalMatch = selectedHospital === "all" || p.customer === selectedHospital;
+        let hospitalMatch = false;
+        if (selectedHospital === "all") {
+            hospitalMatch = true;
+        } else if (selectedHospital === "อื่นๆ") {
+            hospitalMatch = !standardHospitals.includes(p.customer);
+        } else {
+            hospitalMatch = p.customer === selectedHospital;
+        }
         const yearMatch = yearVal === "all" || p.year === parseInt(yearVal);
         return hospitalMatch && yearMatch;
     });
@@ -12089,9 +12115,22 @@ document.addEventListener("DOMContentLoaded", () => {
         const selectedYear = portalYearFilter ? portalYearFilter.value : "all";
         const searchText = portalProjectSearch ? portalProjectSearch.value.trim().toLowerCase() : "";
 
+        const standardHospitals = [
+            "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
+            "โรงพยาบาลพญาไท บ่อวิน", "โรงพยาบาลพญาไท พหลโยธิน", "โรงพยาบาลพญาไท ศรีราชา", "โรงพยาบาลเปาโล พระประแดง",
+            "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4"
+        ];
+
         // 2. Filter projects matching filters
         let projects = Object.values(projectsData).filter(p => {
-            const hospitalMatch = selectedHospital === "all" || p.customer === selectedHospital;
+            let hospitalMatch = false;
+            if (selectedHospital === "all") {
+                hospitalMatch = true;
+            } else if (selectedHospital === "อื่นๆ") {
+                hospitalMatch = !standardHospitals.includes(p.customer);
+            } else {
+                hospitalMatch = p.customer === selectedHospital;
+            }
             const yearMatch = selectedYear === "all" || p.year === parseInt(selectedYear);
             const isQuotingTab = appState.currentView === "quoting-projects-list";
             const isQuotingStatus = (p.status === "งานที่กำลังเสนอราคา" || p.status === "กำลังเสนอราคา" || p.status === "งานที่รอเสนอราคา");
