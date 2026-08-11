@@ -6429,7 +6429,7 @@ function renderOverallDashboard() {
     
     // Render Bottom Hospital Cards Grid (Show all projects that are not completed across all years)
     const gridProjects = Object.values(projectsData).filter(p => 
-        p.progress < 100
+        p.status !== "งานที่ดำเนินการเสร็จแล้ว" && p.status !== "เสร็จสิ้น" && (p.progress === undefined || p.progress === null || p.progress < 100)
     );
     renderHospitalsGrid(gridProjects);
     
