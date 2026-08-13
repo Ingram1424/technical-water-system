@@ -7411,21 +7411,15 @@ function renderHospitalsGrid(activeProjects) {
         "อื่นๆ"
     ];
     
+    // Build a set of known/predefined hospitals for "อื่นๆ" matching
+    const knownHospitals = new Set(allHospitalsList.filter(h => h !== "อื่นๆ"));
+    
     allHospitalsList.forEach(hospital => {
         // Find all projects of this hospital in the active projects list that are NOT 100% completed
+        const isOthers = (hospital === "อื่นๆ");
         const hospitalProjects = activeProjects.filter(item => {
-            const isCompleted = !(item.progress === undefined || item.progress === null || isNaN(item.progress) || item.progress < 100);
-            if (isCompleted) return false;
-            
-            if (hospital === "อื่นๆ") {
-                const standardHospitals = [
-                    "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
-                    "โรงพยาบาลพญาไท บ่อวิน", "โรงพยาบาลพญาไท พหลโยธิน", "โรงพยาบาลพญาไท ศรีราชา", "โรงพยาบาลเปาโล พระประแดง",
-                    "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4"
-                ];
-                return !standardHospitals.includes(item.customer);
-            }
-            return item.customer === hospital;
+            const matchesHospital = isOthers ? !knownHospitals.has(item.customer) : item.customer === hospital;
+            return matchesHospital && (item.progress === undefined || item.progress === null || item.progress < 100);
         });
         
         // Sort projects by year descending (newest first)
@@ -7444,17 +7438,7 @@ function renderHospitalsGrid(activeProjects) {
             let totalProfit = 0;
             
             // Count projects status for this hospital across all years
-            const allHospitalProjects = Object.values(projectsData).filter(p => {
-                if (hospital === "อื่นๆ") {
-                    const standardHospitals = [
-                        "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
-                        "โรงพยาบาลพญาไท บ่อวิน", "โรงพยาบาลพญาไท พหลโยธิน", "โรงพยาบาลพญาไท ศรีราชา", "โรงพยาบาลเปาโล พระประแดง",
-                        "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4"
-                    ];
-                    return !standardHospitals.includes(p.customer);
-                }
-                return p.customer === hospital;
-            });
+            const allHospitalProjects = Object.values(projectsData).filter(p => isOthers ? !knownHospitals.has(p.customer) : p.customer === hospital);
             let totalProjects = allHospitalProjects.length;
             let finishedProjects = 0;
             let completedProjects = 0;
