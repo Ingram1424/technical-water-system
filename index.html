@@ -5851,12 +5851,7 @@ try {
                 projectsData[k] = parsed[k];
             }
         });
-        // Self-healing: Remove duplicate project code PO 2811125011407 if it exists in local storage
-        if (projectsData["PO 2811125011407"]) {
-            console.warn("Self-healing: Removing duplicate project PO 2811125011407 from LocalStorage");
-            delete projectsData["PO 2811125011407"];
-            localStorage.setItem("technical_water_projects_data_v2", JSON.stringify(projectsData));
-        }
+
     } else {
         projectsData = defaultProjectsData;
         localStorage.setItem("technical_water_projects_data_v2", JSON.stringify(projectsData));
