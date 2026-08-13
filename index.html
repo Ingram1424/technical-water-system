@@ -10265,7 +10265,7 @@ function renderSubnavPlanWork(project) {
                         }
                         tr.addEventListener('click', function(e) {
                             // Don't select row when clicking inputs, buttons, checkboxes, or painting cells
-                            if (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.classList.contains('gantt-cell')) return;
+                            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'BUTTON' || e.target.closest('button') || e.target.classList.contains('gantt-cell')) return;
                             const clickedIdx = parseInt(this.getAttribute('data-row-idx'));
                             if (ganttSelectedRowIdx === clickedIdx) {
                                 ganttSelectedRowIdx = -1; // Deselect
