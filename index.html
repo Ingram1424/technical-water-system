@@ -8746,6 +8746,28 @@ function calculatePlanScurveFromGantt(proj) {
     });
 }
 
+
+function formatBudgetInput(input) {
+    let cursor = input.selectionStart;
+    let oldLength = input.value.length;
+    
+    // กรองเอาเฉพาะตัวเลข
+    let val = input.value.replace(/[^0-9]/g, "");
+    if (!val) {
+        input.value = "";
+        return;
+    }
+    
+    // ใส่เครื่องหมายจุลภาค (ลูกน้ำ)
+    let formatted = val.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    input.value = formatted;
+    
+    // รักษาตำแหน่งเคอร์เซอร์การพิมพ์
+    let newLength = formatted.length;
+    let diff = newLength - oldLength;
+    input.setSelectionRange(cursor + diff, cursor + diff);
+}
+
 function syncScurveDOMToObject(proj) {
     if (!proj || !proj.scurveData) return;
     const monthInputs = document.querySelectorAll('.scurve-month-name');
@@ -8760,7 +8782,7 @@ function syncScurveDOMToObject(proj) {
         if (nameEl) item.name = nameEl.value.trim();
         if (!item.isSubtask) {
             if (itemEl) item.item = itemEl.value.trim();
-            if (budgetEl) item.budget = parseFloat(budgetEl.value) || 0;
+            if (budgetEl) item.budget = parseFloat(budgetEl.value.replace(/,/g, "")) || 0;
             if (weightEl) item.weight = parseFloat(weightEl.value) || 0;
         }
         const cellVals = document.querySelectorAll(`.scurve-cell-val[data-idx="${idx}"]`);
@@ -9562,7 +9584,7 @@ function renderSubnavActualProgress(project) {
                 </td>
                 ${hideBudget ? '' : `
                 <td style="padding: 6px;">
-                    ${isSub ? '' : `<input type="number" class="scurve-budget" data-idx="${idx}" value="${item.budget || 0}" step="1000" ${readonlyAttr} ${canEdit?editInputStyle:inputStyle}>`}
+                    ${isSub ? '' : `<input type="text" class="scurve-budget" data-idx="${idx}" value="${formatNumber(item.budget || 0)}" ${readonlyAttr} ${canEdit?editInputStyle:inputStyle} oninput="formatBudgetInput(this)">`}
                 </td>
                 `}
                 ${hideWeight ? '' : `
@@ -14612,7 +14634,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (nameEl) item.name = nameEl.value.trim();
                 if (!item.isSubtask) {
                     if (itemEl) item.item = itemEl.value.trim();
-                    if (budgetEl) item.budget = parseFloat(budgetEl.value) || 0;
+                    if (budgetEl) item.budget = parseFloat(budgetEl.value.replace(/,/g, "")) || 0;
                     if (weightEl) item.weight = parseFloat(weightEl.value) || 0;
                     if (totalPctEl) item.totalPercent = parseFloat(totalPctEl.value) || 0;
                 }
