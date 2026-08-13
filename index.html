@@ -4773,6 +4773,9 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                                         <button class="btn btn-sm btn-primary hide-accounting hide-customer" id="btn-save-scurve-data" style="font-size: 11px; padding: 6px 12px; height: auto;">
                                             <i class="fa-solid fa-floppy-disk"></i> บันทึกข้อมูล
                                         </button>
+                                        <button class="btn btn-sm btn-outline" id="btn-print-scurve" style="font-size: 11px; padding: 6px 12px; height: auto; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;">
+                                            <i class="fa-solid fa-print"></i> พิมพ์ / บันทึก PDF
+                                        </button>
                                     </div>
                                 </div>
 
@@ -14349,6 +14352,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     
     const btnSaveScurveData = document.getElementById("btn-save-scurve-data");
+    const btnPrintScurve = document.getElementById("btn-print-scurve");
     if (btnSaveScurveData) {
         btnSaveScurveData.addEventListener("click", function() {
             const code = appState.selectedDetailProject;
@@ -14409,6 +14413,240 @@ document.addEventListener("DOMContentLoaded", () => {
             saveToLocalStorage();
             renderSubnavActualProgress(proj);
             showToast("บันทึกข้อมูลแผนงาน S-Curve เรียบร้อยแล้ว!", "success");
+        });
+    }
+
+    if (btnPrintScurve) {
+        btnPrintScurve.addEventListener("click", function() {
+            const code = appState.selectedDetailProject;
+            if (!code || code === "all") {
+                showToast("กรุณาเลือกโครงการเฉพาะก่อนพิมพ์", "warning");
+                return;
+            }
+            const proj = projectsData[code];
+            if (!proj) return;
+
+            // Generate S-Curve Chart Image
+            const scurveCanvas = document.getElementById("scurve-chart-canvas");
+            let scurveImgHtml = "";
+            if (scurveCanvas) {
+                try {
+                    const imgData = scurveCanvas.toDataURL("image/png");
+                    scurveImgHtml = `
+                        <div style="text-align: center; margin-bottom: 25px; page-break-inside: avoid;">
+                            <img src="${imgData}" style="max-width: 100%; height: auto; border: 1px solid #cbd5e1; padding: 10px; border-radius: 6px;" alt="S-Curve Chart">
+                        </div>
+                    `;
+                } catch(e) {
+                    console.error("Failed to generate S-Curve chart image:", e);
+                }
+            }
+
+            // Gather headers
+            const hideBudget = (appState.currentRole === "pe" || appState.currentRole === "customer" || appState.currentRole === "technician" || appState.currentRole === "tech");
+            const hideWeight = (appState.currentRole === "customer");
+            
+            const isPlanMode = currentScurveMode === 'plan';
+            const modeTextTh = isPlanMode ? "แผนงาน (Plan)" : "ผลงานจริง (Actual)";
+
+            // Build headers row
+            let monthsHeaderHtml = "";
+            let weeksHeaderHtml = "";
+            (proj.scurveMonths || ["Month 1"]).forEach((month, mIdx) => {
+                monthsHeaderHtml += `<th colspan="4" style="border: 1px solid #94a3b8; padding: 6px; background: #e2e8f0; font-size: 11px;">${month}</th>`;
+                for (let w = 1; w <= 4; w++) {
+                    weeksHeaderHtml += `<th style="border: 1px solid #94a3b8; padding: 4px 2px; font-size: 10px; font-weight: bold; width: 35px; text-align: center;">${w}</th>`;
+                }
+            });
+
+            // Build rows
+            let rowsHtml = "";
+            (proj.scurveData || []).forEach((item, idx) => {
+                const isSub = item.isSubtask;
+                const indentStyle = isSub ? "padding-left: 20px;" : "";
+                const prefix = isSub ? "- " : "";
+                const nameWeight = isSub ? "normal" : "bold";
+                const rowBg = isSub ? "" : "background: #f8fafc;";
+
+                // Weekly cells
+                let weeklyCellsHtml = "";
+                const vals = isPlanMode ? (item.plan || []) : (item.actual || []);
+                const limit = (proj.scurveMonths || ["Month 1"]).length * 4;
+                for (let i = 0; i < limit; i++) {
+                    const val = vals[i] || 0;
+                    const valStr = val === 0 ? "" : (isPlanMode ? val.toFixed(1) : val);
+                    weeklyCellsHtml += `<td style="border: 1px solid #94a3b8; text-align: center; padding: 4px; font-size: 10.5px;">${valStr}</td>`;
+                }
+
+                rowsHtml += `
+                    <tr style="${rowBg}">
+                        <td style="text-align: center; border: 1px solid #94a3b8; font-size: 11px;">${isSub ? '' : (item.item || '')}</td>
+                        <td style="border: 1px solid #94a3b8; padding: 6px; text-align: left; font-size: 11px; font-weight: ${nameWeight}; ${indentStyle}">${prefix}${item.name || ''}</td>
+                        ${hideBudget ? '' : `<td style="border: 1px solid #94a3b8; text-align: right; padding: 6px; font-size: 11px;">${isSub ? '' : (item.budget ? formatNumber(item.budget) : '0')}</td>`}
+                        ${hideWeight ? '' : `<td style="border: 1px solid #94a3b8; text-align: center; padding: 6px; font-size: 11px; font-weight: bold;">${isSub ? '' : (item.weight ? item.weight.toFixed(2) : '0.00')}</td>`}
+                        <td style="border: 1px solid #94a3b8; text-align: center; padding: 6px; font-size: 11px; font-weight: bold;">${isSub ? '' : (item.totalPercent || 0)}%</td>
+                        ${weeklyCellsHtml}
+                    </tr>
+                `;
+            });
+
+            // Open print window
+            const printWindow = window.open("", "_blank");
+            if (!printWindow) return showToast("Pop-up blocker เปิดใช้งานอยู่ กรุณาอนุญาตให้เปิดหน้าต่างใหม่", "warning");
+
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>พิมพ์รายงาน S-Curve - ${proj.name}</title>
+                    <style>
+                        @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700&display=swap');
+                        body {
+                            font-family: 'Prompt', sans-serif;
+                            padding: 20px;
+                            color: #334155;
+                            background: #fff;
+                        }
+                        .company-header {
+                            display: flex;
+                            align-items: center;
+                            gap: 15px;
+                            border-bottom: 2px solid #1e3a8a;
+                            padding-bottom: 12px;
+                            margin-bottom: 15px;
+                        }
+                        .company-info {
+                            text-align: left;
+                        }
+                        .company-info h1 {
+                            font-size: 14px;
+                            color: #1e3a8a;
+                            margin: 0 0 4px 0;
+                            font-weight: 700;
+                        }
+                        .company-info p {
+                            font-size: 9px;
+                            color: #64748b;
+                            margin: 0;
+                        }
+                        .doc-meta {
+                            display: grid;
+                            grid-template-columns: 1fr 1fr;
+                            gap: 10px;
+                            font-size: 11px;
+                            margin-bottom: 15px;
+                            border: 1px solid #cbd5e1;
+                            padding: 10px;
+                            border-radius: 6px;
+                        }
+                        .doc-meta-item {
+                            display: flex;
+                            gap: 6px;
+                        }
+                        .doc-meta-label {
+                            font-weight: 600;
+                            color: #334155;
+                            min-width: 90px;
+                        }
+                        .report-title {
+                            font-size: 14px;
+                            font-weight: 700;
+                            text-align: center;
+                            margin-bottom: 15px;
+                            color: #1e3a8a;
+                            text-decoration: underline;
+                        }
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            font-size: 10.5px;
+                            margin-top: 10px;
+                        }
+                        th, td {
+                            border: 1px solid #94a3b8;
+                            padding: 5px;
+                            text-align: center;
+                        }
+                        th {
+                            background: #e2e8f0;
+                            font-weight: bold;
+                        }
+                        @media print {
+                            body {
+                                padding: 0 !important;
+                            }
+                            .no-print {
+                                display: none !important;
+                            }
+                            @page {
+                                size: A4 landscape;
+                                margin: 10mm;
+                            }
+                        }
+                        @media screen {
+                            body {
+                                padding-top: 70px !important;
+                            }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <!-- Floating print toolbar (Screen only) -->
+                    <div class="no-print" style="position: fixed; top: 0; left: 0; right: 0; background: #1e293b; color: #fff; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; z-index: 9999; box-shadow: 0 4px 6px rgba(0,0,0,0.1); font-family: 'Prompt', sans-serif;">
+                        <span style="font-size: 14px; font-weight: 500;">ตัวอย่างรายงาน S-Curve & Progress (S-Curve Report Preview) - [ข้อมูลฝั่ง: ${modeTextTh}]</span>
+                        <div style="display: flex; gap: 10px;">
+                            <button onclick="window.print()" style="background: #0284c7; color: #fff; border: none; padding: 6px 16px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-family: 'Prompt', sans-serif;">
+                                <i class="fa-solid fa-print"></i> พิมพ์ / บันทึก PDF
+                            </button>
+                            <button onclick="window.close()" style="background: #475569; color: #fff; border: none; padding: 6px 16px; border-radius: 4px; font-size: 12px; font-weight: bold; cursor: pointer; font-family: 'Prompt', sans-serif;">
+                                ปิดหน้าต่าง
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="company-header">
+                        <img src="${window.location.origin}/logo.png" style="height: 65px; width: auto; object-fit: contain;" alt="TECHNICAL WATER Logo">
+                        <div class="company-info">
+                            <h1>บริษัท เทคนิคอล วอเตอร์ จำกัด (TECHNICAL WATER CO., LTD.)</h1>
+                            <p>301/856 ซอยรามคำแหง 68 ถนนรามคำแหง แขวงหัวหมาก เขตบางกะปิ กรุงเทพฯ 10240</p>
+                            <p>เบอร์โทร (Tel): 02-735-3022 | E-mail: technicalwater2015@gmail.com</p>
+                        </div>
+                    </div>
+                    
+                    <div class="doc-meta">
+                        <div class="doc-meta-item"><span class="doc-meta-label">วันที่พิมพ์:</span> <span>${new Date().toLocaleDateString('th-TH')}</span></div>
+                        <div class="doc-meta-item"><span class="doc-meta-label">โครงการ:</span> <span>${proj.name}</span></div>
+                        <div class="doc-meta-item"><span class="doc-meta-label">รหัสโครงการ:</span> <span>${proj.code || '-'}</span></div>
+                        <div class="doc-meta-item"><span class="doc-meta-label">ข้อมูลแสดงผล:</span> <span>สถิติความคืบหน้าฝั่ง: ${modeTextTh}</span></div>
+                    </div>
+
+                    <div class="report-title">รายงานความคืบหน้าและกราฟ S-Curve โครงการ: ${proj.name}</div>
+
+                    <!-- Canvas Chart rendered as Image -->
+                    ${scurveImgHtml}
+
+                    <!-- Progress Table -->
+                    <table>
+                        <thead>
+                            <tr style="background: #e2e8f0;">
+                                <th rowspan="2" style="width: 50px;">Items</th>
+                                <th rowspan="2">Description</th>
+                                ${hideBudget ? '' : '<th rowspan="2" style="width: 95px;">Budget</th>'}
+                                ${hideWeight ? '' : '<th rowspan="2" style="width: 55px;">%</th>'}
+                                <th rowspan="2" style="width: 65px;">% (รวม)</th>
+                                ${monthsHeaderHtml}
+                            </tr>
+                            <tr>
+                                ${weeksHeaderHtml}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHtml}
+                        </tbody>
+                    </table>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
         });
     }
 
