@@ -9297,6 +9297,88 @@ function syncScurveMonthsWithGantt(project) {
     }
 }
 
+
+function initScurveAutocomplete(project, textarea) {
+    if (!project || !project.ganttData || !project.ganttData.tasks) return;
+    
+    // ดึงรายชื่องานจาก Gantt Chart โดยตัดช่องว่างหัวท้ายและตัดค่าว่างออก
+    const suggestions = Array.from(new Set(
+        project.ganttData.tasks
+            .map(t => t.name ? t.name.trim() : "")
+            .filter(name => name.length > 0)
+    ));
+    
+    if (suggestions.length === 0) return;
+    
+    // สร้างหรือหา dropdown สำหรับ autocomplete
+    let dropdown = document.getElementById("scurve-autocomplete-dropdown");
+    if (!dropdown) {
+        dropdown = document.createElement("div");
+        dropdown.id = "scurve-autocomplete-dropdown";
+        dropdown.style.cssText = "position: absolute; background: #fff; border: 1.5px solid var(--border-color); border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); max-height: 180px; overflow-y: auto; z-index: 99999; display: none; font-family: 'Prompt', sans-serif; min-width: 250px;";
+        document.body.appendChild(dropdown);
+    }
+    
+    const showDropdown = () => {
+        const val = textarea.value.trim().toLowerCase();
+        if (!val) {
+            dropdown.style.display = "none";
+            return;
+        }
+        
+        // ค้นหารายการที่คำพิมพ์ตรงกัน
+        const matches = suggestions.filter(s => s.toLowerCase().includes(val));
+        if (matches.length === 0) {
+            dropdown.style.display = "none";
+            return;
+        }
+        
+        // จัดตำแหน่ง dropdown ให้อยู่ใต้ textarea พอดี
+        const rect = textarea.getBoundingClientRect();
+        dropdown.style.top = `${rect.bottom + window.scrollY}px`;
+        dropdown.style.left = `${rect.left + window.scrollX}px`;
+        dropdown.style.width = `${rect.width}px`;
+        
+        dropdown.innerHTML = "";
+        matches.forEach(match => {
+            const item = document.createElement("div");
+            item.style.cssText = "padding: 8px 12px; cursor: pointer; font-size: 12.5px; border-bottom: 1px solid var(--border-color); color: #334155; font-weight: 500; transition: background 0.15s; text-align: left;";
+            
+            // Highlight ส่วนที่ตรงกัน
+            const escapedVal = val.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+            item.innerHTML = match.replace(new RegExp(`(${escapedVal})`, 'gi'), '<strong style="color:#2563eb;">$1</strong>');
+            
+            item.addEventListener("mouseenter", () => {
+                item.style.background = "#eff6ff";
+            });
+            item.addEventListener("mouseleave", () => {
+                item.style.background = "none";
+            });
+            item.addEventListener("mousedown", (e) => {
+                e.preventDefault(); // กันไม่ให้บลาร์ออกจาก textarea
+                textarea.value = match;
+                textarea.dispatchEvent(new Event("input", { bubbles: true }));
+                
+                // ปรับความสูง textarea อัตโนมัติ
+                textarea.style.height = 'auto';
+                textarea.style.height = textarea.scrollHeight + 'px';
+                dropdown.style.display = "none";
+            });
+            dropdown.appendChild(item);
+        });
+        dropdown.style.display = "block";
+    };
+    
+    textarea.addEventListener("input", showDropdown);
+    textarea.addEventListener("focus", showDropdown);
+    textarea.addEventListener("blur", () => {
+        // ดีเลย์นิดนึงเพื่อให้เหตุการณ์ mousedown ในรายการทำงานได้ก่อนซ่อน
+        setTimeout(() => {
+            dropdown.style.display = "none";
+        }, 180);
+    });
+}
+
 function renderSubnavActualProgress(project) {
     syncScurveMonthsWithGantt(project);
     if (!project.scurveMonths || project.scurveMonths.length === 0) project.scurveMonths = ["Month 1"];
@@ -9477,6 +9559,9 @@ function renderSubnavActualProgress(project) {
     body.querySelectorAll(".scurve-item-name").forEach(tx => {
         tx.style.height = 'auto';
         tx.style.height = tx.scrollHeight + 'px';
+        if (canEdit) {
+            initScurveAutocomplete(project, tx);
+        }
     });
 }
 
