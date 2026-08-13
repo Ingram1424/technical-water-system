@@ -15178,10 +15178,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     
                     <div class="doc-meta">
                         <div class="doc-meta-item"><span class="doc-meta-label">วันที่:</span> <span>${proj.ganttData.header.date || '-'}</span></div>
-
                         <div class="doc-meta-item"><span class="doc-meta-label">เรื่อง:</span> <span>${proj.ganttData.header.subject || '-'}</span></div>
                         <div class="doc-meta-item"><span class="doc-meta-label">เอกสารอ้างอิง:</span> <span>${proj.ganttData.header.refPo || '-'}</span></div>
-                        <div class="doc-meta-item" style="grid-column: span 2;"><span class="doc-meta-label">ระยะเวลาแผนงาน:</span> <span>${formatYmdToTh(proj.ganttData.startDate)} ถึง ${formatYmdToTh(proj.ganttData.endDate)}</span></div>
+                        <div class="doc-meta-item"><span class="doc-meta-label">ระยะเวลาแผนงาน:</span> <span>${formatYmdToTh(proj.ganttData.startDate)} ถึง ${formatYmdToTh(proj.ganttData.endDate)}</span></div>
                     </div>
 
                     <div class="gantt-title">แผนงานปรับปรุงโครงการ: ${proj.name}</div>
