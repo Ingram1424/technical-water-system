@@ -6429,7 +6429,7 @@ function renderOverallDashboard() {
     
     // Render Bottom Hospital Cards Grid (Show all projects that are not completed across all years)
     const gridProjects = Object.values(projectsData).filter(p => 
-        p.status !== "งานที่ดำเนินการเสร็จแล้ว" && p.status !== "เสร็จสิ้น" && (p.progress === undefined || p.progress === null || p.progress < 100)
+        p.status !== "งานที่ดำเนินการเสร็จแล้ว" && p.status !== "เสร็จสิ้น" && (p.progress === undefined || p.progress === null || isNaN(p.progress) || p.progress < 100)
     );
     renderHospitalsGrid(gridProjects);
     
@@ -7018,7 +7018,11 @@ function recalculateJobsFromTasks(project) {
     if (scurveProgress !== null) {
         project.progress = scurveProgress;
     } else if (total > 0) {
-        project.progress = Math.round(project.tasks.reduce((s, t) => s + (t.progress || 0), 0) / total);
+        const sumVal = project.tasks.reduce((s, t) => {
+            const val = parseFloat(t.progress);
+            return s + (isNaN(val) ? 0 : val);
+        }, 0);
+        project.progress = Math.round(sumVal / total);
     } else {
         if (project.progress === undefined || project.progress === null) {
             project.progress = 0;
