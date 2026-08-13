@@ -95,7 +95,7 @@ body {
     overflow-x: hidden;
 }
 
-body:not(.public-view-mode) {
+body {
     overflow: hidden;
 }
 
@@ -251,14 +251,9 @@ body:not(.public-view-mode) {
     flex-direction: column;
 }
 
-body:not(.public-view-mode) .main-content {
+.main-content {
     height: 100vh;
     overflow: hidden;
-}
-
-body:not(.public-view-mode) .main-header {
-    position: relative;
-    top: auto;
 }
 
 /* HEADER BAR */
@@ -270,8 +265,8 @@ body:not(.public-view-mode) .main-header {
     align-items: center;
     justify-content: space-between;
     padding: 0 24px;
-    position: sticky;
-    top: 0;
+    position: relative;
+    top: auto;
     z-index: 99;
     border-bottom: 1px solid var(--border-color);
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.01);
@@ -626,7 +621,7 @@ body:not(.public-view-mode) .main-header {
     animation: fadeIn 0.3s ease;
 }
 
-body:not(.public-view-mode) .view-panel {
+.view-panel {
     flex-grow: 1;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
@@ -6283,7 +6278,16 @@ function populateDashboardKpiProjects() {
     
     let filtered = combinedProjects;
     if (hospitalVal !== "all") {
-        filtered = filtered.filter(p => p.customer === hospitalVal);
+        const standardHospitals = [
+            "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
+            "โรงพยาบาลพญาไท บ่อวิน", "โรงพยาบาลพญาไท พหลโยธิน", "โรงพยาบาลพญาไท ศรีราชา", "โรงพยาบาลเปาโล พระประแดง",
+            "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4"
+        ];
+        if (hospitalVal === "อื่นๆ") {
+            filtered = filtered.filter(p => !standardHospitals.includes(p.customer));
+        } else {
+            filtered = filtered.filter(p => p.customer === hospitalVal);
+        }
     }
     
     const currentVal = projectSelect.value;
@@ -6329,7 +6333,16 @@ function updateDashboardProgressAndFinancials() {
     
     let filtered = combinedProjects;
     if (hospitalVal !== "all") {
-        filtered = filtered.filter(p => p.customer === hospitalVal);
+        const standardHospitals = [
+            "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
+            "โรงพยาบาลพญาไท บ่อวิน", "โรงพยาบาลพญาไท พหลโยธิน", "โรงพยาบาลพญาไท ศรีราชา", "โรงพยาบาลเปาโล พระประแดง",
+            "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4"
+        ];
+        if (hospitalVal === "อื่นๆ") {
+            filtered = filtered.filter(p => !standardHospitals.includes(p.customer));
+        } else {
+            filtered = filtered.filter(p => p.customer === hospitalVal);
+        }
     }
     if (projectVal !== "all") {
         filtered = filtered.filter(p => p.code === projectVal);
@@ -6447,7 +6460,10 @@ function renderOverallDashboard() {
     const pendingApprovalCounts = Array(hospitalsList.length).fill(0);
     
     combinedProjects.forEach(p => {
-        const idx = hospitalsList.indexOf(p.customer);
+        let idx = hospitalsList.indexOf(p.customer);
+        if (idx === -1) {
+            idx = hospitalsList.indexOf("อื่นๆ");
+        }
         if (idx === -1) return;
         
         if (p.status === "งานที่ดำเนินการเสร็จแล้ว" || p.status === "เสร็จสิ้น") {
@@ -7419,7 +7435,9 @@ function renderHospitalsGrid(activeProjects) {
         const isOthers = (hospital === "อื่นๆ");
         const hospitalProjects = activeProjects.filter(item => {
             const matchesHospital = isOthers ? !knownHospitals.has(item.customer) : item.customer === hospital;
-            return matchesHospital && (item.progress === undefined || item.progress === null || item.progress < 100);
+            const progressVal = (item.progress !== undefined && item.progress !== null) ? parseFloat(item.progress.toString().replace("%", "")) : NaN;
+            const isNotCompleted = isNaN(progressVal) || progressVal < 100;
+            return matchesHospital && isNotCompleted;
         });
         
         // Sort projects by year descending (newest first)
@@ -10947,7 +10965,10 @@ function renderCostOverallBarChart(projectsList) {
         const profits = new Array(hospitals.length).fill(0);
         
         projectsList.forEach(p => {
-            const index = hospitals.indexOf(p.customer);
+            let index = hospitals.indexOf(p.customer);
+            if (index === -1) {
+                index = hospitals.indexOf("อื่นๆ");
+            }
             if (index !== -1) {
                 values[index] += p.value || 0;
                 costs[index] += p.cost || 0;
@@ -15059,6 +15080,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 remarks: remarks
             };
             
+            // Set current active project workspace to the newly created one!
+            appState.selectedDetailProject = code;
+
             // Save and sync immediately
             saveToLocalStorage();
             
@@ -15069,9 +15093,6 @@ document.addEventListener("DOMContentLoaded", () => {
             populateSubnavHospitals();
             populateSubnavProjects(document.getElementById("subnav-year-filter").value);
             populateCostProjects();
-            
-            // Set current active project workspace to the newly created one!
-            appState.selectedDetailProject = code;
             
             renderOverallDashboard();
             renderSubnavProjectWorkspace();
