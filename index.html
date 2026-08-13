@@ -5873,6 +5873,7 @@ async function loadFromSupabase() {
                     remoteData[row.code] = row.data;
                 }
             });
+            removeBase64FromObject(remoteData);
             
             // Safety Guard: Compare timestamps and content sizes to prevent overwriting newer local data
             if (typeof projectsData === "object" && projectsData !== null) {
