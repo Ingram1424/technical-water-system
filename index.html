@@ -9352,7 +9352,7 @@ function renderSubnavActualProgress(project) {
                 <td style="padding: 6px 10px;">
                     <div style="display: flex; gap: 4px; padding-left: ${isSub ? '16px' : '0'};">
                         ${isSub ? '<span style="color:#64748b; font-weight: 600;">-</span>' : ''}
-                        <input type="text" class="scurve-item-name" data-idx="${idx}" value="${item.name || ''}" placeholder="${isSub?'ชื่องานย่อย':'ชื่องานหลัก'}" ${readonlyAttr} style="width: 100%; font-size: 12.5px; padding: 5px 8px; border: 1px solid ${canEdit?'var(--border-color)':'transparent'}; border-radius: 4px; background: ${canEdit?'#fff':'transparent'}; font-weight: ${isSub?'normal':'700'}; color: #334155;">
+                        <textarea class="scurve-item-name" data-idx="${idx}" placeholder="${isSub?'ชื่องานย่อย':'ชื่องานหลัก'}" ${readonlyAttr} style="width: 100%; font-size: 12.5px; padding: 5px 8px; border: 1px solid ${canEdit?'var(--border-color)':'transparent'}; border-radius: 4px; background: ${canEdit?'#fff':'transparent'}; font-weight: ${isSub?'normal':'700'}; color: #334155; resize: none; overflow: hidden; height: auto;" rows="1" oninput="this.style.height = 'auto'; this.style.height = this.scrollHeight + 'px';" onkeydown="if(event.key === 'Enter') { event.preventDefault(); this.blur(); }">${item.name || ''}</textarea>
                     </div>
                 </td>
                 ${hideBudget ? '' : `
@@ -9440,6 +9440,12 @@ function renderSubnavActualProgress(project) {
 
     updateScurveTotals(project);
     renderSCurveChart(project);
+
+    // Auto-resize S-Curve task textareas to fit content on load
+    body.querySelectorAll(".scurve-item-name").forEach(tx => {
+        tx.style.height = 'auto';
+        tx.style.height = tx.scrollHeight + 'px';
+    });
 }
 
 function renderSubnavProjectBarChart(wb) {
@@ -10111,7 +10117,7 @@ function renderSubnavPlanWork(project) {
                                 <input type="text" class="gantt-item-num" data-idx="${idx}" value="${task.itemNum || ''}" ${readonlyAttr} ${canEdit ? editStyle : inputStyle} placeholder="เช่น Phase 1">
                             </td>
                             <td colspan="${dateList.length + 1}" style="padding: 6px; border: 1px solid var(--border-color);">
-                                <input type="text" class="gantt-item-name" data-idx="${idx}" value="${task.name || ''}" ${readonlyAttr} style="width: 100%; font-size: 14px; font-weight: 800; padding: 6px 8px; border: 1px solid ${canEdit ? 'var(--border-color)' : 'transparent'}; border-radius: 4px; background: ${canEdit ? '#fff' : 'transparent'}; color: var(--navy-dark);" placeholder="Phase เช่น Phase 1 ปรับปรุงพื้นที่แผนกต้อนรับ...">
+                                <textarea class="gantt-item-name" data-idx="${idx}" ${readonlyAttr} style="width: 100%; font-size: 14px; font-weight: 800; padding: 6px 8px; border: 1px solid ${canEdit ? 'var(--border-color)' : 'transparent'}; border-radius: 4px; background: ${canEdit ? '#fff' : 'transparent'}; color: var(--navy-dark); resize: none; overflow: hidden; height: auto;" placeholder="Phase เช่น Phase 1 ปรับปรุงพื้นที่แผนกต้อนรับ..." rows="1" oninput="this.style.height = 'auto'; this.style.height = this.scrollHeight + 'px';" onkeydown="if(event.key === 'Enter') { event.preventDefault(); this.blur(); }">${task.name || ''}</textarea>
                             </td>
                             <td class="hide-accounting hide-customer" style="padding: 6px; text-align: center; border: 1px solid var(--border-color); width: 50px;">
                                 ${canEdit ? `<button class="btn-delete-gantt-row" data-idx="${idx}" style="background:none; border:none; color:#e63946; cursor:pointer; font-size:12px;"><i class="fa-solid fa-trash-can"></i></button>` : ''}
@@ -10126,7 +10132,7 @@ function renderSubnavPlanWork(project) {
                                 <input type="text" class="gantt-item-num" data-idx="${idx}" value="${task.itemNum || ''}" ${readonlyAttr} ${canEdit ? editStyle : inputStyle} placeholder="เช่น 1.1">
                             </td>
                             <td colspan="${dateList.length + 1}" style="padding: 6px; border: 1px solid var(--border-color);">
-                                <input type="text" class="gantt-item-name" data-idx="${idx}" value="${task.name || ''}" ${readonlyAttr} style="width: 100%; font-size: 13px; font-weight: 800; color: #1e40af; padding: 6px 8px; border: 1px solid ${canEdit ? 'var(--border-color)' : 'transparent'}; border-radius: 4px; background: ${canEdit ? '#fff' : 'transparent'};" placeholder="ประเภทงาน เช่น 1.1 งานรื้อถอน">
+                                <textarea class="gantt-item-name" data-idx="${idx}" ${readonlyAttr} style="width: 100%; font-size: 13px; font-weight: 800; color: #1e40af; padding: 6px 8px; border: 1px solid ${canEdit ? 'var(--border-color)' : 'transparent'}; border-radius: 4px; background: ${canEdit ? '#fff' : 'transparent'}; resize: none; overflow: hidden; height: auto;" placeholder="ประเภทงาน เช่น 1.1 งานรื้อถอน" rows="1" oninput="this.style.height = 'auto'; this.style.height = this.scrollHeight + 'px';" onkeydown="if(event.key === 'Enter') { event.preventDefault(); this.blur(); }">${task.name || ''}</textarea>
                             </td>
                             <td class="hide-accounting hide-customer" style="padding: 6px; text-align: center; border: 1px solid var(--border-color); width: 50px;">
                                 ${canEdit ? `<button class="btn-delete-gantt-row" data-idx="${idx}" style="background:none; border:none; color:#e63946; cursor:pointer; font-size:12px;"><i class="fa-solid fa-trash-can"></i></button>` : ''}
@@ -10141,7 +10147,7 @@ function renderSubnavPlanWork(project) {
                                 <input type="text" class="gantt-item-num" data-idx="${idx}" value="${task.itemNum || ''}" ${readonlyAttr} ${canEdit ? editStyle : inputStyle} placeholder="เช่น 1.2.1">
                             </td>
                             <td colspan="${dateList.length + 1}" style="padding: 6px; border: 1px solid var(--border-color);">
-                                <input type="text" class="gantt-item-name" data-idx="${idx}" value="${task.name || ''}" ${readonlyAttr} style="width: 100%; font-size: 13px; font-weight: 800; padding: 6px 8px; border: 1px solid ${canEdit ? 'var(--border-color)' : 'transparent'}; border-radius: 4px; background: ${canEdit ? '#fff' : 'transparent'}; text-decoration: underline; color: #334155;" placeholder="หมวดงาน เช่น 1.2.1 หมวดงานผนัง">
+                                <textarea class="gantt-item-name" data-idx="${idx}" ${readonlyAttr} style="width: 100%; font-size: 13px; font-weight: 800; padding: 6px 8px; border: 1px solid ${canEdit ? 'var(--border-color)' : 'transparent'}; border-radius: 4px; background: ${canEdit ? '#fff' : 'transparent'}; text-decoration: underline; color: #334155; resize: none; overflow: hidden; height: auto;" placeholder="หมวดงาน เช่น 1.2.1 หมวดงานผนัง" rows="1" oninput="this.style.height = 'auto'; this.style.height = this.scrollHeight + 'px';" onkeydown="if(event.key === 'Enter') { event.preventDefault(); this.blur(); }">${task.name || ''}</textarea>
                             </td>
                             <td class="hide-accounting hide-customer" style="padding: 6px; text-align: center; border: 1px solid var(--border-color); width: 50px;">
                                 ${canEdit ? `<button class="btn-delete-gantt-row" data-idx="${idx}" style="background:none; border:none; color:#e63946; cursor:pointer; font-size:12px;"><i class="fa-solid fa-trash-can"></i></button>` : ''}
@@ -10159,7 +10165,7 @@ function renderSubnavPlanWork(project) {
                             <td style="padding: 6px; border: 1px solid var(--border-color); width: 250px; min-width: 250px; max-width: 250px;">
                                 <div style="display: flex; align-items: center; gap: 4px; ${indent}">
                                     ${canEdit ? `<input type="checkbox" class="gantt-subtask-toggle" data-idx="${idx}" ${task.isSubtask ? 'checked' : ''} title="ย่อหน้าเป็นงานย่อย" style="margin-right: 4px;">` : (task.isSubtask ? '<span style="color:#64748b; margin-right:4px;">-</span>' : '')}
-                                    <input type="text" class="gantt-item-name" data-idx="${idx}" value="${task.name || ''}" ${readonlyAttr} style="width: 100%; font-size: 12.5px; padding: 6px 8px; border: 1px solid ${canEdit ? 'var(--border-color)' : 'transparent'}; border-radius: 4px; background: ${canEdit ? '#fff' : 'transparent'}; font-weight: ${nameWeight}; color: #334155;" placeholder="ชื่องานย่อย/รายการงาน">
+                                    <textarea class="gantt-item-name" data-idx="${idx}" ${readonlyAttr} style="width: 100%; font-size: 12.5px; padding: 6px 8px; border: 1px solid ${canEdit ? 'var(--border-color)' : 'transparent'}; border-radius: 4px; background: ${canEdit ? '#fff' : 'transparent'}; font-weight: ${nameWeight}; color: #334155; resize: none; overflow: hidden; height: auto;" placeholder="ชื่องานย่อย/รายการงาน" rows="1" oninput="this.style.height = 'auto'; this.style.height = this.scrollHeight + 'px';" onkeydown="if(event.key === 'Enter') { event.preventDefault(); this.blur(); }">${task.name || ''}</textarea>
                                 </div>
                             </td>
                         `;
@@ -10364,6 +10370,12 @@ function renderSubnavPlanWork(project) {
                 }
             }
         }
+
+        // Auto-resize Gantt task textareas to fit content on load
+        tableBody.querySelectorAll(".gantt-item-name").forEach(tx => {
+            tx.style.height = 'auto';
+            tx.style.height = tx.scrollHeight + 'px';
+        });
     }
 
     // Attach local input sync listeners
