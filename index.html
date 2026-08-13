@@ -24,6 +24,21 @@
     <!-- Supabase JS Client for Real-time Cloud Database -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
         <style>
+        .gantt-doc-headers-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 2.5fr 1.3fr;
+            gap: 12px;
+            margin-bottom: 20px;
+            padding: 12px;
+            border: 1.5px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background: #f8fafc;
+        }
+        @media (max-width: 768px) {
+            .gantt-doc-headers-grid {
+                grid-template-columns: 1fr;
+            }
+        }
 /* Hide number input spinners globally */
 input[type=number]::-webkit-outer-spin-button,
 input[type=number]::-webkit-inner-spin-button {
@@ -4707,23 +4722,20 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                                 </div>
 
                                 <!-- Document header info inputs -->
-                                <div style="display: grid; grid-template-columns: 180px 1fr 220px; gap: 12px; margin-bottom: 20px; padding: 12px; border: 1.5px solid var(--border-color); border-radius: var(--radius-md); background: #f8fafc;">
+                                <div class="gantt-doc-headers-grid">
                                     <div>
                                         <label style="font-size: 13.5px; font-weight: 700; color: var(--navy-dark); display: block; margin-bottom: 6px;">วันที่เอกสาร:</label>
                                         <input type="text" id="gantt-doc-date" class="form-control" style="width: 100%; font-size: 13px; padding: 6px 10px; height: auto; font-weight: 600; border-radius: 6px;" placeholder="เช่น 5/3/2569">
                                     </div>
                                     <div>
                                         <label style="font-size: 13.5px; font-weight: 700; color: var(--navy-dark); display: block; margin-bottom: 6px;">เรื่อง:</label>
-                                        <input type="text" id="gantt-doc-subject" class="form-control" style="width: 100%; font-size: 13px; padding: 6px 10px; height: auto; font-weight: 600; border-radius: 6px;" placeholder="เช่น แผนงานปรับปรุงห้องต้อนรับ...">
-                                    </div>
-                                    <div style="display: none;">
-                                        <label style="font-size: 13.5px; font-weight: 700; color: var(--navy-dark); display: block; margin-bottom: 6px;">เรียน/ถึง:</label>
-                                        <input type="text" id="gantt-doc-to" class="form-control" style="font-size: 13px; padding: 6px 10px; height: auto; font-weight: 600; border-radius: 6px;" placeholder="เช่น ฝ่ายวิศวกรรมฯ...">
+                                        <input type="text" id="gantt-doc-subject" class="form-control" style="font-size: 13px; padding: 6px 10px; height: auto; font-weight: 600; border-radius: 6px; width: 100%;" placeholder="เช่น แผนงานปรับปรุงห้องต้อนรับ...">
                                     </div>
                                     <div>
                                         <label style="font-size: 13.5px; font-weight: 700; color: var(--navy-dark); display: block; margin-bottom: 6px;">เอกสารอ้างอิง (Ref PO):</label>
                                         <input type="text" id="gantt-doc-ref" class="form-control" style="width: 100%; font-size: 13px; padding: 6px 10px; height: auto; font-weight: 600; border-radius: 6px;" placeholder="เช่น PO.22026002729">
                                     </div>
+                                    <input type="hidden" id="gantt-doc-to">
                                 </div>
 
                                 <!-- Gantt Grid Table Container -->
@@ -6045,6 +6057,7 @@ function updateCloudSyncStatus(status) {
 
 let isSyncing = false;
 const syncQueue = [];
+const failedProjects = new Set();
 
 // Warn user if they try to close/refresh tab during sync or with unsaved Gantt changes
 window.addEventListener('beforeunload', (e) => {
@@ -6063,7 +6076,11 @@ window.addEventListener('beforeunload', (e) => {
 async function processSyncQueue() {
     if (isSyncing) return;
     if (syncQueue.length === 0) {
-        updateCloudSyncStatus("synced");
+        if (failedProjects.size > 0) {
+            updateCloudSyncStatus("error");
+        } else {
+            updateCloudSyncStatus("synced");
+        }
         return;
     }
     
@@ -6074,6 +6091,7 @@ async function processSyncQueue() {
     
     try {
         await syncProjectToSupabase(nextCode);
+        failedProjects.delete(nextCode);
         
         // Satisfying UX: Ensure yellow state is visible for at least 600ms
         const elapsed = Date.now() - startTime;
@@ -6082,6 +6100,7 @@ async function processSyncQueue() {
         }
     } catch (e) {
         console.error("Queue sync error:", e);
+        failedProjects.add(nextCode);
         updateCloudSyncStatus("error");
     } finally {
         isSyncing = false;
@@ -6091,6 +6110,7 @@ async function processSyncQueue() {
 
 function queueSyncActiveProject(code) {
     if (!code) return;
+    
     updateCloudSyncStatus("syncing");
     // Collapse duplicates by moving them to the end of the queue
     const idx = syncQueue.indexOf(code);
@@ -11746,20 +11766,19 @@ document.addEventListener("DOMContentLoaded", () => {
             const href = a.getAttribute("href");
             if (href && href.startsWith("FILE:")) {
                 e.preventDefault();
-                showToast("กำลังดึงไฟล์ดาวน์โหลดจากคลาวด์...", "info");
+                showToast("กำลังดึงไฟล์ดาวน์โหลด...", "info");
                 try {
-                    const { data, error } = await supabaseClient.from('projects').select('data').eq('code', href).single();
-                    if (error) throw error;
-                    if (data && data.data && data.data.fileUrl) {
+                    const actualUrl = await window.resolveFileUrl(href);
+                    if (actualUrl) {
                         const tempA = document.createElement("a");
-                        tempA.href = data.data.fileUrl;
+                        tempA.href = actualUrl;
                         tempA.download = a.getAttribute("download") || "downloaded-file";
                         document.body.appendChild(tempA);
                         tempA.click();
                         document.body.removeChild(tempA);
                         showToast("ดาวน์โหลดไฟล์สำเร็จ", "success");
                     } else {
-                        throw new Error("ไม่พบไฟล์ในคลาวด์");
+                        throw new Error("ไม่พบไฟล์ในระบบ");
                     }
                 } catch (err) {
                     showToast("ดาวน์โหลดไฟล์ล้มเหลว: " + err.message, "error");
@@ -12082,6 +12101,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const notifBtn = document.getElementById("notification-btn");
     const notifDropdown = document.getElementById("notification-dropdown");
     
+
     notifBtn.addEventListener("click", (e) => {
         if (e.target.closest("#notification-dropdown")) {
             // Clicks inside the dropdown should not toggle the dropdown itself
@@ -12948,7 +12968,6 @@ document.addEventListener("DOMContentLoaded", () => {
             window.openExpenseModal(-1);
         });
     }
-
     if (closeExpenseBtn) closeExpenseBtn.addEventListener("click", closeExpenseModal);
     if (cancelExpenseBtn) cancelExpenseBtn.addEventListener("click", closeExpenseModal);
 
@@ -12961,15 +12980,46 @@ document.addEventListener("DOMContentLoaded", () => {
         const date = document.getElementById("exp-date").value;
         const fileInput = document.getElementById("exp-file");
         
+        const project = projectsData[appState.selectedCostProject];
+        if (!project) {
+            showToast("ไม่พบข้อมูลโครงการ", "error");
+            return;
+        }
+        
         let file = "";
         let fileUrl = "";
         if (fileInput && fileInput.files && fileInput.files.length > 0) {
-            const result = await readFileAsBase64(fileInput.files[0]);
+            const uploadedFile = fileInput.files[0];
+            const result = await readFileAsBase64(uploadedFile);
             file = result.name;
-            fileUrl = result.dataUrl;
+            
+            // Create a unique FILE key for this expense receipt
+            const fileKey = `FILE:${project.code || appState.selectedCostProject}:EXPENSE:${Date.now()}:${file}`;
+            
+            showToast("กำลังบันทึกไฟล์ใบเสร็จขึ้นคลาวด์...", "info");
+            try {
+                const { error: fileErr } = await supabaseClient.from('projects').upsert({
+                    code: fileKey,
+                    data: { fileUrl: result.dataUrl },
+                    updated_at: new Date().toISOString()
+                });
+                if (fileErr) throw fileErr;
+                
+                // Cache locally
+                try {
+                    localStorage.setItem(fileKey, result.dataUrl);
+                } catch (cacheErr) {
+                    console.warn("Failed to cache file locally:", cacheErr);
+                }
+                
+                fileUrl = fileKey;
+            } catch (err) {
+                console.error("Upload receipt error:", err);
+                showToast(`อัปโหลดใบเสร็จล้มเหลว: ${err.message || err}`, "error");
+                return;
+            }
         }
         
-        const project = projectsData[appState.selectedCostProject];
         if (project) {
             if (!project.expenses) project.expenses = [];
             
@@ -15342,9 +15392,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     
                     <div class="doc-meta">
                         <div class="doc-meta-item"><span class="doc-meta-label">วันที่:</span> <span>${proj.ganttData.header.date || '-'}</span></div>
-                        <div class="doc-meta-item"><span class="doc-meta-label">เรื่อง:</span> <span>${proj.ganttData.header.subject || '-'}</span></div>
                         <div class="doc-meta-item"><span class="doc-meta-label">เอกสารอ้างอิง:</span> <span>${proj.ganttData.header.refPo || '-'}</span></div>
-                        <div class="doc-meta-item"><span class="doc-meta-label">ระยะเวลาแผนงาน:</span> <span>${formatYmdToTh(proj.ganttData.startDate)} ถึง ${formatYmdToTh(proj.ganttData.endDate)}</span></div>
+                        <div class="doc-meta-item" style="grid-column: span 2;"><span class="doc-meta-label">เรื่อง:</span> <span>${proj.ganttData.header.subject || '-'}</span></div>
+                        <div class="doc-meta-item" style="grid-column: span 2;"><span class="doc-meta-label">ระยะเวลาแผนงาน:</span> <span>${formatYmdToTh(proj.ganttData.startDate)} ถึง ${formatYmdToTh(proj.ganttData.endDate)}</span></div>
                     </div>
 
                     <div class="gantt-title">แผนงานปรับปรุงโครงการ: ${proj.name}</div>
@@ -15419,9 +15469,25 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (boqFileEl && boqFileEl.files && boqFileEl.files.length > 0) {
                     const file = boqFileEl.files[0];
                     boqFileName = file.name;
-                    showToast("กำลังเข้ารหัสไฟล์ BOQ...", "info");
+                    showToast("กำลังอัปโหลดไฟล์ BOQ...", "info");
                     const base64Res = await readFileAsBase64(file);
-                    boqFileBase64 = base64Res.dataUrl;
+                    
+                    const fileKey = `FILE:${code}:BOQ:${Date.now()}:${boqFileName}`;
+                    const { error: fileErr } = await supabaseClient.from('projects').upsert({
+                        code: fileKey,
+                        data: { fileUrl: base64Res.dataUrl },
+                        updated_at: new Date().toISOString()
+                    });
+                    if (fileErr) {
+                        showToast(`อัปโหลดไฟล์ BOQ ล้มเหลว: ${fileErr.message}`, "error");
+                        return;
+                    }
+                    try {
+                        localStorage.setItem(fileKey, base64Res.dataUrl);
+                    } catch (e) {
+                        console.warn("Failed to cache BOQ locally:", e);
+                    }
+                    boqFileBase64 = fileKey;
                 }
 
                 const comp1El = document.getElementById("new-quoting-comparison-1");
@@ -15450,11 +15516,27 @@ document.addEventListener("DOMContentLoaded", () => {
                     const file = docFileEl.files[0];
                     const docName = file.name;
                     const docType = docTypeEl ? docTypeEl.value : "Contract";
-                    showToast("กำลังเข้ารหัสไฟล์เอกสารโครงการ...", "info");
+                    showToast("กำลังอัปโหลดไฟล์เอกสารโครงการ...", "info");
                     const base64Res = await readFileAsBase64(file);
-                    const fileUrl = base64Res.dataUrl;
+                    
+                    const fileKey = `FILE:${code}:DOC:${Date.now()}:${docName}`;
+                    const { error: fileErr } = await supabaseClient.from('projects').upsert({
+                        code: fileKey,
+                        data: { fileUrl: base64Res.dataUrl },
+                        updated_at: new Date().toISOString()
+                    });
+                    if (fileErr) {
+                        showToast(`อัปโหลดเอกสารโครงการล้มเหลว: ${fileErr.message}`, "error");
+                        return;
+                    }
+                    try {
+                        localStorage.setItem(fileKey, base64Res.dataUrl);
+                    } catch (e) {
+                        console.warn("Failed to cache doc locally:", e);
+                    }
+                    
                     const dateToday = new Date().toISOString().substring(0, 10);
-                    initialDocs.push({ name: docName, type: docType, uploadedAt: dateToday, fileUrl });
+                    initialDocs.push({ name: docName, type: docType, uploadedAt: dateToday, fileUrl: fileKey });
                 }
             }
 
@@ -15891,6 +15973,35 @@ document.addEventListener("DOMContentLoaded", () => {
     const pdfTitle = document.getElementById("pdf-viewer-title");
     const pdfDownloadBtn = document.getElementById("pdf-viewer-download-btn");
 
+    window.resolveFileUrl = async function(fileUrl) {
+        if (!fileUrl) return "";
+        if (!fileUrl.startsWith("FILE:")) return fileUrl;
+        
+        // Check local storage cache first
+        const cached = localStorage.getItem(fileUrl);
+        if (cached) return cached;
+        
+        // Load from Supabase
+        if (typeof supabaseClient !== "undefined") {
+            try {
+                const { data, error } = await supabaseClient.from('projects').select('data').eq('code', fileUrl).single();
+                if (error) throw error;
+                if (data && data.data && data.data.fileUrl) {
+                    const actualUrl = data.data.fileUrl;
+                    try {
+                        localStorage.setItem(fileUrl, actualUrl);
+                    } catch (cacheErr) {
+                        console.warn("Failed to cache file locally:", cacheErr);
+                    }
+                    return actualUrl;
+                }
+            } catch (err) {
+                console.error("resolveFileUrl error for key:", fileUrl, err);
+            }
+        }
+        return "";
+    };
+
     window.openPdfInNewTab = async function(fileUrl, fileName) {
         if (!fileUrl) {
             showToast("ไม่พบไฟล์ PDF สำหรับเปิดดู", "warning");
@@ -15899,17 +16010,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
         let actualUrl = fileUrl;
         if (fileUrl.startsWith("FILE:")) {
-            showToast("กำลังดึงไฟล์ PDF จากคลาวด์...", "info");
-            try {
-                const { data, error } = await supabaseClient.from('projects').select('data').eq('code', fileUrl).single();
-                if (error) throw error;
-                if (data && data.data && data.data.fileUrl) {
-                    actualUrl = data.data.fileUrl;
-                } else {
-                    throw new Error("ไม่พบไฟล์ในคลาวด์");
-                }
-            } catch (err) {
-                showToast("ดึงไฟล์ล้มเหลว: " + err.message, "error");
+            showToast("กำลังดึงไฟล์ PDF...", "info");
+            actualUrl = await window.resolveFileUrl(fileUrl);
+            if (!actualUrl) {
+                showToast("ไม่พบไฟล์ในระบบหรือดึงไฟล์ล้มเหลว", "error");
                 return;
             }
         }
@@ -15961,17 +16065,10 @@ document.addEventListener("DOMContentLoaded", () => {
         
         let actualUrl = fileUrl;
         if (fileUrl.startsWith("FILE:")) {
-            showToast("กำลังดึงไฟล์ PDF จากคลาวด์...", "info");
-            try {
-                const { data, error } = await supabaseClient.from('projects').select('data').eq('code', fileUrl).single();
-                if (error) throw error;
-                if (data && data.data && data.data.fileUrl) {
-                    actualUrl = data.data.fileUrl;
-                } else {
-                    throw new Error("ไม่พบไฟล์ในคลาวด์");
-                }
-            } catch (err) {
-                showToast("ดึงไฟล์ล้มเหลว: " + err.message, "error");
+            showToast("กำลังดึงไฟล์ PDF...", "info");
+            actualUrl = await window.resolveFileUrl(fileUrl);
+            if (!actualUrl) {
+                showToast("ไม่พบไฟล์ในระบบหรือดึงไฟล์ล้มเหลว", "error");
                 return;
             }
         }
@@ -17298,9 +17395,25 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (boqFileEl && boqFileEl.files && boqFileEl.files.length > 0) {
                     const file = boqFileEl.files[0];
                     proj.boqFileName = file.name;
-                    showToast("กำลังเข้ารหัสไฟล์ BOQ...", "info");
+                    showToast("กำลังอัปโหลดไฟล์ BOQ...", "info");
                     const base64Res = await readFileAsBase64(file);
-                    proj.boqFileBase64 = base64Res.dataUrl;
+                    
+                    const fileKey = `FILE:${code}:BOQ:${Date.now()}:${file.name}`;
+                    const { error: fileErr } = await supabaseClient.from('projects').upsert({
+                        code: fileKey,
+                        data: { fileUrl: base64Res.dataUrl },
+                        updated_at: new Date().toISOString()
+                    });
+                    if (fileErr) {
+                        showToast(`อัปโหลดไฟล์ BOQ ล้มเหลว: ${fileErr.message}`, "error");
+                        return;
+                    }
+                    try {
+                        localStorage.setItem(fileKey, base64Res.dataUrl);
+                    } catch (e) {
+                        console.warn("Failed to cache BOQ locally:", e);
+                    }
+                    proj.boqFileBase64 = fileKey;
                 }
             }
 
