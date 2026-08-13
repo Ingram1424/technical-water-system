@@ -4074,7 +4074,7 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                     <!-- Approvals Dashboard -->
                     <div class="kpi-grid hide-customer" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 20px;">
                         <!-- KPI 1: All Requests -->
-                        <div class="kpi-card blue">
+                        <div class="kpi-card blue" id="btn-approval-filter-all" style="cursor: pointer; transition: all 0.2s ease;" onclick="setApprovalFilter('all')">
                             <div class="kpi-icon-container">
                                 <i class="fa-solid fa-file-invoice"></i>
                             </div>
@@ -4087,7 +4087,7 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                         </div>
                         
                         <!-- KPI 2: Approved -->
-                        <div class="kpi-card green">
+                        <div class="kpi-card green" id="btn-approval-filter-approved" style="cursor: pointer; transition: all 0.2s ease;" onclick="setApprovalFilter('อนุมัติแล้ว')">
                             <div class="kpi-icon-container">
                                 <i class="fa-solid fa-circle-check"></i>
                             </div>
@@ -4100,7 +4100,7 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                         </div>
                         
                         <!-- KPI 3: Pending -->
-                        <div class="kpi-card orange">
+                        <div class="kpi-card orange" id="btn-approval-filter-pending" style="cursor: pointer; transition: all 0.2s ease;" onclick="setApprovalFilter('รออนุมัติ')">
                             <div class="kpi-icon-container">
                                 <i class="fa-solid fa-clock"></i>
                             </div>
@@ -4113,7 +4113,7 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                         </div>
                         
                         <!-- KPI 4: Rejected -->
-                        <div class="kpi-card red">
+                        <div class="kpi-card red" id="btn-approval-filter-rejected" style="cursor: pointer; transition: all 0.2s ease;" onclick="setApprovalFilter('ปฏิเสธ')">
                             <div class="kpi-icon-container">
                                 <i class="fa-solid fa-circle-xmark"></i>
                             </div>
@@ -17857,6 +17857,11 @@ function renderPermissionsManagement() {
     }
 
     // ── Render Disbursement Pending table ───────────────────────
+    window.setApprovalFilter = function(filterVal) {
+        appState.selectedApprovalFilter = filterVal;
+        window.renderDisbursementPendingTable();
+    };
+
     window.renderDisbursementPendingTable = function() {
         // Update Approvals Dashboard
         updateApprovalsDashboard();
@@ -17866,26 +17871,57 @@ function renderPermissionsManagement() {
         
         tbody.querySelectorAll("tr.disbursement-data-row").forEach(r => r.remove());
         
-        const pendingList = [];
+        // Define active filter
+        if (!appState.selectedApprovalFilter) {
+            appState.selectedApprovalFilter = "all";
+        }
+        const activeFilter = appState.selectedApprovalFilter;
+
+        // Apply active class styles to KPI cards
+        const cardAll = document.getElementById("btn-approval-filter-all");
+        const cardApproved = document.getElementById("btn-approval-filter-approved");
+        const cardPending = document.getElementById("btn-approval-filter-pending");
+        const cardRejected = document.getElementById("btn-approval-filter-rejected");
+
+        if (cardAll) cardAll.style.boxShadow = activeFilter === "all" ? "0 0 0 2px var(--primary-blue)" : "";
+        if (cardApproved) cardApproved.style.boxShadow = activeFilter === "อนุมัติแล้ว" ? "0 0 0 2px var(--status-success)" : "";
+        if (cardPending) cardPending.style.boxShadow = activeFilter === "รออนุมัติ" ? "0 0 0 2px var(--status-warning)" : "";
+        if (cardRejected) cardRejected.style.boxShadow = activeFilter === "ปฏิเสธ" ? "0 0 0 2px var(--status-danger)" : "";
+        
+        const list = [];
         Object.keys(projectsData).forEach(code => {
             const p = projectsData[code];
             if (p.expenses) {
                 p.expenses.forEach((e, idx) => {
-                    if (e.status === "รออนุมัติ") {
-                        pendingList.push({ projectCode: code, projectName: p.name, expense: e, expenseIdx: idx });
+                    if (activeFilter === "all" || e.status === activeFilter) {
+                        list.push({ projectCode: code, projectName: p.name, expense: e, expenseIdx: idx });
                     }
                 });
             }
         });
 
+        // Set empty text dynamically based on the current filter
+        const emptyLabel = document.querySelector("#disbursement-empty-row div");
+        if (emptyLabel) {
+            if (activeFilter === "all") {
+                emptyLabel.innerHTML = '<i class="fa-solid fa-folder-open" style="font-size: 20px; margin-bottom: 6px; display: block; opacity: 0.5;"></i> ยังไม่มีรายการขอเบิกจ่ายเงินใดๆ';
+            } else if (activeFilter === "อนุมัติแล้ว") {
+                emptyLabel.innerHTML = '<i class="fa-solid fa-folder-open" style="font-size: 20px; margin-bottom: 6px; display: block; opacity: 0.5;"></i> ไม่มีรายการที่อนุมัติแล้ว';
+            } else if (activeFilter === "รออนุมัติ") {
+                emptyLabel.innerHTML = '<i class="fa-solid fa-folder-open" style="font-size: 20px; margin-bottom: 6px; display: block; opacity: 0.5;"></i> ไม่มีรายการขอเบิกจ่ายรออนุมัติ';
+            } else {
+                emptyLabel.innerHTML = '<i class="fa-solid fa-folder-open" style="font-size: 20px; margin-bottom: 6px; display: block; opacity: 0.5;"></i> ไม่มีรายการที่โดนปฏิเสธ';
+            }
+        }
+
         const emptyRow = document.getElementById("disbursement-empty-row");
-        if (pendingList.length === 0) {
+        if (list.length === 0) {
             if (emptyRow) emptyRow.style.display = "";
             return;
         }
         if (emptyRow) emptyRow.style.display = "none";
 
-        pendingList.forEach((item, idx) => {
+        list.forEach((item, idx) => {
             const tr = document.createElement("tr");
             tr.className = "disbursement-data-row";
             tr.style.cssText = "border-bottom: 1px solid var(--border-color);";
@@ -17894,6 +17930,24 @@ function renderPermissionsManagement() {
                 `<a href="#" class="btn-expense-view-pdf" data-url="${item.expense.fileUrl || ''}" data-file="${item.expense.file}" title="ดูเอกสาร: ${item.expense.file}" style="color: var(--primary-blue); font-size: 14px; cursor: pointer; text-decoration: none;"><i class="fa-solid fa-file-invoice-dollar"></i> ${item.expense.file}</a>` :
                 `<span class="text-muted" style="font-size: 11px;">ไม่มีเอกสารแนบ</span>`;
 
+            let actionHTML = "";
+            if (item.expense.status === "รออนุมัติ") {
+                actionHTML = `
+                    <div style="display: flex; gap: 6px; justify-content: center; align-items: center; padding: 4px;">
+                        <button class="btn btn-sm" onclick="approveDisbursement('${item.projectCode}', ${item.expenseIdx})" style="font-size:10px; padding:4px 10px; background:#e6f4ea; color:#137333; border:1px solid #137333; border-radius:4px; cursor:pointer; font-family:'Prompt'; font-weight:bold;"><i class="fa-solid fa-check"></i> อนุมัติ</button>
+                        <button class="btn btn-sm" onclick="rejectDisbursement('${item.projectCode}', ${item.expenseIdx})" style="font-size:10px; padding:4px 10px; background:#fce8e6; color:#c5221f; border:1px solid #c5221f; border-radius:4px; cursor:pointer; font-family:'Prompt'; font-weight:bold;"><i class="fa-solid fa-xmark"></i> ปฏิเสธ</button>
+                    </div>
+                `;
+            } else if (item.expense.status === "อนุมัติแล้ว") {
+                actionHTML = `
+                    <span style="display: inline-block; color: #137333; font-weight: bold; background: #e6f4ea; padding: 4px 8px; border-radius: 4px; border: 1px solid #137333; font-size: 10px;"><i class="fa-solid fa-circle-check"></i> อนุมัติแล้ว</span>
+                `;
+            } else {
+                actionHTML = `
+                    <span style="display: inline-block; color: #c5221f; font-weight: bold; background: #fce8e6; padding: 4px 8px; border-radius: 4px; border: 1px solid #c5221f; font-size: 10px;" title="เหตุผล: ${item.expense.rejectReason || ''}"><i class="fa-solid fa-circle-xmark"></i> ปฏิเสธแล้ว</span>
+                `;
+            }
+
             tr.innerHTML = `
                 <td style="font-size:12px; font-weight:700; color:#0f52ba;">${item.expense.date}</td>
                 <td style="font-size:12px;"><strong>[${item.projectCode}]</strong> ${item.projectName}</td>
@@ -17901,12 +17955,7 @@ function renderPermissionsManagement() {
                 <td style="font-size:12px;"><span class="badge-status ${item.expense.type === "ค่าแรง" ? "success" : "warning"}">${item.expense.type}</span></td>
                 <td style="font-size:12px;">${fileHTML}</td>
                 <td style="font-size:12px; font-weight:600; color:var(--primary-blue); text-align:right;">${formatNumber(item.expense.amount)} บาท</td>
-                <td style="text-align:center;">
-                    <div style="display: flex; gap: 6px; justify-content: center; align-items: center; padding: 4px;">
-                        <button class="btn btn-sm" onclick="approveDisbursement('${item.projectCode}', ${item.expenseIdx})" style="font-size:10px; padding:4px 10px; background:#e6f4ea; color:#137333; border:1px solid #137333; border-radius:4px; cursor:pointer; font-family:'Prompt'; font-weight:bold;"><i class="fa-solid fa-check"></i> อนุมัติ</button>
-                        <button class="btn btn-sm" onclick="rejectDisbursement('${item.projectCode}', ${item.expenseIdx})" style="font-size:10px; padding:4px 10px; background:#fce8e6; color:#c5221f; border:1px solid #c5221f; border-radius:4px; cursor:pointer; font-family:'Prompt'; font-weight:bold;"><i class="fa-solid fa-xmark"></i> ปฏิเสธ</button>
-                    </div>
-                </td>`;
+                <td style="text-align:center;">${actionHTML}</td>`;
             tbody.appendChild(tr);
         });
 
