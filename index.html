@@ -7413,7 +7413,20 @@ function renderHospitalsGrid(activeProjects) {
     
     allHospitalsList.forEach(hospital => {
         // Find all projects of this hospital in the active projects list that are NOT 100% completed
-        const hospitalProjects = activeProjects.filter(item => item.customer === hospital && (item.progress === undefined || item.progress === null || item.progress < 100));
+        const hospitalProjects = activeProjects.filter(item => {
+            const isCompleted = !(item.progress === undefined || item.progress === null || isNaN(item.progress) || item.progress < 100);
+            if (isCompleted) return false;
+            
+            if (hospital === "อื่นๆ") {
+                const standardHospitals = [
+                    "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
+                    "โรงพยาบาลพญาไท บ่อวิน", "โรงพยาบาลพญาไท พหลโยธิน", "โรงพยาบาลพญาไท ศรีราชา", "โรงพยาบาลเปาโล พระประแดง",
+                    "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4"
+                ];
+                return !standardHospitals.includes(item.customer);
+            }
+            return item.customer === hospital;
+        });
         
         // Sort projects by year descending (newest first)
         hospitalProjects.sort((a, b) => b.year - a.year);
@@ -7431,7 +7444,17 @@ function renderHospitalsGrid(activeProjects) {
             let totalProfit = 0;
             
             // Count projects status for this hospital across all years
-            const allHospitalProjects = Object.values(projectsData).filter(p => p.customer === hospital);
+            const allHospitalProjects = Object.values(projectsData).filter(p => {
+                if (hospital === "อื่นๆ") {
+                    const standardHospitals = [
+                        "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
+                        "โรงพยาบาลพญาไท บ่อวิน", "โรงพยาบาลพญาไท พหลโยธิน", "โรงพยาบาลพญาไท ศรีราชา", "โรงพยาบาลเปาโล พระประแดง",
+                        "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4"
+                    ];
+                    return !standardHospitals.includes(p.customer);
+                }
+                return p.customer === hospital;
+            });
             let totalProjects = allHospitalProjects.length;
             let finishedProjects = 0;
             let completedProjects = 0;
