@@ -17893,8 +17893,11 @@ function renderPermissionsManagement() {
             const p = projectsData[code];
             if (p.expenses) {
                 p.expenses.forEach((e, idx) => {
-                    if (activeFilter === "all" || e.status === activeFilter) {
-                        list.push({ projectCode: code, projectName: p.name, expense: e, expenseIdx: idx });
+                    // Only display expenses that are part of the approval process
+                    if (e.status === "รออนุมัติ" || e.status === "อนุมัติแล้ว" || e.status === "ปฏิเสธ") {
+                        if (activeFilter === "all" || e.status === activeFilter) {
+                            list.push({ projectCode: code, projectName: p.name, expense: e, expenseIdx: idx });
+                        }
                     }
                 });
             }
