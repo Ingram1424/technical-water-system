@@ -5830,28 +5830,58 @@ async function loadFromSupabase() {
                 }
             });
             
-            // Safety Guard: Prevent overwriting newer/unsynced local project data with empty remote data
+            // Safety Guard: Compare timestamps and content sizes to prevent overwriting newer local data
             if (typeof projectsData === "object" && projectsData !== null) {
+                const localProjectsToSync = [];
+                
                 Object.keys(projectsData).forEach(code => {
                     const localProj = projectsData[code];
                     const remoteProj = remoteData[code];
+                    
+                    const dbRow = data.find(r => r.code === code);
+                    const remoteUpdatedAt = dbRow ? new Date(dbRow.updated_at).getTime() : 0;
+                    const localUpdatedAt = localProj && localProj.updatedAt ? new Date(localProj.updatedAt).getTime() : 0;
+                    
                     if (localProj && remoteProj) {
-                        const localHasData = (localProj.tasks && localProj.tasks.length > 0) || 
-                                             (localProj.scurveData && localProj.scurveData.length > 0) ||
-                                             (localProj.expenses && localProj.expenses.length > 0) ||
-                                             (localProj.dailyReports && localProj.dailyReports.length > 0);
+                        const localDocsLen = localProj.documents ? localProj.documents.length : 0;
+                        const remoteDocsLen = remoteProj.documents ? remoteProj.documents.length : 0;
+                        
+                        const localTasksLen = localProj.tasks ? localProj.tasks.length : 0;
+                        const remoteTasksLen = remoteProj.tasks ? remoteProj.tasks.length : 0;
+                        
+                        const localExpsLen = localProj.expenses ? localProj.expenses.length : 0;
+                        const remoteExpsLen = remoteProj.expenses ? remoteProj.expenses.length : 0;
+
+                        const localReportsLen = localProj.dailyReports ? localProj.dailyReports.length : 0;
+                        const remoteReportsLen = remoteProj.dailyReports ? remoteProj.dailyReports.length : 0;
+
+                        const localIsNewer = (localUpdatedAt > remoteUpdatedAt) || 
+                                             (localDocsLen > remoteDocsLen) ||
+                                             (localTasksLen > remoteTasksLen) ||
+                                             (localExpsLen > remoteExpsLen) ||
+                                             (localReportsLen > remoteReportsLen);
                                              
-                        const remoteIsEmpty = (!remoteProj.tasks || remoteProj.tasks.length === 0) &&
-                                              (!remoteProj.scurveData || remoteProj.scurveData.length === 0) &&
-                                              (!remoteProj.expenses || remoteProj.expenses.length === 0) &&
-                                              (!remoteProj.dailyReports || remoteProj.dailyReports.length === 0);
-                                              
-                        if (localHasData && remoteIsEmpty) {
-                            console.warn(`Local project ${code} has unsynced data. Preserving local version.`);
+                        if (localIsNewer) {
+                            console.warn(`Local project ${code} has newer changes (Local: ${new Date(localUpdatedAt).toISOString()}, Remote: ${dbRow ? dbRow.updated_at : 'none'}). Preserving local version.`);
                             remoteData[code] = localProj;
+                            localProjectsToSync.push(code);
                         }
+                    } else if (localProj && !remoteProj) {
+                        console.warn(`Local project ${code} is missing from remote. Preserving local.`);
+                        remoteData[code] = localProj;
+                        localProjectsToSync.push(code);
                     }
                 });
+                
+                if (localProjectsToSync.length > 0) {
+                    setTimeout(() => {
+                        localProjectsToSync.forEach(code => {
+                            if (typeof queueSyncActiveProject === "function") {
+                                queueSyncActiveProject(code);
+                            }
+                        });
+                    }, 1000);
+                }
             }
             
             projectsData = remoteData;
@@ -6111,6 +6141,10 @@ function saveToLocalStorage() {
                 }
             });
         }
+    }
+    // Set updatedAt timestamp locally to help resolve startup sync conflicts
+    if (activeProj) {
+        activeProj.updatedAt = new Date().toISOString();
     }
     try {
         localStorage.setItem("technical_water_projects_data_v2", JSON.stringify(projectsData));
