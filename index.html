@@ -5829,6 +5829,31 @@ async function loadFromSupabase() {
                     remoteData[row.code] = row.data;
                 }
             });
+            
+            // Safety Guard: Prevent overwriting newer/unsynced local project data with empty remote data
+            if (typeof projectsData === "object" && projectsData !== null) {
+                Object.keys(projectsData).forEach(code => {
+                    const localProj = projectsData[code];
+                    const remoteProj = remoteData[code];
+                    if (localProj && remoteProj) {
+                        const localHasData = (localProj.tasks && localProj.tasks.length > 0) || 
+                                             (localProj.scurveData && localProj.scurveData.length > 0) ||
+                                             (localProj.expenses && localProj.expenses.length > 0) ||
+                                             (localProj.dailyReports && localProj.dailyReports.length > 0);
+                                             
+                        const remoteIsEmpty = (!remoteProj.tasks || remoteProj.tasks.length === 0) &&
+                                              (!remoteProj.scurveData || remoteProj.scurveData.length === 0) &&
+                                              (!remoteProj.expenses || remoteProj.expenses.length === 0) &&
+                                              (!remoteProj.dailyReports || remoteProj.dailyReports.length === 0);
+                                              
+                        if (localHasData && remoteIsEmpty) {
+                            console.warn(`Local project ${code} has unsynced data. Preserving local version.`);
+                            remoteData[code] = localProj;
+                        }
+                    }
+                });
+            }
+            
             projectsData = remoteData;
             localStorage.setItem("technical_water_projects_data_v2", JSON.stringify(projectsData));
             
