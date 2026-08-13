@@ -14585,6 +14585,11 @@ document.addEventListener("DOMContentLoaded", () => {
                                 size: A4 landscape;
                                 margin: 10mm;
                             }
+                            table {
+                                width: 100% !important;
+                                max-width: 100% !important;
+                                table-layout: auto !important;
+                            }
                         }
                         @media screen {
                             body {
@@ -15135,6 +15140,11 @@ document.addEventListener("DOMContentLoaded", () => {
                                 size: A4 landscape;
                                 margin: 10mm;
                             }
+                            table {
+                                width: 100% !important;
+                                max-width: 100% !important;
+                                table-layout: auto !important;
+                            }
                         }
                         @media screen {
                             body {
@@ -15167,7 +15177,17 @@ document.addEventListener("DOMContentLoaded", () => {
                             </button>
                         </div>
                     </div>
-                    <div class="company-header">
+                    
+                    <!-- Help notice (Screen only) -->
+                    <div class="no-print" style="margin: 60px auto 20px auto; max-width: 1000px; background: #fffbeb; border: 1.5px solid #fef3c7; padding: 14px 18px; border-radius: 8px; font-size: 13px; color: #b45309; line-height: 1.6; font-family: 'Prompt', sans-serif; display: flex; align-items: flex-start; gap: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.04);">
+                        <i class="fa-solid fa-circle-info" style="font-size: 18px; margin-top: 2px;"></i>
+                        <div>
+                            <strong style="font-size: 14px;">💡 คำแนะนำสำหรับการพิมพ์ / บันทึก PDF (เพื่อไม่ให้ตารางและเดือนหลังๆ โดนตัด):</strong><br>
+                            1. ในหน้าตั้งค่าเครื่องพิมพ์ขวาบน กรุณาเลือก <strong>การวางแนว (Orientation) เป็น "แนวนอน" (Landscape)</strong> (สำคัญมาก 🌟)<br>
+                            2. หากระยะเวลาโครงการยาวและข้อมูลกว้างเกินหน้ากระดาษ ให้คลิก <strong>การตั้งค่าเพิ่มเติม (More settings) ➡️ สัดส่วน (Scale) ➡️ ปรับสเกลเป็น "พอดีกับหน้ากระดาษ" (Fit to page)</strong> หรือระบุเป็นตัวเลขเปอร์เซ็นต์ (เช่น 70-80%) เพื่อย่อตารางลงให้พอดีกับกระดาษ A4 ในหน้าเดียวครับ
+                        </div>
+                    </div>
+                    <div class="company-header" style="margin-top: 10px;">
                         <img src="${window.location.origin}/logo.png" style="height: 65px; width: auto; object-fit: contain;" alt="TECHNICAL WATER Logo">
                         <div class="company-info">
                             <h1>บริษัท เทคนิคอล วอเตอร์ จำกัด (TECHNICAL WATER CO., LTD.)</h1>
