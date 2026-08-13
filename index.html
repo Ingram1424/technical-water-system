@@ -5808,11 +5808,43 @@ const supabaseUrl = 'https://txglgkovojxvazbqxaac.supabase.co';
 const supabaseKey = 'sb_publishable_XYSvmVEwASmhS9RpJMuz9Q_EbCZ8JJe';
 const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
+// Clean up large cached files in localStorage on startup to free up quota
+try {
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith("FILE:") || key.startsWith("SHARE:"))) {
+            const val = localStorage.getItem(key);
+            if (val && val.length > 5000) {
+                keysToRemove.push(key);
+            }
+        }
+    }
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+    if (keysToRemove.length > 0) {
+        console.log(`Cleaned up ${keysToRemove.length} large cached files from localStorage to restore quota.`);
+    }
+} catch (e) {
+    console.warn("Failed to clean up localStorage:", e);
+}
+
+function removeBase64FromObject(obj) {
+    if (!obj || typeof obj !== "object") return;
+    for (const key in obj) {
+        if (typeof obj[key] === "string" && obj[key].startsWith("data:") && obj[key].length > 5000) {
+            obj[key] = "";
+        } else if (typeof obj[key] === "object") {
+            removeBase64FromObject(obj[key]);
+        }
+    }
+}
+
 let projectsData = {};
 try {
     const savedData = localStorage.getItem("technical_water_projects_data_v2");
     if (savedData) {
         const parsed = JSON.parse(savedData);
+        removeBase64FromObject(parsed);
         projectsData = {};
         Object.keys(parsed).forEach(k => {
             if (!k.startsWith("SHARE:") && !k.startsWith("FILE:")) {
@@ -6165,6 +6197,10 @@ function saveToLocalStorage() {
     // Set updatedAt timestamp locally to help resolve startup sync conflicts
     if (activeProj) {
         activeProj.updatedAt = new Date().toISOString();
+    }
+    const costProj = (appState.selectedCostProject && appState.selectedCostProject !== "all" && appState.selectedCostProject !== appState.selectedDetailProject) ? projectsData[appState.selectedCostProject] : null;
+    if (costProj) {
+        costProj.updatedAt = new Date().toISOString();
     }
     try {
         localStorage.setItem("technical_water_projects_data_v2", JSON.stringify(projectsData));
@@ -13005,12 +13041,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
                 if (fileErr) throw fileErr;
                 
-                // Cache locally
-                try {
-                    localStorage.setItem(fileKey, result.dataUrl);
-                } catch (cacheErr) {
-                    console.warn("Failed to cache file locally:", cacheErr);
-                }
+                // Cache in memory only to preserve localStorage quota
+                window.fileCache = window.fileCache || {};
+                window.fileCache[fileKey] = result.dataUrl;
                 
                 fileUrl = fileKey;
             } catch (err) {
@@ -15482,11 +15515,8 @@ document.addEventListener("DOMContentLoaded", () => {
                         showToast(`อัปโหลดไฟล์ BOQ ล้มเหลว: ${fileErr.message}`, "error");
                         return;
                     }
-                    try {
-                        localStorage.setItem(fileKey, base64Res.dataUrl);
-                    } catch (e) {
-                        console.warn("Failed to cache BOQ locally:", e);
-                    }
+                    window.fileCache = window.fileCache || {};
+                    window.fileCache[fileKey] = base64Res.dataUrl;
                     boqFileBase64 = fileKey;
                 }
 
@@ -15529,11 +15559,8 @@ document.addEventListener("DOMContentLoaded", () => {
                         showToast(`อัปโหลดเอกสารโครงการล้มเหลว: ${fileErr.message}`, "error");
                         return;
                     }
-                    try {
-                        localStorage.setItem(fileKey, base64Res.dataUrl);
-                    } catch (e) {
-                        console.warn("Failed to cache doc locally:", e);
-                    }
+                    window.fileCache = window.fileCache || {};
+                    window.fileCache[fileKey] = base64Res.dataUrl;
                     
                     const dateToday = new Date().toISOString().substring(0, 10);
                     initialDocs.push({ name: docName, type: docType, uploadedAt: dateToday, fileUrl: fileKey });
@@ -15977,7 +16004,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!fileUrl) return "";
         if (!fileUrl.startsWith("FILE:")) return fileUrl;
         
-        // Check local storage cache first
+        // Check memory cache or local storage cache first
+        window.fileCache = window.fileCache || {};
+        if (window.fileCache[fileUrl]) return window.fileCache[fileUrl];
         const cached = localStorage.getItem(fileUrl);
         if (cached) return cached;
         
@@ -15988,11 +16017,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (error) throw error;
                 if (data && data.data && data.data.fileUrl) {
                     const actualUrl = data.data.fileUrl;
-                    try {
-                        localStorage.setItem(fileUrl, actualUrl);
-                    } catch (cacheErr) {
-                        console.warn("Failed to cache file locally:", cacheErr);
-                    }
+                    window.fileCache[fileUrl] = actualUrl;
                     return actualUrl;
                 }
             } catch (err) {
@@ -17408,11 +17433,8 @@ document.addEventListener("DOMContentLoaded", () => {
                         showToast(`อัปโหลดไฟล์ BOQ ล้มเหลว: ${fileErr.message}`, "error");
                         return;
                     }
-                    try {
-                        localStorage.setItem(fileKey, base64Res.dataUrl);
-                    } catch (e) {
-                        console.warn("Failed to cache BOQ locally:", e);
-                    }
+                    window.fileCache = window.fileCache || {};
+                    window.fileCache[fileKey] = base64Res.dataUrl;
                     proj.boqFileBase64 = fileKey;
                 }
             }
