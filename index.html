@@ -5114,7 +5114,7 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                     </div>
                     <div class="form-group mt-3">
                         <label for="exp-file" class="form-label">อัปโหลดเอกสารอ้างอิง (เช่น ใบเสนอราคา / ใบเสร็จ / บิลเงินสด)</label>
-                        <input type="file" id="exp-file" class="form-control" accept=".pdf,.png,.jpg,.jpeg" style="padding: 6px 12px; height: auto;">
+                        <input type="file" id="exp-file" class="form-control" accept=".pdf,.png,.jpg,.jpeg,.xls,.xlsx,.csv" style="padding: 6px 12px; height: auto;">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -15881,6 +15881,21 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         try {
+            // Direct download support for non-PDF/non-image base64 files (e.g. Excel)
+            if (actualUrl.startsWith("data:")) {
+                const mimeType = actualUrl.split(";")[0].split(":")[1] || "";
+                if (mimeType !== "application/pdf" && !mimeType.startsWith("image/")) {
+                    const downloadLink = document.createElement("a");
+                    downloadLink.href = actualUrl;
+                    downloadLink.download = fileName || "document";
+                    document.body.appendChild(downloadLink);
+                    downloadLink.click();
+                    document.body.removeChild(downloadLink);
+                    showToast("เริ่มดาวน์โหลดไฟล์แล้ว", "success");
+                    return;
+                }
+            }
+
             if (actualUrl.startsWith("data:application/pdf;base64,")) {
                 const base64Clean = actualUrl.split(",")[1];
                 const byteCharacters = atob(base64Clean);
