@@ -4712,7 +4712,7 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                                         <label style="font-size: 13.5px; font-weight: 700; color: var(--navy-dark); display: block; margin-bottom: 6px;">เรื่อง:</label>
                                         <input type="text" id="gantt-doc-subject" class="form-control" style="font-size: 13px; padding: 6px 10px; height: auto; font-weight: 600; border-radius: 6px;" placeholder="เช่น แผนงานปรับปรุงห้องต้อนรับ...">
                                     </div>
-                                    <div>
+                                    <div style="display: none;">
                                         <label style="font-size: 13.5px; font-weight: 700; color: var(--navy-dark); display: block; margin-bottom: 6px;">เรียน/ถึง:</label>
                                         <input type="text" id="gantt-doc-to" class="form-control" style="font-size: 13px; padding: 6px 10px; height: auto; font-weight: 600; border-radius: 6px;" placeholder="เช่น ฝ่ายวิศวกรรมฯ...">
                                     </div>
@@ -15174,7 +15174,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     
                     <div class="doc-meta">
                         <div class="doc-meta-item"><span class="doc-meta-label">วันที่:</span> <span>${proj.ganttData.header.date || '-'}</span></div>
-                        <div class="doc-meta-item"><span class="doc-meta-label">เรียน:</span> <span>${proj.ganttData.header.to || '-'}</span></div>
+
                         <div class="doc-meta-item"><span class="doc-meta-label">เรื่อง:</span> <span>${proj.ganttData.header.subject || '-'}</span></div>
                         <div class="doc-meta-item"><span class="doc-meta-label">เอกสารอ้างอิง:</span> <span>${proj.ganttData.header.refPo || '-'}</span></div>
                         <div class="doc-meta-item" style="grid-column: span 2;"><span class="doc-meta-label">ระยะเวลาแผนงาน:</span> <span>${formatYmdToTh(proj.ganttData.startDate)} ถึง ${formatYmdToTh(proj.ganttData.endDate)}</span></div>
