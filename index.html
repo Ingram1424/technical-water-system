@@ -9306,7 +9306,7 @@ function renderSubnavActualProgress(project) {
     const hideWeight = (appState.currentRole === "customer");
     let headerRow1 = `<tr style="background: #e0e7ff; border-bottom: 1px solid var(--border-color); text-align: center; font-size: 13.5px; font-weight: 700;">
         <th rowspan="2" style="padding: 10px; width: 55px; border: 1px solid var(--border-color);">Items</th>
-        <th rowspan="2" style="padding: 10px; text-align: left; width: 240px; border: 1px solid var(--border-color);">Description</th>
+        <th rowspan="2" style="padding: 10px; text-align: left; min-width: 350px; border: 1px solid var(--border-color);">Description</th>
         ${hideBudget ? '' : '<th rowspan="2" style="padding: 10px; width: 90px; border: 1px solid var(--border-color);">Budget</th>'}
         ${hideWeight ? '' : '<th rowspan="2" style="padding: 10px; width: 65px; border: 1px solid var(--border-color);">%</th>'}
         <th rowspan="2" style="padding: 10px; width: 65px; border: 1px solid var(--border-color);">% (รวม)</th>`;
@@ -9356,7 +9356,7 @@ function renderSubnavActualProgress(project) {
                 <td style="padding: 6px; text-align: center;">
                     ${isSub ? '' : `<input type="text" class="scurve-item-num" data-idx="${idx}" value="${item.item || ''}" ${readonlyAttr} ${canEdit?editInputStyle:inputStyle} style="font-weight: 600;">`}
                 </td>
-                <td style="padding: 6px 10px;">
+                <td style="padding: 6px 10px; min-width: 350px;">
                     <div style="display: flex; gap: 4px; padding-left: ${isSub ? '16px' : '0'};">
                         ${isSub ? '<span style="color:#64748b; font-weight: 600;">-</span>' : ''}
                         <textarea class="scurve-item-name" data-idx="${idx}" placeholder="${isSub?'ชื่องานย่อย':'ชื่องานหลัก'}" ${readonlyAttr} style="width: 100%; font-size: 12.5px; padding: 5px 8px; border: 1px solid ${canEdit?'var(--border-color)':'transparent'}; border-radius: 4px; background: ${canEdit?'#fff':'transparent'}; font-weight: ${isSub?'normal':'700'}; color: #334155; resize: none; overflow: hidden; height: auto;" rows="1" oninput="this.style.height = 'auto'; this.style.height = this.scrollHeight + 'px';" onkeydown="if(event.key === 'Enter') { event.preventDefault(); this.blur(); }">${item.name || ''}</textarea>
