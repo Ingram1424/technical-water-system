@@ -5629,8 +5629,8 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
             <form id="create-customer-form">
                 <div class="modal-body">
                     <div class="form-group">
-                        <label class="form-label" for="new-cust-name">ชื่อบัญชีลูกค้า / โรงพยาบาล <span class="required">*</span></label>
-                        <input type="text" id="new-cust-name" class="form-control" list="all-hospitals-datalist" placeholder="เช่น ตัวแทน รพ.เปาโล โชคชัย 4" required autocomplete="off">
+                        <label class="form-label" for="new-cust-name">ชื่อบัญชีลูกค้า / โรงพยาบาล (ไม่บังคับ)</label>
+                        <input type="text" id="new-cust-name" class="form-control" list="all-hospitals-datalist" placeholder="เช่น ตัวแทน รพ.เปาโล โชคชัย 4" autocomplete="off">
                     </div>
                     <div class="form-group mt-3">
                         <label class="form-label" for="new-cust-username">ชื่อผู้ใช้งาน (Username) <span class="required">*</span></label>
@@ -13881,8 +13881,8 @@ document.addEventListener("DOMContentLoaded", () => {
             const username = document.getElementById("new-cust-username").value.trim();
             const password = document.getElementById("new-cust-password").value.trim();
 
-            if (!name || !username || !password) {
-                showToast("กรุณากรอกข้อมูลให้ครบทุกช่อง", "warning");
+            if (!username || !password) {
+                showToast("กรุณากรอก Username และ Password ให้ครบถ้วน", "warning");
                 return;
             }
 
@@ -17989,7 +17989,7 @@ window.copyCustomerLogin = function(key) {
     
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(() => {
-            showToast(`📋 คัดลอกข้อมูล Username & Password ของ "${acc.name}" เรียบร้อยแล้ว!`, "success");
+            showToast(`📋 คัดลอกข้อมูล Username & Password ของ "${acc.name || acc.username}" เรียบร้อยแล้ว!`, "success");
         });
     } else {
         const ta = document.createElement("textarea");
@@ -17998,7 +17998,7 @@ window.copyCustomerLogin = function(key) {
         ta.select();
         document.execCommand("copy");
         document.body.removeChild(ta);
-        showToast(`📋 คัดลอกข้อมูล Username & Password ของ "${acc.name}" เรียบร้อยแล้ว!`, "success");
+        showToast(`📋 คัดลอกข้อมูล Username & Password ของ "${acc.name || acc.username}" เรียบร้อยแล้ว!`, "success");
     }
 };
 
@@ -18026,7 +18026,7 @@ window.deleteCustomerAccount = function(key) {
     }
     saveCustomerAccounts();
     saveUserPermissions();
-    showToast(`ลบบัญชี "${acc.name}" เรียบร้อยแล้ว`, "info");
+    showToast(`ลบบัญชี "${acc.name || acc.username}" เรียบร้อยแล้ว`, "info");
     renderPermissionsManagement();
 };
 
@@ -18041,7 +18041,7 @@ function renderPermissionsManagement() {
         Object.entries(appState.customerAccounts || {}).forEach(([key, acc]) => {
             const opt = document.createElement("option");
             opt.value = key;
-            opt.textContent = `${acc.name} (${acc.username})`;
+            opt.textContent = acc.name ? `${acc.name} (${acc.username})` : `บัญชีผู้ใช้: ${acc.username}`;
             userSelector.appendChild(opt);
         });
         if (curVal && appState.customerAccounts[curVal]) {
@@ -18102,7 +18102,7 @@ function renderPermissionsManagement() {
             const tr = document.createElement("tr");
             tr.innerHTML = `
                 <td style="text-align: center; font-weight: 700; color: var(--text-muted);">${index + 1}</td>
-                <td style="font-weight: 700; color: var(--navy-dark);">${acc.name}</td>
+                <td style="font-weight: 700; color: var(--navy-dark);">${acc.name || '<span class="text-muted" style="font-size: 11px; font-weight: normal;">(ไม่ได้ระบุชื่อ)</span>'}</td>
                 <td><span style="font-family: monospace; font-weight: 700; color: #1e40af; background: #dbeafe; padding: 3px 8px; border-radius: 4px; border: 1px solid #93c5fd;">${acc.username}</span></td>
                 <td>
                     <div style="display: flex; align-items: center; gap: 6px;">
