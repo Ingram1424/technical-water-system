@@ -18789,7 +18789,7 @@ function renderPermissionsManagement() {
         const body = document.getElementById("notif-dropdown-body");
         if (!body) return;
 
-        body.querySelectorAll(".disbursement-notif-item").forEach(el => el.remove());
+        body.querySelectorAll(".disbursement-notif-item, .disbursement-response-notif-item").forEach(el => el.remove());
 
         Object.keys(projectsData).forEach(code => {
             const p = projectsData[code];
@@ -18823,6 +18823,40 @@ function renderPermissionsManagement() {
                         }
                         
                         body.insertBefore(div, body.firstChild);
+                    } else if (e.status === "อนุมัติแล้ว" || e.status === "ปฏิเสธ") {
+                        const isApproved = e.status === "อนุมัติแล้ว";
+                        const notifId = `drawdown-response-${code}-${idx}-${e.status}`;
+                        
+                        const ack = getAcknowledged();
+                        if (ack.includes(notifId)) return;
+                        
+                        const div = document.createElement("div");
+                        div.className = "notif-item unread disbursement-response-notif-item general-notif";
+                        div.setAttribute("data-notif-type", "general");
+                        
+                        const statusText = isApproved ? "ได้รับการอนุมัติแล้ว" : `ถูกปฏิเสธ (เหตุผล: ${e.rejectReason || 'ไม่ระบุ'})`;
+                        const statusColor = isApproved ? "#137333" : "#c5221f";
+                        const statusBg = isApproved ? "rgba(19, 115, 51, 0.1)" : "rgba(197, 34, 31, 0.1)";
+                        const icon = isApproved ? "fa-circle-check" : "fa-circle-xmark";
+                        
+                        div.innerHTML = `
+                            <div class="notif-icon" style="background: ${statusBg}; color: ${statusColor};"><i class="fa-solid ${icon}"></i></div>
+                            <div class="notif-content">
+                                <p class="notif-text">คำขอเบิกเงิน <strong>[${code}] ${e.title}</strong> (${formatNumber(e.amount)} บาท) ${statusText}</p>
+                                <span class="notif-time">${e.date}</span>
+                                <div style="display: flex; align-items: center; gap: 8px;">
+                                    <button class="btn-drawdown-detail" onclick="acknowledgeResponseNotif('${notifId}', '${code}')"><i class="fa-solid fa-arrow-right mr-1"></i>ดูรายละเอียด</button>
+                                    <button class="btn-delete-notif" data-notif-id="${notifId}" title="ลบการแจ้งเตือน"><i class="fa-solid fa-trash-can"></i></button>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Hide from accounting role
+                        if (appState.currentRole === "accounting") {
+                            div.style.display = "none";
+                        }
+                        
+                        body.insertBefore(div, body.firstChild);
                     }
                 });
             }
@@ -18852,6 +18886,38 @@ function renderPermissionsManagement() {
         // Close dropdown
         const dropdown = document.getElementById("notification-dropdown");
         if (dropdown) dropdown.classList.remove("active");
+    };
+
+    window.acknowledgeResponseNotif = function(notifId, projectCode) {
+        markAcknowledged(notifId);
+        
+        // Set selected project
+        appState.selectedDetailProject = projectCode;
+        sessionStorage.setItem("technical_water_last_detail_project", projectCode);
+        
+        // Switch active tab in project details to cost-tab
+        appState.activeProjectTab = "cost-tab";
+        appState.selectedGalleryFolder = null;
+        
+        // Sync dropdown selector
+        const projSelector = document.getElementById("subnav-project-selector");
+        if (projSelector) projSelector.value = projectCode;
+        
+        // Go to projects-list view
+        if (typeof switchView === "function") {
+            switchView("projects-list");
+        }
+        
+        // Render details workspace
+        if (typeof renderSubnavProjectWorkspace === "function") {
+            renderSubnavProjectWorkspace();
+        }
+
+        // Close the notification dropdown
+        const notifDropdown = document.getElementById("notification-dropdown");
+        if (notifDropdown) notifDropdown.classList.remove("active");
+        
+        updateBellBadge();
     };
 
     // ── Modal HTML factory ────────────────────────────────────
