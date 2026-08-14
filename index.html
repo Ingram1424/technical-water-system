@@ -3526,7 +3526,10 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                                     <span style="font-size: 11px; color: var(--text-muted); font-weight: 500;" id="dropdown-user-role">Project Manager</span>
                                 </div>
                             </div>
-                            <div style="display: flex; flex-direction: column;">
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                <button type="button" id="change-my-password-btn" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: 'Prompt'; font-size: 12.5px; background: #eff6ff; color: #2563eb; border: 1px solid #bfdbfe; padding: 10px 8px; border-radius: var(--radius-sm); cursor: pointer; font-weight: 700; transition: background 0.15s;" onmouseover="this.style.background='#dbeafe'" onmouseout="this.style.background='#eff6ff'">
+                                    <i class="fa-solid fa-key"></i> เปลี่ยนรหัสผ่าน (Change Password)
+                                </button>
                                 <button type="button" id="logout-btn" style="width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; font-family: 'Prompt'; font-size: 12.5px; background: #fee2e2; color: #ef4444; border: 1px solid #fca5a5; padding: 10px 8px; border-radius: var(--radius-sm); cursor: pointer; font-weight: 700; transition: background 0.15s;" onmouseover="this.style.background='#fecaca'" onmouseout="this.style.background='#fee2e2'">
                                     <i class="fa-solid fa-right-from-bracket"></i> ออกจากระบบ (Logout)
                                 </button>
@@ -5614,6 +5617,36 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline" id="cancel-edit-project-btn">ยกเลิก</button>
                     <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> บันทึกการแก้ไข</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Change Password Modal -->
+    <div class="modal-overlay" id="change-password-modal" style="z-index: 1300;">
+        <div class="modal-card" style="max-width: 400px;">
+            <div class="modal-header">
+                <h3 class="modal-title"><i class="fa-solid fa-key text-blue"></i> เปลี่ยนรหัสผ่านใหม่ (Change Password)</h3>
+                <button class="modal-close-btn" id="close-change-password-modal">&times;</button>
+            </div>
+            <form id="change-password-form">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label" for="chg-pass-current">รหัสผ่านปัจจุบัน <span class="required">*</span></label>
+                        <input type="password" id="chg-pass-current" class="form-control" placeholder="กรอกรหัสผ่านปัจจุบัน" required autocomplete="off">
+                    </div>
+                    <div class="form-group mt-3">
+                        <label class="form-label" for="chg-pass-new">รหัสผ่านใหม่ <span class="required">*</span></label>
+                        <input type="password" id="chg-pass-new" class="form-control" placeholder="กรอกรหัสผ่านใหม่ (อย่างน้อย 4 ตัวอักษร)" required minlength="4" autocomplete="off">
+                    </div>
+                    <div class="form-group mt-3">
+                        <label class="form-label" for="chg-pass-confirm">ยืนยันรหัสผ่านใหม่ <span class="required">*</span></label>
+                        <input type="password" id="chg-pass-confirm" class="form-control" placeholder="ยืนยันรหัสผ่านใหม่" required minlength="4" autocomplete="off">
+                    </div>
+                </div>
+                <div class="modal-footer" style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;">
+                    <button type="button" class="btn btn-outline" id="cancel-change-password-btn">ยกเลิก</button>
+                    <button type="submit" class="btn btn-primary">บันทึกการเปลี่ยนรหัส</button>
                 </div>
             </form>
         </div>
@@ -17618,9 +17651,10 @@ window.getUserDetails = function(username) {
     
     // Check static USERS
     if (USERS[lowerUser]) {
+        const overridePass = localStorage.getItem("tw_pass_override_" + lowerUser);
         return {
             username: lowerUser,
-            password: USERS[lowerUser].password,
+            password: overridePass || USERS[lowerUser].password,
             role: USERS[lowerUser].role,
             displayName: USERS[lowerUser].displayName,
             roleLabel: USERS[lowerUser].roleLabel,
@@ -17908,6 +17942,97 @@ function initPublicView(projectCode) {
                 showToast(`ยินดีต้อนรับคุณ ${user.displayName}!`, "success");
             } else {
                 showLoginError("⚠️ ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง");
+            }
+        });
+    }
+
+    // Change Password handlers
+    const changePasswordBtn = document.getElementById("change-my-password-btn");
+    const changePasswordModal = document.getElementById("change-password-modal");
+    const closeChangePasswordBtn = document.getElementById("close-change-password-modal");
+    const cancelChangePasswordBtn = document.getElementById("cancel-change-password-btn");
+    const changePasswordForm = document.getElementById("change-password-form");
+
+    if (changePasswordBtn) {
+        changePasswordBtn.addEventListener("click", () => {
+            const session = getSession();
+            if (!session || !session.username) {
+                showToast("กรุณาเข้าสู่ระบบก่อนทำการเปลี่ยนรหัสผ่าน", "warning");
+                return;
+            }
+            // Clear fields
+            document.getElementById("chg-pass-current").value = "";
+            document.getElementById("chg-pass-new").value = "";
+            document.getElementById("chg-pass-confirm").value = "";
+            
+            // Close profile dropdown
+            const dropdown = document.getElementById("profile-dropdown");
+            if (dropdown) dropdown.classList.remove("active");
+            
+            // Open modal
+            if (changePasswordModal) changePasswordModal.classList.add("active");
+        });
+    }
+
+    const closeChangePassword = () => {
+        if (changePasswordModal) changePasswordModal.classList.remove("active");
+    };
+
+    if (closeChangePasswordBtn) closeChangePasswordBtn.onclick = closeChangePassword;
+    if (cancelChangePasswordBtn) cancelChangePasswordBtn.onclick = closeChangePassword;
+
+    if (changePasswordForm) {
+        changePasswordForm.addEventListener("submit", async function(e) {
+            e.preventDefault();
+            const currentPass = document.getElementById("chg-pass-current").value;
+            const newPass = document.getElementById("chg-pass-new").value;
+            const confirmPass = document.getElementById("chg-pass-confirm").value;
+
+            const session = getSession();
+            if (!session || !session.username) return;
+
+            const user = window.getUserDetails(session.username);
+            if (!user) {
+                showToast("ไม่พบข้อมูลผู้ใช้งาน", "error");
+                return;
+            }
+
+            // Verify current password
+            if (user.password !== currentPass) {
+                showToast("⚠️ รหัสผ่านปัจจุบันไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง", "error");
+                return;
+            }
+
+            // Verify new password matches confirm password
+            if (newPass !== confirmPass) {
+                showToast("⚠️ รหัสผ่านใหม่และยืนยันรหัสผ่านใหม่ไม่ตรงกัน", "warning");
+                return;
+            }
+
+            // Prevent changing to the same password
+            if (currentPass === newPass) {
+                showToast("⚠️ รหัสผ่านใหม่ต้องไม่ซ้ำกับรหัสผ่านปัจจุบัน", "warning");
+                return;
+            }
+
+            try {
+                if (user.isStatic) {
+                    // Save password override to localStorage
+                    localStorage.setItem("tw_pass_override_" + user.username, newPass);
+                } else {
+                    // Dynamic user, save to customerAccounts and sync to Supabase
+                    if (appState.customerAccounts && user.userKey && appState.customerAccounts[user.userKey]) {
+                        appState.customerAccounts[user.userKey].password = newPass;
+                        await saveCustomerAccounts();
+                    } else {
+                        throw new Error("User key not found in customerAccounts");
+                    }
+                }
+                showToast("🔒 เปลี่ยนรหัสผ่านเรียบร้อยแล้ว!", "success");
+                closeChangePassword();
+            } catch (err) {
+                console.error("Change password error:", err);
+                showToast("เกิดข้อผิดพลาดในการเปลี่ยนรหัสผ่าน", "error");
             }
         });
     }
