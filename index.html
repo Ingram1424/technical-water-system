@@ -9453,6 +9453,11 @@ function initScurveAutocomplete(project, textarea) {
         dropdown.id = "scurve-autocomplete-dropdown";
         dropdown.style.cssText = "position: absolute; background: #fff; border: 1.5px solid var(--border-color); border-radius: 8px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); max-height: 180px; overflow-y: auto; z-index: 99999; display: none; font-family: 'Prompt', sans-serif; min-width: 250px;";
         document.body.appendChild(dropdown);
+        
+        // ปิดดรอปดาวน์เมื่อเลื่อนหน้าจอหรือเลื่อนตาราง (แก้ปัญหากล่องลอยค้างเวลาเลื่อน)
+        window.addEventListener("scroll", () => {
+            dropdown.style.display = "none";
+        }, { capture: true, passive: true });
     }
     
     const showDropdown = () => {
