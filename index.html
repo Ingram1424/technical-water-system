@@ -18816,6 +18816,12 @@ function renderPermissionsManagement() {
                                 </div>
                             </div>
                         `;
+                        
+                        // Hide from non-accounting roles
+                        if (appState.currentRole !== "accounting") {
+                            div.style.display = "none";
+                        }
+                        
                         body.insertBefore(div, body.firstChild);
                     }
                 });
@@ -19095,7 +19101,8 @@ function renderPermissionsManagement() {
                 updateDisbursementNotifications();
             }
 
-            const unread = document.querySelectorAll(".notif-item.unread:not([style*='opacity: 0.5'])");
+            const unread = Array.from(document.querySelectorAll(".notif-item.unread:not([style*='opacity: 0.5'])"))
+                                .filter(el => el.style.display !== "none");
             const count = unread.length;
             badge.textContent = count;
             badge.style.display = count > 0 ? "" : "none";
@@ -19123,14 +19130,23 @@ function renderPermissionsManagement() {
     // ── Role-based notification filtering ─────────────────────
     window.applyNotifRoleFilter = function(role) {
         const generalNotifs = document.querySelectorAll(".general-notif");
+        const approvalNotifs = document.querySelectorAll(".approval-notif, .disbursement-notif-item");
         const header = document.getElementById("notif-header-label");
-        generalNotifs.forEach(el => {
-            el.style.display = (role === "accounting") ? "none" : "";
-        });
-        if (header) {
-            header.textContent = (role === "accounting")
-                ? "การแจ้งเตือน: งานรออนุมัติ"
-                : "การแจ้งเตือนล่าสุด";
+        
+        if (role === "accounting") {
+            // Accounting sees ONLY approval notifications
+            generalNotifs.forEach(el => el.style.display = "none");
+            approvalNotifs.forEach(el => el.style.display = "");
+            if (header) {
+                header.textContent = "การแจ้งเตือน: งานรออนุมัติ";
+            }
+        } else {
+            // PM and other roles see ONLY general notifications
+            generalNotifs.forEach(el => el.style.display = "");
+            approvalNotifs.forEach(el => el.style.display = "none");
+            if (header) {
+                header.textContent = "การแจ้งเตือนล่าสุด";
+            }
         }
         updateBellBadge();
     };
