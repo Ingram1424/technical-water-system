@@ -5845,6 +5845,13 @@ try {
         projectsData = {};
         Object.keys(parsed).forEach(k => {
             if (!k.startsWith("SHARE:") && !k.startsWith("FILE:")) {
+                if (parsed[k]) {
+                    parsed[k].code = k;
+                    // Migration fallback: default undefined isSynced to true
+                    if (parsed[k].isSynced === undefined) {
+                        parsed[k].isSynced = true;
+                    }
+                }
                 projectsData[k] = parsed[k];
             }
         });
@@ -5868,6 +5875,10 @@ async function loadFromSupabase() {
             const remoteData = {};
             data.forEach(row => {
                 if (!row.code.startsWith("SHARE:") && !row.code.startsWith("FILE:")) {
+                    if (row.data) {
+                        row.data.code = row.code; // Force inner code to match database key
+                        row.data.isSynced = true; // Mark as synced since it came from Supabase
+                    }
                     remoteData[row.code] = row.data;
                 }
             });
@@ -5910,9 +5921,14 @@ async function loadFromSupabase() {
                             localProjectsToSync.push(code);
                         }
                     } else if (localProj && !remoteProj) {
-                        console.warn(`Local project ${code} is missing from remote. Preserving local.`);
-                        remoteData[code] = localProj;
-                        localProjectsToSync.push(code);
+                        if (localProj.isSynced) {
+                            console.warn(`Local project ${code} was deleted on remote. Removing locally.`);
+                            delete remoteData[code];
+                        } else {
+                            console.warn(`Local project ${code} is missing from remote. Preserving local.`);
+                            remoteData[code] = localProj;
+                            localProjectsToSync.push(code);
+                        }
                     }
                 });
                 
@@ -6033,6 +6049,13 @@ async function syncProjectToSupabase(code) {
         });
         if (error) throw error;
         console.log(`Synced project ${code} with Supabase`);
+        // Mark as synced and save locally
+        projectsData[code].isSynced = true;
+        try {
+            localStorage.setItem("technical_water_projects_data_v2", JSON.stringify(projectsData));
+        } catch (e) {
+            console.warn("LocalStorage quota exceeded:", e);
+        }
     } catch (e) {
         console.error(`Failed to sync project ${code} with Supabase:`, e);
         showToast(`บันทึกข้อมูลคลาวด์ล้มเหลว: ${e.message || e}`, "error");
@@ -6196,10 +6219,12 @@ function saveToLocalStorage() {
     // Set updatedAt timestamp locally to help resolve startup sync conflicts
     if (activeProj) {
         activeProj.updatedAt = new Date().toISOString();
+        activeProj.isSynced = false;
     }
     const costProj = (appState.selectedCostProject && appState.selectedCostProject !== "all" && appState.selectedCostProject !== appState.selectedDetailProject) ? projectsData[appState.selectedCostProject] : null;
     if (costProj) {
         costProj.updatedAt = new Date().toISOString();
+        costProj.isSynced = false;
     }
     try {
         localStorage.setItem("technical_water_projects_data_v2", JSON.stringify(projectsData));
@@ -11479,7 +11504,6 @@ function renderProjectCostSummaryTable() {
 
 // 4. Cost Management View (Section 4)
 function renderCostManagement() {
-    saveToLocalStorage();
     // Render high-level Cost Dashboard Overview
     renderCostDashboardOverview();
 
@@ -15617,6 +15641,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 expenses: [],
                 dailyReports: [],
                 planDocs: [],
+                isSynced: false,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
                 
                 // Save Quoting fields
                 siteVisitDate: siteVisitDate,
