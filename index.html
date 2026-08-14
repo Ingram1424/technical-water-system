@@ -6044,9 +6044,15 @@ async function loadFromSupabase() {
         // Sync customer accounts from Supabase
         try {
             const { data: accsRes } = await supabaseClient.from('projects').select('data').eq('code', 'FILE:CUSTOMER_ACCOUNTS_DATA').single();
-            if (accsRes && accsRes.data && accsRes.data.accounts) {
-                appState.customerAccounts = accsRes.data.accounts;
-                localStorage.setItem("technical_water_customer_accounts", JSON.stringify(appState.customerAccounts));
+            if (accsRes && accsRes.data) {
+                if (accsRes.data.accounts) {
+                    appState.customerAccounts = accsRes.data.accounts;
+                    localStorage.setItem("technical_water_customer_accounts", JSON.stringify(appState.customerAccounts));
+                }
+                if (accsRes.data.staticUserOverrides) {
+                    appState.staticUserOverrides = accsRes.data.staticUserOverrides;
+                    localStorage.setItem("technical_water_static_user_overrides", JSON.stringify(appState.staticUserOverrides));
+                }
                 if (typeof window.renderCustomerAccountsTable === "function") {
                     window.renderCustomerAccountsTable();
                 }
@@ -6970,14 +6976,24 @@ try {
 } catch (e) {
     appState.customerAccounts = defaultCustomerAccounts;
 }
+try {
+    const rawOverrides = localStorage.getItem("technical_water_static_user_overrides");
+    appState.staticUserOverrides = rawOverrides ? JSON.parse(rawOverrides) : {};
+} catch (e) {
+    appState.staticUserOverrides = {};
+}
 
 window.saveCustomerAccounts = async function() {
     localStorage.setItem("technical_water_customer_accounts", JSON.stringify(appState.customerAccounts));
+    localStorage.setItem("technical_water_static_user_overrides", JSON.stringify(appState.staticUserOverrides || {}));
     if (typeof supabaseClient !== "undefined") {
         try {
             await supabaseClient.from('projects').upsert({
                 code: 'FILE:CUSTOMER_ACCOUNTS_DATA',
-                data: { accounts: appState.customerAccounts }
+                data: { 
+                    accounts: appState.customerAccounts,
+                    staticUserOverrides: appState.staticUserOverrides || {}
+                }
             });
         } catch (err) {
             console.error("Failed to sync customer accounts to Supabase:", err);
@@ -17651,7 +17667,8 @@ window.getUserDetails = function(username) {
     
     // Check static USERS
     if (USERS[lowerUser]) {
-        const overridePass = localStorage.getItem("tw_pass_override_" + lowerUser);
+        const overridePass = (appState.staticUserOverrides && appState.staticUserOverrides[lowerUser]) 
+            || localStorage.getItem("tw_pass_override_" + lowerUser);
         return {
             username: lowerUser,
             password: overridePass || USERS[lowerUser].password,
@@ -18017,8 +18034,10 @@ function initPublicView(projectCode) {
 
             try {
                 if (user.isStatic) {
-                    // Save password override to localStorage
-                    localStorage.setItem("tw_pass_override_" + user.username, newPass);
+                    // Save password override to appState and sync to Supabase
+                    if (!appState.staticUserOverrides) appState.staticUserOverrides = {};
+                    appState.staticUserOverrides[user.username] = newPass;
+                    await saveCustomerAccounts();
                 } else {
                     // Dynamic user, save to customerAccounts and sync to Supabase
                     if (appState.customerAccounts && user.userKey && appState.customerAccounts[user.userKey]) {
