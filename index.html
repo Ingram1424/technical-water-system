@@ -16199,41 +16199,29 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         try {
-            // Direct download support for non-PDF/non-image base64 files (e.g. Excel)
             if (actualUrl.startsWith("data:")) {
-                const mimeType = actualUrl.split(";")[0].split(":")[1] || "";
-                if (mimeType !== "application/pdf" && !mimeType.startsWith("image/")) {
-                    const downloadLink = document.createElement("a");
-                    downloadLink.href = actualUrl;
-                    downloadLink.download = fileName || "document";
-                    document.body.appendChild(downloadLink);
-                    downloadLink.click();
-                    document.body.removeChild(downloadLink);
-                    showToast("เริ่มดาวน์โหลดไฟล์แล้ว", "success");
-                    return;
-                }
-            }
-
-            if (actualUrl.startsWith("data:application/pdf;base64,")) {
-                const base64Clean = actualUrl.split(",")[1];
+                const parts = actualUrl.split(",");
+                const mimeType = parts[0].split(";")[0].split(":")[1] || "application/octet-stream";
+                const base64Clean = parts[1];
                 const byteCharacters = atob(base64Clean);
                 const byteNumbers = new Array(byteCharacters.length);
                 for (let i = 0; i < byteCharacters.length; i++) {
                     byteNumbers[i] = byteCharacters.charCodeAt(i);
                 }
                 const byteArray = new Uint8Array(byteNumbers);
-                const blob = new Blob([byteArray], { type: "application/pdf" });
+                const blob = new Blob([byteArray], { type: mimeType });
                 const blobUrl = URL.createObjectURL(blob);
-                window.open(blobUrl, '_blank');
+                
+                const newWindow = window.open(blobUrl, '_blank');
+                if (!newWindow) {
+                    showToast("เบราว์เซอร์บล็อกป็อปอัป กรุณาอนุญาตให้เปิดป็อปอัป", "warning");
+                }
             } else {
                 window.open(actualUrl, '_blank');
             }
         } catch (e) {
-            console.error("Failed to open PDF in new tab, falling back to iframe:", e);
-            const win = window.open();
-            if (win) {
-                win.document.write(`<iframe src="${actualUrl}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
-            }
+            console.error("Failed to open file in new tab:", e);
+            window.open(actualUrl, '_blank');
         }
     };
 
