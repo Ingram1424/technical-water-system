@@ -5127,6 +5127,15 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                     <div class="form-group mt-3">
                         <label for="exp-file" class="form-label">อัปโหลดเอกสารอ้างอิง (เช่น ใบเสนอราคา / ใบเสร็จ / บิลเงินสด)</label>
                         <input type="file" id="exp-file" class="form-control" accept=".pdf,.png,.jpg,.jpeg,.xls,.xlsx,.csv" style="padding: 6px 12px; height: auto;">
+                        <div id="edit-expense-current-file-wrapper" style="display: none; margin-top: 8px; font-size: 11.5px; align-items: center; gap: 8px; background: #f8fafc; padding: 6px 12px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                            <span style="color: var(--text-muted);">ไฟล์แนบปัจจุบัน:</span>
+                            <a href="#" id="edit-expense-current-file-link" style="color: #2563eb; font-weight: 600; text-decoration: underline; display: inline-flex; align-items: center; gap: 4px;">
+                                <i class="fa-solid fa-paperclip"></i> <span id="edit-expense-current-file-name">-</span>
+                            </a>
+                            <button type="button" id="btn-delete-expense-attachment" class="btn btn-xs" style="padding: 2px 6px; background: #fee2e2; color: #ef4444; border: 1px solid #fca5a5; cursor: pointer; font-size: 10px; border-radius: 4px; margin-left: auto;">
+                                <i class="fa-solid fa-trash-can"></i> ลบไฟล์แนบ
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -10084,9 +10093,19 @@ function renderSubnavCostTab(project) {
                 </td>
             `;
 
+            let fileLinkHTML = "";
+            if (e.file && e.fileUrl) {
+                fileLinkHTML = `
+                    <br/>
+                    <a href="#" onclick="event.preventDefault(); window.openPdfInNewTab('${e.fileUrl}', '${e.file}')" style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #2563eb; font-weight: 500; text-decoration: underline; margin-top: 4px;">
+                        <i class="fa-solid fa-paperclip"></i> ${e.file}
+                    </a>
+                `;
+            }
+
             tr.innerHTML = `
                 <td>${e.date}</td>
-                <td><strong>${e.title}</strong></td>
+                <td><strong>${e.title}</strong>${fileLinkHTML}</td>
                 <td><span class="badge-status ${e.type === "ค่าแรง" ? "success" : "warning"}">${e.type}</span></td>
                 <td>${statusHTML}</td>
                 <td class="text-right text-navy font-semibold">${formatNumber(e.amount)} บาท</td>
@@ -13045,6 +13064,13 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
+        const wrapper = document.getElementById("edit-expense-current-file-wrapper");
+        const nameSpan = document.getElementById("edit-expense-current-file-name");
+        const fileLink = document.getElementById("edit-expense-current-file-link");
+
+        window.editingExpenseCurrentFile = "";
+        window.editingExpenseCurrentFileUrl = "";
+
         if (editIdx === -1) {
             if (isDrawdownRequest) {
                 if (modalTitle) modalTitle.innerHTML = `<i class="fa-solid fa-paper-plane"></i> ขอเบิกงบโครงการใหม่`;
@@ -13057,6 +13083,7 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("exp-title").value = "";
             document.getElementById("exp-amount").value = "";
             document.getElementById("exp-type").value = "ค่าแรง";
+            if (wrapper) wrapper.style.display = "none";
         } else {
             const exp = project.expenses[editIdx];
             if (!exp) return;
@@ -13075,6 +13102,21 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("exp-title").value = exp.title || "";
             document.getElementById("exp-amount").value = exp.amount || "";
             document.getElementById("exp-type").value = exp.type || "ค่าแรง";
+
+            if (exp.file && exp.fileUrl) {
+                window.editingExpenseCurrentFile = exp.file;
+                window.editingExpenseCurrentFileUrl = exp.fileUrl;
+                if (nameSpan) nameSpan.textContent = exp.file;
+                if (fileLink) {
+                    fileLink.onclick = (event) => {
+                        event.preventDefault();
+                        window.openPdfInNewTab(exp.fileUrl, exp.file);
+                    };
+                }
+                if (wrapper) wrapper.style.display = "flex";
+            } else {
+                if (wrapper) wrapper.style.display = "none";
+            }
         }
         expenseModal.classList.add("active");
     };
@@ -13105,6 +13147,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     if (closeExpenseBtn) closeExpenseBtn.addEventListener("click", closeExpenseModal);
     if (cancelExpenseBtn) cancelExpenseBtn.addEventListener("click", closeExpenseModal);
+
+    const btnDeleteAttachment = document.getElementById("btn-delete-expense-attachment");
+    if (btnDeleteAttachment) {
+        btnDeleteAttachment.addEventListener("click", () => {
+            window.editingExpenseCurrentFile = "";
+            window.editingExpenseCurrentFileUrl = "";
+            const wrapper = document.getElementById("edit-expense-current-file-wrapper");
+            if (wrapper) wrapper.style.display = "none";
+            showToast("ลบไฟล์แนบชั่วคราวแล้ว (กรุณากดบันทึกการแก้ไขเพื่อบันทึกจริง)", "info");
+        });
+    }
 
     expenseForm.addEventListener("submit", async function(e) {
         e.preventDefault();
@@ -13158,9 +13211,9 @@ document.addEventListener("DOMContentLoaded", () => {
             if (editingExpenseIndex >= 0) {
                 // Edit existing expense
                 const oldExp = project.expenses[editingExpenseIndex];
-                if (!file && oldExp) {
-                    file = oldExp.file || "";
-                    fileUrl = oldExp.fileUrl || "";
+                if (!file) {
+                    file = window.editingExpenseCurrentFile || "";
+                    fileUrl = window.editingExpenseCurrentFileUrl || "";
                 }
                 const status = oldExp.status || (isDrawdownRequest ? "รออนุมัติ" : "จ่ายตรง");
                 project.expenses[editingExpenseIndex] = { date, title, type, amount, file, fileUrl, status, rejectReason: oldExp.rejectReason || "" };
