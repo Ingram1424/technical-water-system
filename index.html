@@ -9476,7 +9476,11 @@ function renderSubnavPhotosFiles(project) {
 }
 
 window.isProjectDailyMode = function(project) {
-    if (!project || !project.ganttData) return false;
+    if (!project) return false;
+    if (project.scurveTimeframeMode) {
+        return project.scurveTimeframeMode === "daily";
+    }
+    if (!project.ganttData) return false;
     let daysDiff = 0;
     if (project.ganttData.startDate && project.ganttData.endDate) {
         const [sy, sm, sd] = project.ganttData.startDate.split('-').map(Number);
