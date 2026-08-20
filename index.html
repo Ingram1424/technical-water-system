@@ -9689,8 +9689,6 @@ function renderSubnavActualProgress(project) {
     const body = document.getElementById("scurve-table-body");
     if (!head || !body) return;
 
-    const canEdit = (appState.currentRole === "pm" || appState.currentRole === "admin" || appState.currentRole === "pe") && appState.selectedDetailProject !== "all";
-
     // Build Headers
     const hideBudget = (appState.currentRole === "pe" || appState.currentRole === "customer" || appState.currentRole === "technician" || appState.currentRole === "tech");
     const hideWeight = (appState.currentRole === "customer");
