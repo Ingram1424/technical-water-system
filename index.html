@@ -4774,7 +4774,16 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                                 <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 16px;">
                                     <div>
                                         <h2 class="section-title">แผนการดำเนินงานและความคืบหน้าจริง (S-Curve & Progress)</h2>
-                                        <p class="section-subtitle">กรอกน้ำหนักงานและเปอร์เซ็นต์ความคืบหน้าในแต่ละสัปดาห์ (4 สัปดาห์/เดือน) เพื่อพล็อตกราฟ S-Curve</p>
+                                        <div style="display: flex; align-items: center; gap: 12px; margin-top: 4px; flex-wrap: wrap;">
+                                            <p class="section-subtitle" style="margin: 0;">กรอกน้ำหนักงานและเปอร์เซ็นต์ความคืบหน้าเพื่อพล็อตกราฟ S-Curve</p>
+                                            <div style="display: flex; align-items: center; gap: 6px; background: #f8fafc; border: 1.5px solid var(--border-color); border-radius: 6px; padding: 2px 8px; margin-left: 8px;">
+                                                <span style="font-size: 11px; font-weight: 600; color: var(--navy-dark); font-family: 'Prompt', sans-serif;">มุมมองตารางเวลา S-Curve:</span>
+                                                <select id="scurve-timeframe-mode" style="font-size: 11px; font-weight: 600; border: none; background: transparent; padding: 2px 4px; color: var(--navy-dark); font-family: 'Prompt', sans-serif; cursor: pointer; outline: none;">
+                                                    <option value="weekly">รายสัปดาห์ (Weekly)</option>
+                                                    <option value="daily">รายวัน (Daily)</option>
+                                                </select>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div style="display: flex; gap: 8px;">
                                         <button class="btn btn-sm btn-outline hide-accounting hide-customer" id="btn-add-scurve-month" style="font-size: 11px; padding: 6px 12px; height: auto;">
@@ -9636,6 +9645,24 @@ function initScurveAutocomplete(project, textarea) {
 }
 
 function renderSubnavActualProgress(project) {
+    const canEdit = (appState.currentRole === "pm" || appState.currentRole === "admin" || appState.currentRole === "pe") && appState.selectedDetailProject !== "all";
+    
+    // Bind and set S-Curve Timeframe dropdown
+    const scurveModeSelect = document.getElementById("scurve-timeframe-mode");
+    if (scurveModeSelect) {
+        scurveModeSelect.value = window.isProjectDailyMode(project) ? "daily" : "weekly";
+        scurveModeSelect.onchange = function() {
+            project.scurveTimeframeMode = this.value;
+            
+            // Re-run sync to adjust plan & actual arrays sizes to the new mode!
+            syncScurveMonthsWithGantt(project);
+            if (canEdit) {
+                window.ganttIsDirty = true; // Mark dirty so they can save!
+            }
+            renderSubnavActualProgress(project);
+        };
+    }
+
     syncScurveMonthsWithGantt(project);
     if (!project.scurveMonths || project.scurveMonths.length === 0) project.scurveMonths = ["Month 1"];
     if (!project.scurveData) project.scurveData = [];
