@@ -8733,7 +8733,7 @@ function calculatePlanScurveFromGantt(proj) {
     if (!proj.scurveData || proj.scurveData.length === 0) return;
     if (!proj.scurveMonths || proj.scurveMonths.length === 0) return;
 
-    const isDaily = (proj.ganttData && proj.ganttData.viewMode === "daily");
+    const isDaily = window.isProjectDailyMode(proj);
     const numColumns = window.getScurveColumnsCount(proj);
 
     // Calculate dates list from Gantt chart start/end dates
@@ -9028,7 +9028,7 @@ function renderSCurveChart(project) {
             return;
         }
         
-        const isDaily = (project.ganttData && project.ganttData.viewMode === "daily");
+        const isDaily = window.isProjectDailyMode(project);
         const numColumns = window.getScurveColumnsCount(project);
 
         let planWeeklySums = new Array(numColumns).fill(0);
@@ -9466,9 +9466,22 @@ function renderSubnavPhotosFiles(project) {
     }
 }
 
+window.isProjectDailyMode = function(project) {
+    if (!project || !project.ganttData) return false;
+    let daysDiff = 0;
+    if (project.ganttData.startDate && project.ganttData.endDate) {
+        const [sy, sm, sd] = project.ganttData.startDate.split('-').map(Number);
+        const [ey, em, ed] = project.ganttData.endDate.split('-').map(Number);
+        const start = new Date(sy, sm - 1, sd);
+        const end = new Date(ey, em - 1, ed);
+        daysDiff = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+    }
+    return (project.ganttData.viewMode === "daily") || (!project.ganttData.viewMode && daysDiff <= 35);
+};
+
 window.getScurveColumnsCount = function(project) {
     if (!project || !project.ganttData) return 4;
-    const isDaily = (project.ganttData.viewMode === "daily");
+    const isDaily = window.isProjectDailyMode(project);
     if (isDaily && project.ganttData.startDate && project.ganttData.endDate) {
         const [sy, sm, sd] = project.ganttData.startDate.split('-').map(Number);
         const [ey, em, ed] = project.ganttData.endDate.split('-').map(Number);
@@ -9514,7 +9527,7 @@ function syncScurveMonthsWithGantt(project) {
                 }
             });
             if (ganttMonths.length > 0) {
-                const isDaily = (project.ganttData && project.ganttData.viewMode === "daily");
+                const isDaily = window.isProjectDailyMode(project);
                 const newLen = isDaily ? dateList.length : ganttMonths.length * 4;
                 if (project.scurveData && project.scurveData.length > 0) {
                     project.scurveData.forEach(item => {
@@ -9662,7 +9675,7 @@ function renderSubnavActualProgress(project) {
         <th rowspan="2" style="padding: 10px; width: 65px; border: 1px solid var(--border-color);">% (รวม)</th>`;
     let headerRow2 = `<tr style="background: #f1f5f9; border-bottom: 2px solid var(--border-color); text-align: center;">`;
  
-    const isDaily = (project.ganttData && project.ganttData.viewMode === "daily");
+    const isDaily = window.isProjectDailyMode(project);
     let numColumns = window.getScurveColumnsCount(project);
     let dateList = [];
     
