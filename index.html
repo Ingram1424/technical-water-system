@@ -8931,9 +8931,12 @@ function updateScurveTotals(project) {
             weightInput.value = (item.weight || 0).toFixed(2);
         }
     });
+
+    const isDaily = window.isProjectDailyMode(project);
+    const numColumns = window.getScurveColumnsCount(project);
     
-    let planWeeklySums = new Array(project.scurveMonths.length * 4).fill(0);
-    let actualWeeklySums = new Array(project.scurveMonths.length * 4).fill(0);
+    let planWeeklySums = new Array(numColumns).fill(0);
+    let actualWeeklySums = new Array(numColumns).fill(0);
 
     let currentParentWeight = 0;
     project.scurveData.forEach(item => {
@@ -8966,17 +8969,20 @@ function updateScurveTotals(project) {
                 <td style="padding: 8px 4px; text-align: center;"></td>
         `;
         displayWeeklySums.forEach((val, i) => {
-            footerHtml += `<td style="padding: 8px 4px; border-left: ${i%4===0 ? '1px' : '0'} solid var(--border-color);"></td>`;
+            const hasBorder = isDaily || (i % 4 === 0);
+            footerHtml += `<td style="padding: 8px 4px; border-left: ${hasBorder ? '1px' : '0'} solid var(--border-color);"></td>`;
         });
         footerHtml += `<td class="hide-accounting hide-customer"></td></tr>`;
     }
 
+    const labelPeriod = isDaily ? "ปริมาณงานต่อวัน (%)" : "ปริมาณงานต่อสัปดาห์ (%)";
     footerHtml += `
         <tr style="background: #fff; border-top: 1px solid var(--border-color);">
-            <td colspan="${labelColspan}" style="padding: 8px 10px; text-align: right; font-weight: 600;">ปริมาณงานต่อสัปดาห์ (%)</td>
+            <td colspan="${labelColspan}" style="padding: 8px 10px; text-align: right; font-weight: 600;">${labelPeriod}</td>
     `;
     displayWeeklySums.forEach((val, i) => {
-        footerHtml += `<td style="padding: 8px 4px; text-align: center; font-size: 10px; border-left: ${i%4===0 ? '1px' : '0'} solid var(--border-color);">${val === 0 ? '0.00%' : val.toFixed(2)+'%'}</td>`;
+        const hasBorder = isDaily || (i % 4 === 0);
+        footerHtml += `<td style="padding: 8px 4px; text-align: center; font-size: 10px; border-left: ${hasBorder ? '1px' : '0'} solid var(--border-color);">${val === 0 ? '0.00%' : val.toFixed(2)+'%'}</td>`;
     });
     footerHtml += `<td class="hide-accounting hide-customer"></td></tr>`;
     
@@ -8987,7 +8993,8 @@ function updateScurveTotals(project) {
     let cumSum = 0;
     displayWeeklySums.forEach((val, i) => {
         cumSum += val;
-        footerHtml += `<td style="padding: 8px 4px; text-align: center; font-size: 10px; border-left: ${i%4===0 ? '1px' : '0'} solid var(--border-color); color: var(--primary-blue);">${cumSum === 0 ? '0.0%' : cumSum.toFixed(1)+'%'}</td>`;
+        const hasBorder = isDaily || (i % 4 === 0);
+        footerHtml += `<td style="padding: 8px 4px; text-align: center; font-size: 10px; border-left: ${hasBorder ? '1px' : '0'} solid var(--border-color); color: var(--primary-blue);">${cumSum === 0 ? '0.0%' : cumSum.toFixed(1)+'%'}</td>`;
     });
     footerHtml += `<td class="hide-accounting hide-customer"></td></tr>`;
 
@@ -9002,12 +9009,13 @@ function updateScurveTotals(project) {
             <td colspan="${labelColspan}" style="padding: 8px 10px; text-align: right; color: #1e40af;">สะสมแผนงาน (%)</td>
     `;
     
-    if (!project.scurvePlanCum) project.scurvePlanCum = new Array(project.scurveMonths.length * 4).fill(0);
-    while (project.scurvePlanCum.length < project.scurveMonths.length * 4) project.scurvePlanCum.push(0);
+    if (!project.scurvePlanCum) project.scurvePlanCum = new Array(numColumns).fill(0);
+    while (project.scurvePlanCum.length < numColumns) project.scurvePlanCum.push(0);
 
     project.scurvePlanCum.forEach((val, i) => {
         let valStr = val === 0 ? '' : val;
-        footerHtml += `<td style="padding: 4px; border-left: ${i%4===0 ? '1px' : '0'} solid var(--border-color);">
+        const hasBorder = isDaily || (i % 4 === 0);
+        footerHtml += `<td style="padding: 4px; border-left: ${hasBorder ? '1px' : '0'} solid var(--border-color);">
             <input type="number" class="scurve-plan-cum-val" data-widx="${i}" value="${valStr}" min="0" max="100" step="0.1" ${planReadonlyAttr} ${canEditPlan ? planEditInputStyle : planInputStyle} placeholder="0">
         </td>`;
     });
