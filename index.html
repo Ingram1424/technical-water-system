@@ -7216,7 +7216,8 @@ function recalculateJobsFromTasks(project) {
             }
         });
 
-        let actualWeeklySums = new Array(project.scurveMonths.length * 4).fill(0);
+        const numCols = window.getScurveColumnsCount(project);
+        let actualWeeklySums = new Array(numCols).fill(0);
         let currentParentWeight = 0;
         project.scurveData.forEach((item, idx) => {
             if (!item.isSubtask) {
@@ -8732,7 +8733,8 @@ function calculatePlanScurveFromGantt(proj) {
     if (!proj.scurveData || proj.scurveData.length === 0) return;
     if (!proj.scurveMonths || proj.scurveMonths.length === 0) return;
 
-    const numWeeks = proj.scurveMonths.length * 4;
+    const isDaily = (proj.ganttData && proj.ganttData.viewMode === "daily");
+    const numColumns = window.getScurveColumnsCount(proj);
 
     // Calculate dates list from Gantt chart start/end dates
     const [sy, sm, sd] = proj.ganttData.startDate.split('-').map(Number);
@@ -8752,7 +8754,7 @@ function calculatePlanScurveFromGantt(proj) {
     const totalDays = dateList.length;
     if (totalDays === 0) return;
 
-    const interval = totalDays / numWeeks;
+    const interval = isDaily ? 1 : totalDays / numColumns;
 
     // Map each scurveData item to corresponding task in Gantt by name
     proj.scurveData.forEach(item => {
@@ -8762,8 +8764,8 @@ function calculatePlanScurveFromGantt(proj) {
             t.name.trim().toLowerCase() === item.name.trim().toLowerCase()
         );
 
-        // Reset plan array to match numWeeks
-        item.plan = new Array(numWeeks).fill(0);
+        // Reset plan array to match numColumns
+        item.plan = new Array(numColumns).fill(0);
 
         if (task && task.cells) {
             // Count total active days
@@ -8784,7 +8786,7 @@ function calculatePlanScurveFromGantt(proj) {
             });
 
             if (activeDays > 0) {
-                // Distribute progress across weeks
+                // Distribute progress across columns
                 dateList.forEach((dStr, dIdx) => {
                     const val = task.cells[dStr];
                     let noise = 0;
@@ -8796,23 +8798,23 @@ function calculatePlanScurveFromGantt(proj) {
                         }
                     }
                     if (noise > 0) {
-                        let wIdx = Math.floor(dIdx / interval);
-                        if (wIdx >= numWeeks) wIdx = numWeeks - 1;
+                        let wIdx = isDaily ? dIdx : Math.floor(dIdx / interval);
+                        if (wIdx >= numColumns) wIdx = numColumns - 1;
                         item.plan[wIdx] += (1 / activeDays) * 100;
                     }
                 });
 
                 // Round and check sums
                 let sum = 0;
-                for (let w = 0; w < numWeeks; w++) {
+                for (let w = 0; w < numColumns; w++) {
                     item.plan[w] = Math.round(item.plan[w] * 10) / 10;
                     sum += item.plan[w];
                 }
                 const diff = 100 - sum;
                 if (Math.abs(diff) > 0.01 && Math.abs(diff) < 5) {
-                    // Adjust last active week
+                    // Adjust last active column
                     let lastActiveW = -1;
-                    for (let w = numWeeks - 1; w >= 0; w--) {
+                    for (let w = numColumns - 1; w >= 0; w--) {
                         if (item.plan[w] > 0) {
                             lastActiveW = w;
                             break;
@@ -9026,8 +9028,11 @@ function renderSCurveChart(project) {
             return;
         }
         
-        let planWeeklySums = new Array(project.scurveMonths.length * 4).fill(0);
-        let actualWeeklySums = new Array(project.scurveMonths.length * 4).fill(0);
+        const isDaily = (project.ganttData && project.ganttData.viewMode === "daily");
+        const numColumns = window.getScurveColumnsCount(project);
+
+        let planWeeklySums = new Array(numColumns).fill(0);
+        let actualWeeklySums = new Array(numColumns).fill(0);
         
         let currentParentWeight = 0;
         let lastActualIndex = -1;
@@ -9051,8 +9056,8 @@ function renderSCurveChart(project) {
         });
         
         const cumPlan = [0];
-        if (!project.scurvePlanCum) project.scurvePlanCum = new Array(project.scurveMonths.length * 4).fill(0);
-        while (project.scurvePlanCum.length < project.scurveMonths.length * 4) project.scurvePlanCum.push(0);
+        if (!project.scurvePlanCum) project.scurvePlanCum = new Array(numColumns).fill(0);
+        while (project.scurvePlanCum.length < numColumns) project.scurvePlanCum.push(0);
 
         project.scurvePlanCum.forEach(val => {
             cumPlan.push(parseFloat(val) || 0);
@@ -9070,11 +9075,30 @@ function renderSCurveChart(project) {
         }
         
         const labels = ["เริ่มต้น"];
-        project.scurveMonths.forEach(m => {
-            for (let w = 1; w <= 4; w++) {
-                labels.push(`${m} W${w}`);
+        if (isDaily) {
+            const [sy, sm, sd] = project.ganttData.startDate.split('-').map(Number);
+            const [ey, em, ed] = project.ganttData.endDate.split('-').map(Number);
+            const start = new Date(sy, sm - 1, sd);
+            const end = new Date(ey, em - 1, ed);
+
+            let current = new Date(start);
+            let count = 0;
+            const monthThaiShortNames = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+            while (current <= end && count < 750) {
+                const day = current.getDate();
+                const mShort = monthThaiShortNames[current.getMonth()];
+                const yShort = (current.getFullYear() + 543).toString().substring(2);
+                labels.push(`${day} ${mShort} ${yShort}`);
+                current.setDate(current.getDate() + 1);
+                count++;
             }
-        });
+        } else {
+            project.scurveMonths.forEach(m => {
+                for (let w = 1; w <= 4; w++) {
+                    labels.push(`${m} W${w}`);
+                }
+            });
+        }
         
         scurveChartInstance = new Chart(ctx, {
             type: "line",
@@ -9442,6 +9466,25 @@ function renderSubnavPhotosFiles(project) {
     }
 }
 
+window.getScurveColumnsCount = function(project) {
+    if (!project || !project.ganttData) return 4;
+    const isDaily = (project.ganttData.viewMode === "daily");
+    if (isDaily && project.ganttData.startDate && project.ganttData.endDate) {
+        const [sy, sm, sd] = project.ganttData.startDate.split('-').map(Number);
+        const [ey, em, ed] = project.ganttData.endDate.split('-').map(Number);
+        const start = new Date(sy, sm - 1, sd);
+        const end = new Date(ey, em - 1, ed);
+        let current = new Date(start);
+        let count = 0;
+        while (current <= end && count < 750) {
+            current.setDate(current.getDate() + 1);
+            count++;
+        }
+        return count;
+    }
+    return (project.scurveMonths ? project.scurveMonths.length : 1) * 4;
+};
+
 function syncScurveMonthsWithGantt(project) {
     if (project.ganttData && project.ganttData.startDate && project.ganttData.endDate) {
         const dateList = [];
@@ -9471,7 +9514,8 @@ function syncScurveMonthsWithGantt(project) {
                 }
             });
             if (ganttMonths.length > 0) {
-                const newLen = ganttMonths.length * 4;
+                const isDaily = (project.ganttData && project.ganttData.viewMode === "daily");
+                const newLen = isDaily ? dateList.length : ganttMonths.length * 4;
                 if (project.scurveData && project.scurveData.length > 0) {
                     project.scurveData.forEach(item => {
                         if (!item.plan) item.plan = [];
@@ -9618,14 +9662,58 @@ function renderSubnavActualProgress(project) {
         <th rowspan="2" style="padding: 10px; width: 65px; border: 1px solid var(--border-color);">% (รวม)</th>`;
     let headerRow2 = `<tr style="background: #f1f5f9; border-bottom: 2px solid var(--border-color); text-align: center;">`;
  
-    project.scurveMonths.forEach((month, mIdx) => {
-        headerRow1 += `<th colspan="4" style="padding: 8px; border-left: 1px solid var(--border-color); border-right: 1px solid var(--border-color); font-size: 13.5px; font-weight: 700;">
-            ${canEdit ? `<input type="text" class="scurve-month-name" data-idx="${mIdx}" value="${month}" style="width: 100px; font-size: 12.5px; font-weight: 700; text-align: center; border: 1px solid #ccc; border-radius: 4px; padding: 2px 4px;">` : month}
-        </th>`;
-        for (let w = 1; w <= 4; w++) {
-            headerRow2 += `<th style="padding: 6px; width: 45px; font-weight: 600; font-size: 11.5px; border-left: ${w===1 ? '1px' : '0'} solid var(--border-color); border-bottom: 1px solid var(--border-color);">${w}</th>`;
+    const isDaily = (project.ganttData && project.ganttData.viewMode === "daily");
+    let numColumns = window.getScurveColumnsCount(project);
+    let dateList = [];
+    
+    if (isDaily && project.ganttData.startDate && project.ganttData.endDate) {
+        const [sy, sm, sd] = project.ganttData.startDate.split('-').map(Number);
+        const [ey, em, ed] = project.ganttData.endDate.split('-').map(Number);
+        const start = new Date(sy, sm - 1, sd);
+        const end = new Date(ey, em - 1, ed);
+        let current = new Date(start);
+        let count = 0;
+        while (current <= end && count < 750) {
+            dateList.push(new Date(current));
+            current.setDate(current.getDate() + 1);
+            count++;
         }
-    });
+        
+        const monthThaiNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+        const monthsGroup = [];
+        let currentMonthName = "";
+        let currentGroup = null;
+        
+        dateList.forEach((d, idx) => {
+            const mIdx = d.getMonth();
+            const yTh = d.getFullYear() + 543;
+            const mName = monthThaiNames[mIdx] + " " + yTh;
+            if (mName !== currentMonthName) {
+                currentMonthName = mName;
+                currentGroup = { monthName: mName, days: [], startIdx: idx };
+                monthsGroup.push(currentGroup);
+            }
+            currentGroup.days.push(d.getDate());
+        });
+        
+        monthsGroup.forEach((group, mIdx) => {
+            headerRow1 += `<th colspan="${group.days.length}" style="padding: 8px; border-left: 1px solid var(--border-color); border-right: 1px solid var(--border-color); font-size: 13.5px; font-weight: 700;">
+                ${canEdit ? `<input type="text" class="scurve-month-name" data-idx="${mIdx}" value="${group.monthName}" style="width: 100px; font-size: 12.5px; font-weight: 700; text-align: center; border: 1px solid #ccc; border-radius: 4px; padding: 2px 4px;">` : group.monthName}
+            </th>`;
+            group.days.forEach(day => {
+                headerRow2 += `<th style="padding: 6px; width: 35px; font-weight: 600; font-size: 11px; border-left: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">${day}</th>`;
+            });
+        });
+    } else {
+        project.scurveMonths.forEach((month, mIdx) => {
+            headerRow1 += `<th colspan="4" style="padding: 8px; border-left: 1px solid var(--border-color); border-right: 1px solid var(--border-color); font-size: 13.5px; font-weight: 700;">
+                ${canEdit ? `<input type="text" class="scurve-month-name" data-idx="${mIdx}" value="${month}" style="width: 100px; font-size: 12.5px; font-weight: 700; text-align: center; border: 1px solid #ccc; border-radius: 4px; padding: 2px 4px;">` : month}
+            </th>`;
+            for (let w = 1; w <= 4; w++) {
+                headerRow2 += `<th style="padding: 6px; width: 45px; font-weight: 600; font-size: 11.5px; border-left: ${w===1 ? '1px' : '0'} solid var(--border-color); border-bottom: 1px solid var(--border-color);">${w}</th>`;
+            }
+        });
+    }
     headerRow1 += `<th rowspan="2" class="hide-accounting hide-customer" style="padding: 10px; width: 40px; border: 1px solid var(--border-color);">ลบ</th></tr>`;
     headerRow2 += `</tr>`;
     head.innerHTML = headerRow1 + headerRow2;
@@ -9633,14 +9721,14 @@ function renderSubnavActualProgress(project) {
     // Build Body
     body.innerHTML = "";
     if (project.scurveData.length === 0) {
-        body.innerHTML = `<tr><td colspan="${(hideBudget ? 5 : 6) + project.scurveMonths.length * 4}" style="text-align: center; color: var(--text-muted); padding: 24px;">ยังไม่มีรายการงาน</td></tr>`;
+        body.innerHTML = `<tr><td colspan="${(hideBudget ? 5 : 6) + numColumns}" style="text-align: center; color: var(--text-muted); padding: 24px;">ยังไม่มีรายการงาน</td></tr>`;
     } else {
         project.scurveData.forEach((item, idx) => {
-            if (!item.plan) item.plan = new Array(project.scurveMonths.length * 4).fill(0);
-            if (!item.actual) item.actual = new Array(project.scurveMonths.length * 4).fill(0);
+            if (!item.plan) item.plan = new Array(numColumns).fill(0);
+            if (!item.actual) item.actual = new Array(numColumns).fill(0);
             
-            while(item.plan.length < project.scurveMonths.length * 4) item.plan.push(0);
-            while(item.actual.length < project.scurveMonths.length * 4) item.actual.push(0);
+            while(item.plan.length < numColumns) item.plan.push(0);
+            while(item.actual.length < numColumns) item.actual.push(0);
  
             // Calculate sum for both plan and actual progress
             let currentTotal = 0;
@@ -9686,14 +9774,24 @@ function renderSubnavActualProgress(project) {
             const isEditableCell = canEdit && !isPlanMode;
             const cellReadonlyAttr = isEditableCell ? '' : 'readonly';
 
-            for (let m = 0; m < project.scurveMonths.length; m++) {
-                for (let w = 0; w < 4; w++) {
-                    let wIdx = (m * 4) + w;
+            if (isDaily) {
+                for (let wIdx = 0; wIdx < numColumns; wIdx++) {
                     let val = isPlanMode ? item.plan[wIdx] : item.actual[wIdx];
                     let valStr = val === 0 ? '' : (isPlanMode ? val.toFixed(1) : val);
-                    rowHtml += `<td style="padding: 6px; border-left: ${w===0 ? '1px' : '0'} solid var(--border-color); border-right: ${w===3 ? '1px' : '0'} solid var(--border-color);">
+                    rowHtml += `<td style="padding: 6px; border-left: 1px solid var(--border-color);">
                         <input type="number" class="scurve-cell-val" data-idx="${idx}" data-widx="${wIdx}" value="${valStr}" min="0" max="100" step="0.1" ${cellReadonlyAttr} ${isEditableCell ? editInputStyle : inputStyle} placeholder="${isEditableCell ? '-' : '0'}">
                     </td>`;
+                }
+            } else {
+                for (let m = 0; m < project.scurveMonths.length; m++) {
+                    for (let w = 0; w < 4; w++) {
+                        let wIdx = (m * 4) + w;
+                        let val = isPlanMode ? item.plan[wIdx] : item.actual[wIdx];
+                        let valStr = val === 0 ? '' : (isPlanMode ? val.toFixed(1) : val);
+                        rowHtml += `<td style="padding: 6px; border-left: ${w===0 ? '1px' : '0'} solid var(--border-color); border-right: ${w===3 ? '1px' : '0'} solid var(--border-color);">
+                            <input type="number" class="scurve-cell-val" data-idx="${idx}" data-widx="${wIdx}" value="${valStr}" min="0" max="100" step="0.1" ${cellReadonlyAttr} ${isEditableCell ? editInputStyle : inputStyle} placeholder="${isEditableCell ? '-' : '0'}">
+                        </td>`;
+                    }
                 }
             }
 
