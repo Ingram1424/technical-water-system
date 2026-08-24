@@ -20,93 +20,23 @@ templates = Jinja2Templates(directory=templates_dir)
 async def index(request: Request):
     return RedirectResponse(url="/login")
 
+# All routes serve the monolithic index.html template
 @app.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request, "active_page": "login"})
+    return templates.TemplateResponse("index.html", {"request": request})
 
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard_page(request: Request):
-    return templates.TemplateResponse("dashboard.html", {
-        "request": request,
-        "active_page": "dashboard",
-        "active_project": ""
-    })
+    return templates.TemplateResponse("index.html", {"request": request})
 
 @app.get("/quoting", response_class=HTMLResponse)
 async def quoting_page(request: Request):
-    return templates.TemplateResponse("dashboard.html", {
-        "request": request,
-        "active_page": "quoting",
-        "active_project": ""
-    })
+    return templates.TemplateResponse("index.html", {"request": request})
 
 @app.get("/projects", response_class=HTMLResponse)
 async def projects_page(request: Request):
-    return templates.TemplateResponse("dashboard.html", {
-        "request": request,
-        "active_page": "projects",
-        "active_project": ""
-    })
+    return templates.TemplateResponse("index.html", {"request": request})
 
-@app.get("/project/info", response_class=HTMLResponse)
-async def project_info_page(request: Request, project: str = ""):
-    return templates.TemplateResponse("info.html", {
-        "request": request,
-        "active_page": "projects",
-        "active_project": project,
-        "active_subpage": "info"
-    })
-
-@app.get("/project/gantt", response_class=HTMLResponse)
-async def project_gantt_page(request: Request, project: str = ""):
-    return templates.TemplateResponse("gantt.html", {
-        "request": request,
-        "active_page": "projects",
-        "active_project": project,
-        "active_subpage": "gantt"
-    })
-
-@app.get("/project/actual", response_class=HTMLResponse)
-async def project_actual_page(request: Request, project: str = ""):
-    return templates.TemplateResponse("actual.html", {
-        "request": request,
-        "active_page": "projects",
-        "active_project": project,
-        "active_subpage": "actual"
-    })
-
-@app.get("/project/daily-report", response_class=HTMLResponse)
-async def project_daily_page(request: Request, project: str = ""):
-    return templates.TemplateResponse("daily_report.html", {
-        "request": request,
-        "active_page": "projects",
-        "active_project": project,
-        "active_subpage": "daily"
-    })
-
-@app.get("/project/photos", response_class=HTMLResponse)
-async def project_photos_page(request: Request, project: str = ""):
-    return templates.TemplateResponse("photos.html", {
-        "request": request,
-        "active_page": "projects",
-        "active_project": project,
-        "active_subpage": "photos"
-    })
-
-@app.get("/project/expenses", response_class=HTMLResponse)
-async def project_expenses_page(request: Request, project: str = ""):
-    return templates.TemplateResponse("expenses.html", {
-        "request": request,
-        "active_page": "projects",
-        "active_project": project,
-        "active_subpage": "expenses"
-    })
-
-@app.get("/project/documents", response_class=HTMLResponse)
-async def project_documents_page(request: Request, project: str = ""):
-    return templates.TemplateResponse("documents.html", {
-        "request": request,
-        "active_page": "projects",
-        "active_project": project,
-        "active_subpage": "documents"
-    })
+@app.get("/project/{subpage}", response_class=HTMLResponse)
+async def project_detail_page(request: Request, subpage: str, project: str = ""):
+    return templates.TemplateResponse("index.html", {"request": request})
