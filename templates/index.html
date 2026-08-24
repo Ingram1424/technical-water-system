@@ -19786,6 +19786,11 @@ function showDraftBadge(modalId) {
         
         if (isRouting) return;
         
+        // Don't overwrite URL in guest share/public view mode — it would strip ?share= or ?project= params
+        // causing handleRouting to lose the share context and fall back to session login
+        if (appState.allowedShareProjects && appState.allowedShareProjects.length > 0) return;
+        if (window.location.search.includes("share=") || window.location.search.includes("project=")) return;
+        
         const path = window.location.pathname;
         let targetPath = null;
         
@@ -19805,6 +19810,10 @@ function showDraftBadge(modalId) {
         }
         
         if (isRouting) return;
+        
+        // Don't overwrite URL in guest share/public view mode
+        if (appState.allowedShareProjects && appState.allowedShareProjects.length > 0) return;
+        if (window.location.search.includes("share=") || window.location.search.includes("project=")) return;
         
         const activeCode = appState.selectedDetailProject;
         if (activeCode && activeCode !== "all") {
