@@ -19587,6 +19587,30 @@ function showDraftBadge(modalId) {
             const path = window.location.pathname;
             const params = new URLSearchParams(window.location.search);
             const projectCode = params.get("project") || "";
+            const shareId = params.get("share") || "";
+            
+            // 0. Guest share link / Public view link bypass (No authentication required)
+            const isShareLink = !!shareId;
+            const isPublicLink = !!projectCode && !path.startsWith("/project/");
+            
+            if (isShareLink || isPublicLink) {
+                const overlay = document.getElementById("login-overlay");
+                if (overlay) overlay.style.display = "none";
+                
+                if (isShareLink) {
+                    if (typeof window.initSharedView === "function" && !window.hasInitShared) {
+                        window.initSharedView(shareId);
+                        window.hasInitShared = true;
+                    }
+                } else {
+                    if (typeof window.initPublicView === "function" && !window.hasInitPublic) {
+                        window.initPublicView(projectCode);
+                        window.hasInitPublic = true;
+                    }
+                }
+                isRouting = false;
+                return;
+            }
             
             // Check session
             let session = null;
