@@ -144,6 +144,7 @@ function renderQuotingStorageView(project) {
 }
 
 function renderSubnavGeneralInfo(project) {
+    if (!document.getElementById("detail-info-code")) return;
     if (appState.currentView === "quoting-projects-list") {
         renderQuotingStorageView(project);
         return;
@@ -1837,6 +1838,7 @@ function renderSubnavYearlyComparisonChart(customerName) {
 }
 
 function renderSubnavCostTab(project) {
+    if (!document.getElementById("subtab-cost-v-value")) return;
     // Value labels
     document.getElementById("subtab-cost-v-value").textContent = formatNumber(project.value);
     document.getElementById("subtab-cost-v-cost").textContent = formatNumber(project.cost);
@@ -2082,6 +2084,7 @@ function formatDateLocal(date) {
 }
 
 function renderSubnavPlanWork(project) {
+    if (!document.getElementById("gantt-grid-head")) return;
     // 1. Initialize project.ganttData if not exists
     if (!project.ganttData) {
         project.ganttData = {

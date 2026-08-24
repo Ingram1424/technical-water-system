@@ -509,8 +509,10 @@ function saveToLocalStorage() {
 
 // Disabled Realtime updates to prevent sync race conditions during rapid editing
 
-// Load from Supabase on startup
-loadFromSupabase();
+// Load from Supabase on startup if NOT on login page
+if (window.location.pathname !== "/login" && window.location.pathname !== "/") {
+    loadFromSupabase();
+}
 
 window.isProjectAllowedForCustomer = function(p, perms) {
     if (!p || !perms) return false;
@@ -809,6 +811,7 @@ function updateDashboardProgressAndFinancials() {
 }
 
 function renderOverallDashboard() {
+    if (!document.getElementById("kpi-total-jobs")) return;
     const yearAVal = appState.selectedYearFilterA || "2025";
     const yearBVal = appState.selectedYearFilterB || "2026";
     
