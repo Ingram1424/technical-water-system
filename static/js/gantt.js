@@ -3102,6 +3102,7 @@ function deleteDocument(index) {
 }
 
 function renderCostDashboardOverview() {
+    if (!document.getElementById("cost-kpi-total-value")) return;
     const filterYear = appState.selectedCostYearFilter;
     const allProjects = Object.values(projectsData);
     const filteredProjects = filterYear === "all" 

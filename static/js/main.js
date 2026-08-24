@@ -332,68 +332,74 @@ document.addEventListener("DOMContentLoaded", () => {
     const profileBtn = document.getElementById("profile-trigger-btn");
     const profileDropdown = document.getElementById("profile-dropdown");
     
-    profileBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        profileDropdown.classList.toggle("active");
-        document.getElementById("notification-dropdown").classList.remove("active");
-    });
+    if (profileBtn && profileDropdown) {
+        profileBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            profileDropdown.classList.toggle("active");
+            const notifDropdown = document.getElementById("notification-dropdown");
+            if (notifDropdown) notifDropdown.classList.remove("active");
+        });
+    }
 
     // 3. Notification Dropdown Toggle
     const notifBtn = document.getElementById("notification-btn");
     const notifDropdown = document.getElementById("notification-dropdown");
     
-
-    notifBtn.addEventListener("click", (e) => {
-        if (e.target.closest("#notification-dropdown")) {
-            // Clicks inside the dropdown should not toggle the dropdown itself
-            return;
-        }
-        e.stopPropagation();
-        notifDropdown.classList.toggle("active");
-        profileDropdown.classList.remove("active");
-    });
+    if (notifBtn && notifDropdown) {
+        notifBtn.addEventListener("click", (e) => {
+            if (e.target.closest("#notification-dropdown")) {
+                // Clicks inside the dropdown should not toggle the dropdown itself
+                return;
+            }
+            e.stopPropagation();
+            notifDropdown.classList.toggle("active");
+            if (profileDropdown) profileDropdown.classList.remove("active");
+        });
+    }
 
     // Close dropdowns on outside click
     document.addEventListener("click", (e) => {
         const isProfileClick = e.target.closest("#profile-trigger-btn") || e.target.closest("#profile-dropdown");
-        if (!isProfileClick) {
+        if (!isProfileClick && profileDropdown) {
             profileDropdown.classList.remove("active");
         }
         
         const isNotifClick = e.target.closest("#notification-btn") || e.target.closest("#notification-dropdown");
-        if (!isNotifClick) {
+        if (!isNotifClick && notifDropdown) {
             notifDropdown.classList.remove("active");
         }
     });
 
     // 4. Role Selection Click Listeners
-    document.querySelectorAll(".profile-dropdown .role-option").forEach(option => {
-        option.addEventListener("click", function(e) {
-            e.preventDefault();
-            
-            if (window.ganttIsDirty) {
-                if (!confirm("⚠️ คุณมีข้อมูลแผนงาน (Plan Work) ที่ยังไม่ได้บันทึก!\nหากสลับบทบาท ข้อมูลล่าสุดที่คุณแก้ไขจะสูญหาย\n\nคุณต้องการสลับบทบาทโดยไม่บันทึกใช่หรือไม่?")) {
-                    return;
+    if (profileDropdown) {
+        document.querySelectorAll(".profile-dropdown .role-option").forEach(option => {
+            option.addEventListener("click", function(e) {
+                e.preventDefault();
+                
+                if (window.ganttIsDirty) {
+                    if (!confirm("⚠️ คุณมีข้อมูลแผนงาน (Plan Work) ที่ยังไม่ได้บันทึก!\nหากสลับบทบาท ข้อมูลล่าสุดที่คุณแก้ไขจะสูญหาย\n\nคุณต้องการสลับบทบาทโดยไม่บันทึกใช่หรือไม่?")) {
+                        return;
+                    }
+                    window.ganttIsDirty = false;
                 }
-                window.ganttIsDirty = false;
-            }
 
-            // Toggle active classes on roles dropdown
-            document.querySelectorAll(".profile-dropdown .role-option").forEach(opt => opt.classList.remove("active"));
-            this.classList.add("active");
-            
-            const role = this.getAttribute("data-role");
-            // If it's a customer option, set which customer user first
-            const customerUser = this.getAttribute("data-customer-user");
-            if (role === "customer" && customerUser) {
-                appState.currentCustomerUser = customerUser;
-            }
-            switchRole(role);
-            
-            profileDropdown.classList.remove("active");
-            closeMobileSidebar();
+                // Toggle active classes on roles dropdown
+                document.querySelectorAll(".profile-dropdown .role-option").forEach(opt => opt.classList.remove("active"));
+                this.classList.add("active");
+                
+                const role = this.getAttribute("data-role");
+                // If it's a customer option, set which customer user first
+                const customerUser = this.getAttribute("data-customer-user");
+                if (role === "customer" && customerUser) {
+                    appState.currentCustomerUser = customerUser;
+                }
+                switchRole(role);
+                
+                profileDropdown.classList.remove("active");
+                closeMobileSidebar();
+            });
         });
-    });
+    }
 
     // 5. Section 1: Overall Dashboard Year Filter Dropdowns (Comparison)
     const yearFilterA = document.getElementById("year-filter-a");
@@ -4195,13 +4201,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // --- INITIAL BOOTSTRAP RUN ---
-    populateSubnavHospitals();
-    populateSubnavProjects("all");
-    populateCostHospitals();
-    populateCostProjects();
-    renderOverallDashboard();
-    renderSubnavProjectWorkspace();
-    renderCostManagement();
+    if (window.location.pathname !== "/login" && window.location.pathname !== "/") {
+        populateSubnavHospitals();
+        populateSubnavProjects("all");
+        populateCostHospitals();
+        populateCostProjects();
+        renderOverallDashboard();
+        renderSubnavProjectWorkspace();
+        renderCostManagement();
+    }
 
     // --- 19. PDF VIEWER MODAL ---
     const pdfViewerModal = document.getElementById("pdf-viewer-modal");
