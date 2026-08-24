@@ -5919,6 +5919,17 @@ try {
 // Background sync from Supabase
 async function loadFromSupabase() {
     try {
+        // Ensure we have a Supabase auth session (anonymous sign-in if not logged in)
+        // This is needed because RLS policy requires an authenticated session to read
+        try {
+            const { data: sessionData } = await supabaseClient.auth.getSession();
+            if (!sessionData || !sessionData.session) {
+                await supabaseClient.auth.signInAnonymously();
+            }
+        } catch (authErr) {
+            console.warn("Could not establish anonymous auth session:", authErr);
+        }
+        
         const { data, error } = await supabaseClient.from('projects').select('*').not('code', 'ilike', 'FILE:%').not('code', 'ilike', 'SHARE:%');
         if (error) throw error;
         
@@ -14499,20 +14510,26 @@ document.addEventListener("DOMContentLoaded", () => {
                 createdAt: new Date().toISOString()
             };
             
-            showToast("กำลังสร้างลิงก์แชร์และบันทึกประวัติ...", "info");
+            showToast("กำลังสร้างลิงก์แชร์...", "info");
             
             try {
-                const { error } = await supabaseClient.from('projects').upsert({
+                // Encode shareData as base64 directly in the URL (no DB query needed for guests)
+                const shareToken = btoa(unescape(encodeURIComponent(JSON.stringify(shareData))));
+                
+                const origin = window.location.origin || 'https://technical-water-system.vercel.app';
+                const fullShareUrl = `${origin}/?share=${encodeURIComponent(shareToken)}`;
+                
+                // Also save to Supabase DB as history/audit log (best-effort, non-blocking)
+                const randomPart = Math.random().toString(36).substring(2, 9);
+                const timestampPart = Date.now().toString(36);
+                const linkId = `sh_${randomPart}_${timestampPart}`;
+                supabaseClient.from('projects').upsert({
                     code: `SHARE:${linkId}`,
                     data: shareData,
                     updated_at: new Date().toISOString()
+                }).then(({ error }) => {
+                    if (error) console.warn("Share history log failed (non-critical):", error);
                 });
-                
-                if (error) throw error;
-                
-                const origin = window.location.origin || 'https://technical-water-system.vercel.app';
-                const pathname = window.location.pathname || '/';
-                const fullShareUrl = `${origin}${pathname}?share=${linkId}`;
                 
                 const urlInput = document.getElementById("share-link-result-url");
                 const outputContainer = document.getElementById("share-link-output-container");
@@ -17955,7 +17972,7 @@ function showLoginError(msg) {
 }
 
 // ---- Shared Multi-Project/Hospital View Mode Init ----
-window.initSharedView = async function(linkId) {
+window.initSharedView = async function(shareParam) {
     document.body.className = "role-customer public-view-mode";
     const overlay = document.getElementById("login-overlay");
     if (overlay) overlay.style.display = "none";
@@ -17977,18 +17994,45 @@ window.initSharedView = async function(linkId) {
 
     showToast("กำลังโหลดรายละเอียดจากลิงก์แชร์...", "info");
     
+    let shareConfig = null;
+
     try {
-        const { data, error } = await supabaseClient.from('projects').select('data').eq('code', `SHARE:${linkId}`).single();
-        if (error || !data || !data.data) {
-            showToast("ลิงก์แชร์นี้หมดอายุหรือไม่ถูกต้อง กรุณาเข้าสู่ระบบ", "error");
-            if (overlay) overlay.style.display = "flex";
-            return;
+        // ── Strategy 1: New-style Base64-encoded token in the URL ──
+        // If shareParam looks like base64 (not starting with "sh_"), decode it directly
+        if (shareParam && !shareParam.startsWith("sh_")) {
+            try {
+                const decoded = decodeURIComponent(escape(atob(decodeURIComponent(shareParam))));
+                shareConfig = JSON.parse(decoded);
+            } catch (decodeErr) {
+                console.warn("Base64 decode failed, treating as legacy ID:", decodeErr);
+                shareConfig = null;
+            }
         }
 
-        const shareConfig = data.data;
+        // ── Strategy 2: Legacy "sh_xxx" ID — query from Supabase DB ──
+        if (!shareConfig) {
+            try {
+                // Try anonymous sign-in first (needed for Supabase RLS)
+                const { data: sessionData } = await supabaseClient.auth.getSession();
+                if (!sessionData || !sessionData.session) {
+                    await supabaseClient.auth.signInAnonymously();
+                }
+            } catch (authErr) {
+                console.warn("Anonymous sign-in failed:", authErr);
+            }
+            
+            const { data, error } = await supabaseClient.from('projects').select('data').eq('code', `SHARE:${shareParam}`).single();
+            if (error || !data || !data.data) {
+                showToast("ลิงก์แชร์นี้หมดอายุหรือไม่ถูกต้อง กรุณาเข้าสู่ระบบ", "error");
+                if (overlay) overlay.style.display = "flex";
+                return;
+            }
+            shareConfig = data.data;
+        }
+
         appState.activeShareConfig = shareConfig;
         
-        // Wait for Supabase projects data load
+        // Wait for Supabase projects data load, then render the allowed projects
         const waitAndRenderShared = () => {
             if (Object.keys(projectsData).length > 0) {
                 const allowedCodes = new Set();
