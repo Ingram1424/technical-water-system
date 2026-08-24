@@ -6104,6 +6104,8 @@ async function loadFromSupabase() {
         } catch (e) {}
     } catch (e) {
         console.error("Failed to load from Supabase:", e);
+    } finally {
+        window.supabaseDataLoaded = true;
     }
 }
 
@@ -18009,13 +18011,14 @@ window.initSharedView = async function(shareParam) {
     showToast("กำลังโหลดรายละเอียดจากลิงก์แชร์...", "info");
     
     let shareConfig = null;
+    const cleanParam = (shareParam || "").trim().replace(/ /g, "+");
 
     try {
         // ── Strategy 1: New-style Base64-encoded token in the URL ──
-        // If shareParam looks like base64 (not starting with "sh_"), decode it directly
-        if (shareParam && !shareParam.startsWith("sh_")) {
+        // If cleanParam looks like base64 (not starting with "sh_"), decode it directly
+        if (cleanParam && !cleanParam.startsWith("sh_")) {
             try {
-                const decoded = decodeURIComponent(escape(atob(decodeURIComponent(shareParam))));
+                const decoded = decodeURIComponent(escape(atob(decodeURIComponent(cleanParam))));
                 shareConfig = JSON.parse(decoded);
             } catch (decodeErr) {
                 console.warn("Base64 decode failed, treating as legacy ID:", decodeErr);
@@ -18035,7 +18038,7 @@ window.initSharedView = async function(shareParam) {
                 console.warn("Anonymous sign-in failed:", authErr);
             }
             
-            const { data, error } = await supabaseClient.from('projects').select('data').eq('code', `SHARE:${shareParam}`).single();
+            const { data, error } = await supabaseClient.from('projects').select('data').eq('code', `SHARE:${cleanParam}`).single();
             if (error || !data || !data.data) {
                 showToast("ลิงก์แชร์นี้หมดอายุหรือไม่ถูกต้อง กรุณาเข้าสู่ระบบ", "error");
                 if (overlay) overlay.style.display = "flex";
@@ -18050,7 +18053,7 @@ window.initSharedView = async function(shareParam) {
         let retryCount = 0;
         const MAX_RETRIES = 70; // ~21 seconds max wait
         const waitAndRenderShared = () => {
-            if (Object.keys(projectsData).length > 0) {
+            if (window.supabaseDataLoaded && Object.keys(projectsData).length > 0) {
                 const allowedCodes = new Set();
                 
                 // 1. Explicit project codes

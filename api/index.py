@@ -18,7 +18,7 @@ templates = Jinja2Templates(directory=templates_dir)
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    return RedirectResponse(url="/login")
+    return templates.TemplateResponse("index.html", {"request": request})
 
 # Endpoint to serve the logo image at the root path expected by the monolithic template
 from fastapi.responses import FileResponse
