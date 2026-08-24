@@ -2502,13 +2502,16 @@ function renderSubnavProjectWorkspace() {
     });
     
     // Update labels and details for subtab 7: Documents tab left info panel
-    document.getElementById("subnav-doc-code").textContent = project.code;
-    document.getElementById("subnav-doc-name").textContent = project.name;
-    document.getElementById("subnav-doc-customer").textContent = project.customer;
-    document.getElementById("subnav-doc-pm").textContent = project.manager;
-    document.getElementById("subnav-doc-dates").textContent = `${project.start} - ${project.end}`;
-    document.getElementById("subnav-doc-value").textContent = `${formatNumber(project.value)} บาท`;
-    document.getElementById("subnav-doc-desc").textContent = project.description;
+    const docCodeEl = document.getElementById("subnav-doc-code");
+    if (docCodeEl) {
+        docCodeEl.textContent = project.code;
+        document.getElementById("subnav-doc-name").textContent = project.name;
+        document.getElementById("subnav-doc-customer").textContent = project.customer;
+        document.getElementById("subnav-doc-pm").textContent = project.manager;
+        document.getElementById("subnav-doc-dates").textContent = `${project.start} - ${project.end}`;
+        document.getElementById("subnav-doc-value").textContent = `${formatNumber(project.value)} บาท`;
+        document.getElementById("subnav-doc-desc").textContent = project.description;
+    }
     
     const isCustomer = (appState.currentRole === "customer" || appState.currentRole === "technician" || appState.currentRole === "tech");
     
