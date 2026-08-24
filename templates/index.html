@@ -18033,6 +18033,8 @@ window.initSharedView = async function(shareParam) {
         appState.activeShareConfig = shareConfig;
         
         // Wait for Supabase projects data load, then render the allowed projects
+        let retryCount = 0;
+        const MAX_RETRIES = 70; // ~21 seconds max wait
         const waitAndRenderShared = () => {
             if (Object.keys(projectsData).length > 0) {
                 const allowedCodes = new Set();
@@ -18077,6 +18079,17 @@ window.initSharedView = async function(shareParam) {
                     }
                 }
             } else {
+                retryCount++;
+                if (retryCount >= MAX_RETRIES) {
+                    showToast("โหลดข้อมูลโครงการล้มเหลว กรุณาลองใหม่อีกครั้ง", "error");
+                    console.error("waitAndRenderShared timeout: projectsData never populated");
+                    return;
+                }
+                // If data still loading after 3 seconds, try reloading from Supabase
+                if (retryCount === 10) {
+                    console.warn("projectsData still empty after 3s, retrying loadFromSupabase...");
+                    if (typeof loadFromSupabase === "function") loadFromSupabase();
+                }
                 setTimeout(waitAndRenderShared, 300);
             }
         };
@@ -18150,6 +18163,8 @@ function initPublicView(projectCode) {
 
     if (shareId) {
         // Multi-project/hospital shared link - bypass login
+        // Set flag BEFORE calling so the router's handleRouting won't double-init
+        window.hasInitShared = true;
         if (window.initSharedView) {
             window.initSharedView(shareId);
         }
@@ -18158,6 +18173,8 @@ function initPublicView(projectCode) {
 
     if (sharedCode) {
         // Public share link - bypass login
+        // Set flag BEFORE calling so the router's handleRouting won't double-init
+        window.hasInitPublic = true;
         initPublicView(sharedCode);
         return;
     }
