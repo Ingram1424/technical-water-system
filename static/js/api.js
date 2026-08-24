@@ -1713,21 +1713,60 @@ function switchRole(roleName) {
     const roleBadge = document.getElementById("active-role-badge");
     const roleDisplay = document.getElementById("user-role-display");
     const usernameDisplay = document.getElementById("username-display");
+
+    const headerUserName = document.getElementById("header-user-name");
+    const headerUserRole = document.getElementById("header-user-role");
+    const dropdownUserDisplayname = document.getElementById("dropdown-user-displayname");
+    const dropdownUserRoleDisplay = document.getElementById("dropdown-user-role-display");
+    const dropdownUserAvatar = document.getElementById("dropdown-user-avatar");
+    const headerUserAvatar = document.getElementById("header-user-avatar");
+
+    // Standard avatars
+    const defaultAvatars = {
+        "admin": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80",
+        "pm": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80",
+        "accounting": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80",
+        "customer": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80"
+    };
     
     if (roleName === "admin") {
-        roleBadge.innerHTML = `<i class="fa-solid fa-shield-halved"></i> AD (Admin Manager)`;
-        roleDisplay.textContent = "Admin Manager";
-        usernameDisplay.textContent = "Super Admin";
+        if (roleBadge) roleBadge.innerHTML = `<i class="fa-solid fa-shield-halved"></i> AD (Admin Manager)`;
+        if (roleDisplay) roleDisplay.textContent = "Admin Manager";
+        if (usernameDisplay) usernameDisplay.textContent = "Super Admin";
+
+        if (headerUserName) headerUserName.textContent = "Super Admin";
+        if (headerUserRole) headerUserRole.textContent = "Admin Manager";
+        if (dropdownUserDisplayname) dropdownUserDisplayname.textContent = "Super Admin";
+        if (dropdownUserRoleDisplay) dropdownUserRoleDisplay.textContent = "Admin Manager";
+        if (headerUserAvatar) headerUserAvatar.src = defaultAvatars["admin"];
+        if (dropdownUserAvatar) dropdownUserAvatar.src = defaultAvatars["admin"];
+
         showToast("สลับบทบาทเป็น: Admin (ผู้ดูแลระบบ) จัดการระบบทั้งหมด", "success");
     } else if (roleName === "pm") {
-        roleBadge.innerHTML = `<i class="fa-solid fa-user-lock"></i> PM (Project Manager)`;
-        roleDisplay.textContent = "Project Manager";
-        usernameDisplay.textContent = "Project Manager";
+        if (roleBadge) roleBadge.innerHTML = `<i class="fa-solid fa-user-lock"></i> PM (Project Manager)`;
+        if (roleDisplay) roleDisplay.textContent = "Project Manager";
+        if (usernameDisplay) usernameDisplay.textContent = "Project Manager";
+
+        if (headerUserName) headerUserName.textContent = "Project Manager";
+        if (headerUserRole) headerUserRole.textContent = "Project Manager";
+        if (dropdownUserDisplayname) dropdownUserDisplayname.textContent = "Project Manager";
+        if (dropdownUserRoleDisplay) dropdownUserRoleDisplay.textContent = "Project Manager";
+        if (headerUserAvatar) headerUserAvatar.src = defaultAvatars["pm"];
+        if (dropdownUserAvatar) dropdownUserAvatar.src = defaultAvatars["pm"];
+
         showToast("สลับบทบาทเป็น: Project Manager (ทีมโครงการ) เข้าใช้งานระบบ", "success");
     } else if (roleName === "accounting") {
-        roleBadge.innerHTML = `<i class="fa-solid fa-file-invoice-dollar"></i> AC (Accounting)`;
-        roleDisplay.textContent = "Accountant";
-        usernameDisplay.textContent = "Account System";
+        if (roleBadge) roleBadge.innerHTML = `<i class="fa-solid fa-file-invoice-dollar"></i> AC (Accounting)`;
+        if (roleDisplay) roleDisplay.textContent = "Accountant";
+        if (usernameDisplay) usernameDisplay.textContent = "Account System";
+
+        if (headerUserName) headerUserName.textContent = "Account System";
+        if (headerUserRole) headerUserRole.textContent = "Accountant";
+        if (dropdownUserDisplayname) dropdownUserDisplayname.textContent = "Account System";
+        if (dropdownUserRoleDisplay) dropdownUserRoleDisplay.textContent = "Accountant";
+        if (headerUserAvatar) headerUserAvatar.src = defaultAvatars["accounting"];
+        if (dropdownUserAvatar) dropdownUserAvatar.src = defaultAvatars["accounting"];
+
         showToast("สลับบทบาทเป็น: Accounting (บัญชี) ห้ามลบข้อมูลหลัก", "info");
     } else if (roleName === "customer" || roleName === "pe" || roleName === "technician" || roleName === "tech") {
         // Determine which customer user and their permissions
@@ -1738,19 +1777,41 @@ function switchRole(roleName) {
         const dispName = acc ? acc.name : "Customer View";
         
         if (roleName === "customer") {
-            roleBadge.innerHTML = `<i class="fa-solid fa-user-tie"></i> CS (${dispName})`;
-            roleDisplay.textContent = "Customer View";
+            if (roleBadge) roleBadge.innerHTML = `<i class="fa-solid fa-user-tie"></i> CS (${dispName})`;
+            if (roleDisplay) roleDisplay.textContent = "Customer View";
+
+            if (headerUserName) headerUserName.textContent = dispName;
+            if (headerUserRole) headerUserRole.textContent = "Customer";
+            if (dropdownUserDisplayname) dropdownUserDisplayname.textContent = dispName;
+            if (dropdownUserRoleDisplay) dropdownUserRoleDisplay.textContent = "Customer";
+
             showToast(`สลับบทบาทเป็น: ${dispName} — สิทธิ์จำกัดตาม PM กำหนด`, "info");
         } else if (roleName === "pe") {
-            roleBadge.innerHTML = `<i class="fa-solid fa-helmet-safety"></i> PE (${dispName})`;
-            roleDisplay.textContent = "Project Engineer";
+            if (roleBadge) roleBadge.innerHTML = `<i class="fa-solid fa-helmet-safety"></i> PE (${dispName})`;
+            if (roleDisplay) roleDisplay.textContent = "Project Engineer";
+
+            if (headerUserName) headerUserName.textContent = dispName;
+            if (headerUserRole) headerUserRole.textContent = "Project Engineer";
+            if (dropdownUserDisplayname) dropdownUserDisplayname.textContent = dispName;
+            if (dropdownUserRoleDisplay) dropdownUserRoleDisplay.textContent = "Project Engineer";
+
             showToast(`สลับบทบาทเป็น: PE: ${dispName} — แก้ไขเฉพาะโครงการที่ได้รับสิทธิ์`, "info");
         } else {
-            roleBadge.innerHTML = `<i class="fa-solid fa-screwdriver-wrench"></i> Tech (${dispName})`;
-            roleDisplay.textContent = "Technician View";
+            if (roleBadge) roleBadge.innerHTML = `<i class="fa-solid fa-screwdriver-wrench"></i> Tech (${dispName})`;
+            if (roleDisplay) roleDisplay.textContent = "Technician View";
+
+            if (headerUserName) headerUserName.textContent = dispName;
+            if (headerUserRole) headerUserRole.textContent = "Technician";
+            if (dropdownUserDisplayname) dropdownUserDisplayname.textContent = dispName;
+            if (dropdownUserRoleDisplay) dropdownUserRoleDisplay.textContent = "Technician";
+
             showToast(`สลับบทบาทเป็น: Tech: ${dispName} — ดูอย่างเดียวเฉพาะโครงการที่ได้รับสิทธิ์`, "info");
         }
-        usernameDisplay.textContent = dispName;
+        if (usernameDisplay) usernameDisplay.textContent = dispName;
+        
+        const avatarUrl = acc ? acc.avatar : defaultAvatars["customer"];
+        if (headerUserAvatar) headerUserAvatar.src = avatarUrl;
+        if (dropdownUserAvatar) dropdownUserAvatar.src = avatarUrl;
 
         // Get allowed hospitals and projects for this user
         const perms = appState.userPermissions[cUserKey] || { hospitals: [], projects: [] };
