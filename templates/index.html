@@ -4774,7 +4774,16 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                                 <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 16px;">
                                     <div>
                                         <h2 class="section-title">แผนการดำเนินงานและความคืบหน้าจริง (S-Curve & Progress)</h2>
-                                        <p class="section-subtitle">กรอกน้ำหนักงานและเปอร์เซ็นต์ความคืบหน้าในแต่ละสัปดาห์ (4 สัปดาห์/เดือน) เพื่อพล็อตกราฟ S-Curve</p>
+                                        <div style="display: flex; align-items: center; gap: 12px; margin-top: 4px; flex-wrap: wrap;">
+                                            <p class="section-subtitle" style="margin: 0;">กรอกน้ำหนักงานและเปอร์เซ็นต์ความคืบหน้าเพื่อพล็อตกราฟ S-Curve</p>
+                                            <div style="display: flex; align-items: center; gap: 6px; background: #f8fafc; border: 1.5px solid var(--border-color); border-radius: 6px; padding: 2px 8px; margin-left: 8px;">
+                                                <span style="font-size: 11px; font-weight: 600; color: var(--navy-dark); font-family: 'Prompt', sans-serif;">มุมมองตารางเวลา S-Curve:</span>
+                                                <select id="scurve-timeframe-mode" style="font-size: 11px; font-weight: 600; border: none; background: transparent; padding: 2px 4px; color: var(--navy-dark); font-family: 'Prompt', sans-serif; cursor: pointer; outline: none;">
+                                                    <option value="weekly">รายสัปดาห์ (Weekly)</option>
+                                                    <option value="daily">รายวัน (Daily)</option>
+                                                </select>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div style="display: flex; gap: 8px;">
                                         <button class="btn btn-sm btn-outline hide-accounting hide-customer" id="btn-add-scurve-month" style="font-size: 11px; padding: 6px 12px; height: auto;">
@@ -5127,6 +5136,15 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                     <div class="form-group mt-3">
                         <label for="exp-file" class="form-label">อัปโหลดเอกสารอ้างอิง (เช่น ใบเสนอราคา / ใบเสร็จ / บิลเงินสด)</label>
                         <input type="file" id="exp-file" class="form-control" accept=".pdf,.png,.jpg,.jpeg,.xls,.xlsx,.csv" style="padding: 6px 12px; height: auto;">
+                        <div id="edit-expense-current-file-wrapper" style="display: none; margin-top: 8px; font-size: 11.5px; align-items: center; gap: 8px; background: #f8fafc; padding: 6px 12px; border-radius: 6px; border: 1px solid #cbd5e1;">
+                            <span style="color: var(--text-muted);">ไฟล์แนบปัจจุบัน:</span>
+                            <a href="#" id="edit-expense-current-file-link" style="color: #2563eb; font-weight: 600; text-decoration: underline; display: inline-flex; align-items: center; gap: 4px;">
+                                <i class="fa-solid fa-paperclip"></i> <span id="edit-expense-current-file-name">-</span>
+                            </a>
+                            <button type="button" id="btn-delete-expense-attachment" class="btn btn-xs" style="padding: 2px 6px; background: #fee2e2; color: #ef4444; border: 1px solid #fca5a5; cursor: pointer; font-size: 10px; border-radius: 4px; margin-left: auto;">
+                                <i class="fa-solid fa-trash-can"></i> ลบไฟล์แนบ
+                            </button>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -5827,7 +5845,7 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
     </datalist>
 
     <script>
-// Project Management System - Application Logic & State
+// Project Management System - Application Logic & State (Force Vercel Rollback Build Trigger)
 
 // --- DATA STORE ---
 // Load data from localStorage or fallback to default template project
@@ -7207,7 +7225,8 @@ function recalculateJobsFromTasks(project) {
             }
         });
 
-        let actualWeeklySums = new Array(project.scurveMonths.length * 4).fill(0);
+        const numCols = window.getScurveColumnsCount(project);
+        let actualWeeklySums = new Array(numCols).fill(0);
         let currentParentWeight = 0;
         project.scurveData.forEach((item, idx) => {
             if (!item.isSubtask) {
@@ -8723,7 +8742,8 @@ function calculatePlanScurveFromGantt(proj) {
     if (!proj.scurveData || proj.scurveData.length === 0) return;
     if (!proj.scurveMonths || proj.scurveMonths.length === 0) return;
 
-    const numWeeks = proj.scurveMonths.length * 4;
+    const isDaily = window.isProjectDailyMode(proj);
+    const numColumns = window.getScurveColumnsCount(proj);
 
     // Calculate dates list from Gantt chart start/end dates
     const [sy, sm, sd] = proj.ganttData.startDate.split('-').map(Number);
@@ -8743,7 +8763,7 @@ function calculatePlanScurveFromGantt(proj) {
     const totalDays = dateList.length;
     if (totalDays === 0) return;
 
-    const interval = totalDays / numWeeks;
+    const interval = isDaily ? 1 : totalDays / numColumns;
 
     // Map each scurveData item to corresponding task in Gantt by name
     proj.scurveData.forEach(item => {
@@ -8753,8 +8773,8 @@ function calculatePlanScurveFromGantt(proj) {
             t.name.trim().toLowerCase() === item.name.trim().toLowerCase()
         );
 
-        // Reset plan array to match numWeeks
-        item.plan = new Array(numWeeks).fill(0);
+        // Reset plan array to match numColumns
+        item.plan = new Array(numColumns).fill(0);
 
         if (task && task.cells) {
             // Count total active days
@@ -8775,7 +8795,7 @@ function calculatePlanScurveFromGantt(proj) {
             });
 
             if (activeDays > 0) {
-                // Distribute progress across weeks
+                // Distribute progress across columns
                 dateList.forEach((dStr, dIdx) => {
                     const val = task.cells[dStr];
                     let noise = 0;
@@ -8787,23 +8807,23 @@ function calculatePlanScurveFromGantt(proj) {
                         }
                     }
                     if (noise > 0) {
-                        let wIdx = Math.floor(dIdx / interval);
-                        if (wIdx >= numWeeks) wIdx = numWeeks - 1;
+                        let wIdx = isDaily ? dIdx : Math.floor(dIdx / interval);
+                        if (wIdx >= numColumns) wIdx = numColumns - 1;
                         item.plan[wIdx] += (1 / activeDays) * 100;
                     }
                 });
 
                 // Round and check sums
                 let sum = 0;
-                for (let w = 0; w < numWeeks; w++) {
+                for (let w = 0; w < numColumns; w++) {
                     item.plan[w] = Math.round(item.plan[w] * 10) / 10;
                     sum += item.plan[w];
                 }
                 const diff = 100 - sum;
                 if (Math.abs(diff) > 0.01 && Math.abs(diff) < 5) {
-                    // Adjust last active week
+                    // Adjust last active column
                     let lastActiveW = -1;
-                    for (let w = numWeeks - 1; w >= 0; w--) {
+                    for (let w = numColumns - 1; w >= 0; w--) {
                         if (item.plan[w] > 0) {
                             lastActiveW = w;
                             break;
@@ -8911,9 +8931,12 @@ function updateScurveTotals(project) {
             weightInput.value = (item.weight || 0).toFixed(2);
         }
     });
+
+    const isDaily = window.isProjectDailyMode(project);
+    const numColumns = window.getScurveColumnsCount(project);
     
-    let planWeeklySums = new Array(project.scurveMonths.length * 4).fill(0);
-    let actualWeeklySums = new Array(project.scurveMonths.length * 4).fill(0);
+    let planWeeklySums = new Array(numColumns).fill(0);
+    let actualWeeklySums = new Array(numColumns).fill(0);
 
     let currentParentWeight = 0;
     project.scurveData.forEach(item => {
@@ -8946,17 +8969,20 @@ function updateScurveTotals(project) {
                 <td style="padding: 8px 4px; text-align: center;"></td>
         `;
         displayWeeklySums.forEach((val, i) => {
-            footerHtml += `<td style="padding: 8px 4px; border-left: ${i%4===0 ? '1px' : '0'} solid var(--border-color);"></td>`;
+            const hasBorder = isDaily || (i % 4 === 0);
+            footerHtml += `<td style="padding: 8px 4px; border-left: ${hasBorder ? '1px' : '0'} solid var(--border-color);"></td>`;
         });
         footerHtml += `<td class="hide-accounting hide-customer"></td></tr>`;
     }
 
+    const labelPeriod = isDaily ? "ปริมาณงานต่อวัน (%)" : "ปริมาณงานต่อสัปดาห์ (%)";
     footerHtml += `
         <tr style="background: #fff; border-top: 1px solid var(--border-color);">
-            <td colspan="${labelColspan}" style="padding: 8px 10px; text-align: right; font-weight: 600;">ปริมาณงานต่อสัปดาห์ (%)</td>
+            <td colspan="${labelColspan}" style="padding: 8px 10px; text-align: right; font-weight: 600;">${labelPeriod}</td>
     `;
     displayWeeklySums.forEach((val, i) => {
-        footerHtml += `<td style="padding: 8px 4px; text-align: center; font-size: 10px; border-left: ${i%4===0 ? '1px' : '0'} solid var(--border-color);">${val === 0 ? '0.00%' : val.toFixed(2)+'%'}</td>`;
+        const hasBorder = isDaily || (i % 4 === 0);
+        footerHtml += `<td style="padding: 8px 4px; text-align: center; font-size: 10px; border-left: ${hasBorder ? '1px' : '0'} solid var(--border-color);">${val === 0 ? '0.00%' : val.toFixed(2)+'%'}</td>`;
     });
     footerHtml += `<td class="hide-accounting hide-customer"></td></tr>`;
     
@@ -8967,7 +8993,8 @@ function updateScurveTotals(project) {
     let cumSum = 0;
     displayWeeklySums.forEach((val, i) => {
         cumSum += val;
-        footerHtml += `<td style="padding: 8px 4px; text-align: center; font-size: 10px; border-left: ${i%4===0 ? '1px' : '0'} solid var(--border-color); color: var(--primary-blue);">${cumSum === 0 ? '0.0%' : cumSum.toFixed(1)+'%'}</td>`;
+        const hasBorder = isDaily || (i % 4 === 0);
+        footerHtml += `<td style="padding: 8px 4px; text-align: center; font-size: 10px; border-left: ${hasBorder ? '1px' : '0'} solid var(--border-color); color: var(--primary-blue);">${cumSum === 0 ? '0.0%' : cumSum.toFixed(1)+'%'}</td>`;
     });
     footerHtml += `<td class="hide-accounting hide-customer"></td></tr>`;
 
@@ -8982,12 +9009,13 @@ function updateScurveTotals(project) {
             <td colspan="${labelColspan}" style="padding: 8px 10px; text-align: right; color: #1e40af;">สะสมแผนงาน (%)</td>
     `;
     
-    if (!project.scurvePlanCum) project.scurvePlanCum = new Array(project.scurveMonths.length * 4).fill(0);
-    while (project.scurvePlanCum.length < project.scurveMonths.length * 4) project.scurvePlanCum.push(0);
+    if (!project.scurvePlanCum) project.scurvePlanCum = new Array(numColumns).fill(0);
+    while (project.scurvePlanCum.length < numColumns) project.scurvePlanCum.push(0);
 
     project.scurvePlanCum.forEach((val, i) => {
         let valStr = val === 0 ? '' : val;
-        footerHtml += `<td style="padding: 4px; border-left: ${i%4===0 ? '1px' : '0'} solid var(--border-color);">
+        const hasBorder = isDaily || (i % 4 === 0);
+        footerHtml += `<td style="padding: 4px; border-left: ${hasBorder ? '1px' : '0'} solid var(--border-color);">
             <input type="number" class="scurve-plan-cum-val" data-widx="${i}" value="${valStr}" min="0" max="100" step="0.1" ${planReadonlyAttr} ${canEditPlan ? planEditInputStyle : planInputStyle} placeholder="0">
         </td>`;
     });
@@ -9017,8 +9045,11 @@ function renderSCurveChart(project) {
             return;
         }
         
-        let planWeeklySums = new Array(project.scurveMonths.length * 4).fill(0);
-        let actualWeeklySums = new Array(project.scurveMonths.length * 4).fill(0);
+        const isDaily = window.isProjectDailyMode(project);
+        const numColumns = window.getScurveColumnsCount(project);
+
+        let planWeeklySums = new Array(numColumns).fill(0);
+        let actualWeeklySums = new Array(numColumns).fill(0);
         
         let currentParentWeight = 0;
         let lastActualIndex = -1;
@@ -9042,8 +9073,8 @@ function renderSCurveChart(project) {
         });
         
         const cumPlan = [0];
-        if (!project.scurvePlanCum) project.scurvePlanCum = new Array(project.scurveMonths.length * 4).fill(0);
-        while (project.scurvePlanCum.length < project.scurveMonths.length * 4) project.scurvePlanCum.push(0);
+        if (!project.scurvePlanCum) project.scurvePlanCum = new Array(numColumns).fill(0);
+        while (project.scurvePlanCum.length < numColumns) project.scurvePlanCum.push(0);
 
         project.scurvePlanCum.forEach(val => {
             cumPlan.push(parseFloat(val) || 0);
@@ -9061,11 +9092,30 @@ function renderSCurveChart(project) {
         }
         
         const labels = ["เริ่มต้น"];
-        project.scurveMonths.forEach(m => {
-            for (let w = 1; w <= 4; w++) {
-                labels.push(`${m} W${w}`);
+        if (isDaily) {
+            const [sy, sm, sd] = project.ganttData.startDate.split('-').map(Number);
+            const [ey, em, ed] = project.ganttData.endDate.split('-').map(Number);
+            const start = new Date(sy, sm - 1, sd);
+            const end = new Date(ey, em - 1, ed);
+
+            let current = new Date(start);
+            let count = 0;
+            const monthThaiShortNames = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+            while (current <= end && count < 750) {
+                const day = current.getDate();
+                const mShort = monthThaiShortNames[current.getMonth()];
+                const yShort = (current.getFullYear() + 543).toString().substring(2);
+                labels.push(`${day} ${mShort} ${yShort}`);
+                current.setDate(current.getDate() + 1);
+                count++;
             }
-        });
+        } else {
+            project.scurveMonths.forEach(m => {
+                for (let w = 1; w <= 4; w++) {
+                    labels.push(`${m} W${w}`);
+                }
+            });
+        }
         
         scurveChartInstance = new Chart(ctx, {
             type: "line",
@@ -9433,6 +9483,42 @@ function renderSubnavPhotosFiles(project) {
     }
 }
 
+window.isProjectDailyMode = function(project) {
+    if (!project) return false;
+    if (project.scurveTimeframeMode) {
+        return project.scurveTimeframeMode === "daily";
+    }
+    if (!project.ganttData) return false;
+    let daysDiff = 0;
+    if (project.ganttData.startDate && project.ganttData.endDate) {
+        const [sy, sm, sd] = project.ganttData.startDate.split('-').map(Number);
+        const [ey, em, ed] = project.ganttData.endDate.split('-').map(Number);
+        const start = new Date(sy, sm - 1, sd);
+        const end = new Date(ey, em - 1, ed);
+        daysDiff = Math.ceil((end - start) / (1000 * 60 * 60 * 24)) + 1;
+    }
+    return (project.ganttData.viewMode === "daily") || (!project.ganttData.viewMode && daysDiff <= 35);
+};
+
+window.getScurveColumnsCount = function(project) {
+    if (!project || !project.ganttData) return 4;
+    const isDaily = window.isProjectDailyMode(project);
+    if (isDaily && project.ganttData.startDate && project.ganttData.endDate) {
+        const [sy, sm, sd] = project.ganttData.startDate.split('-').map(Number);
+        const [ey, em, ed] = project.ganttData.endDate.split('-').map(Number);
+        const start = new Date(sy, sm - 1, sd);
+        const end = new Date(ey, em - 1, ed);
+        let current = new Date(start);
+        let count = 0;
+        while (current <= end && count < 750) {
+            current.setDate(current.getDate() + 1);
+            count++;
+        }
+        return count;
+    }
+    return (project.scurveMonths ? project.scurveMonths.length : 1) * 4;
+};
+
 function syncScurveMonthsWithGantt(project) {
     if (project.ganttData && project.ganttData.startDate && project.ganttData.endDate) {
         const dateList = [];
@@ -9462,7 +9548,8 @@ function syncScurveMonthsWithGantt(project) {
                 }
             });
             if (ganttMonths.length > 0) {
-                const newLen = ganttMonths.length * 4;
+                const isDaily = window.isProjectDailyMode(project);
+                const newLen = isDaily ? dateList.length : ganttMonths.length * 4;
                 if (project.scurveData && project.scurveData.length > 0) {
                     project.scurveData.forEach(item => {
                         if (!item.plan) item.plan = [];
@@ -9570,6 +9657,24 @@ function initScurveAutocomplete(project, textarea) {
 }
 
 function renderSubnavActualProgress(project) {
+    const canEdit = (appState.currentRole === "pm" || appState.currentRole === "admin" || appState.currentRole === "pe") && appState.selectedDetailProject !== "all";
+    
+    // Bind and set S-Curve Timeframe dropdown
+    const scurveModeSelect = document.getElementById("scurve-timeframe-mode");
+    if (scurveModeSelect) {
+        scurveModeSelect.value = window.isProjectDailyMode(project) ? "daily" : "weekly";
+        scurveModeSelect.onchange = function() {
+            project.scurveTimeframeMode = this.value;
+            
+            // Re-run sync to adjust plan & actual arrays sizes to the new mode!
+            syncScurveMonthsWithGantt(project);
+            if (canEdit) {
+                window.ganttIsDirty = true; // Mark dirty so they can save!
+            }
+            renderSubnavActualProgress(project);
+        };
+    }
+
     syncScurveMonthsWithGantt(project);
     if (!project.scurveMonths || project.scurveMonths.length === 0) project.scurveMonths = ["Month 1"];
     if (!project.scurveData) project.scurveData = [];
@@ -9596,8 +9701,6 @@ function renderSubnavActualProgress(project) {
     const body = document.getElementById("scurve-table-body");
     if (!head || !body) return;
 
-    const canEdit = (appState.currentRole === "pm" || appState.currentRole === "admin" || appState.currentRole === "pe") && appState.selectedDetailProject !== "all";
-
     // Build Headers
     const hideBudget = (appState.currentRole === "pe" || appState.currentRole === "customer" || appState.currentRole === "technician" || appState.currentRole === "tech");
     const hideWeight = (appState.currentRole === "customer");
@@ -9609,14 +9712,58 @@ function renderSubnavActualProgress(project) {
         <th rowspan="2" style="padding: 10px; width: 65px; border: 1px solid var(--border-color);">% (รวม)</th>`;
     let headerRow2 = `<tr style="background: #f1f5f9; border-bottom: 2px solid var(--border-color); text-align: center;">`;
  
-    project.scurveMonths.forEach((month, mIdx) => {
-        headerRow1 += `<th colspan="4" style="padding: 8px; border-left: 1px solid var(--border-color); border-right: 1px solid var(--border-color); font-size: 13.5px; font-weight: 700;">
-            ${canEdit ? `<input type="text" class="scurve-month-name" data-idx="${mIdx}" value="${month}" style="width: 100px; font-size: 12.5px; font-weight: 700; text-align: center; border: 1px solid #ccc; border-radius: 4px; padding: 2px 4px;">` : month}
-        </th>`;
-        for (let w = 1; w <= 4; w++) {
-            headerRow2 += `<th style="padding: 6px; width: 45px; font-weight: 600; font-size: 11.5px; border-left: ${w===1 ? '1px' : '0'} solid var(--border-color); border-bottom: 1px solid var(--border-color);">${w}</th>`;
+    const isDaily = window.isProjectDailyMode(project);
+    let numColumns = window.getScurveColumnsCount(project);
+    let dateList = [];
+    
+    if (isDaily && project.ganttData.startDate && project.ganttData.endDate) {
+        const [sy, sm, sd] = project.ganttData.startDate.split('-').map(Number);
+        const [ey, em, ed] = project.ganttData.endDate.split('-').map(Number);
+        const start = new Date(sy, sm - 1, sd);
+        const end = new Date(ey, em - 1, ed);
+        let current = new Date(start);
+        let count = 0;
+        while (current <= end && count < 750) {
+            dateList.push(new Date(current));
+            current.setDate(current.getDate() + 1);
+            count++;
         }
-    });
+        
+        const monthThaiNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+        const monthsGroup = [];
+        let currentMonthName = "";
+        let currentGroup = null;
+        
+        dateList.forEach((d, idx) => {
+            const mIdx = d.getMonth();
+            const yTh = d.getFullYear() + 543;
+            const mName = monthThaiNames[mIdx] + " " + yTh;
+            if (mName !== currentMonthName) {
+                currentMonthName = mName;
+                currentGroup = { monthName: mName, days: [], startIdx: idx };
+                monthsGroup.push(currentGroup);
+            }
+            currentGroup.days.push(d.getDate());
+        });
+        
+        monthsGroup.forEach((group, mIdx) => {
+            headerRow1 += `<th colspan="${group.days.length}" style="padding: 8px; border-left: 1px solid var(--border-color); border-right: 1px solid var(--border-color); font-size: 13.5px; font-weight: 700;">
+                ${canEdit ? `<input type="text" class="scurve-month-name" data-idx="${mIdx}" value="${group.monthName}" style="width: 100px; font-size: 12.5px; font-weight: 700; text-align: center; border: 1px solid #ccc; border-radius: 4px; padding: 2px 4px;">` : group.monthName}
+            </th>`;
+            group.days.forEach(day => {
+                headerRow2 += `<th style="padding: 6px; width: 35px; font-weight: 600; font-size: 11px; border-left: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color);">${day}</th>`;
+            });
+        });
+    } else {
+        project.scurveMonths.forEach((month, mIdx) => {
+            headerRow1 += `<th colspan="4" style="padding: 8px; border-left: 1px solid var(--border-color); border-right: 1px solid var(--border-color); font-size: 13.5px; font-weight: 700;">
+                ${canEdit ? `<input type="text" class="scurve-month-name" data-idx="${mIdx}" value="${month}" style="width: 100px; font-size: 12.5px; font-weight: 700; text-align: center; border: 1px solid #ccc; border-radius: 4px; padding: 2px 4px;">` : month}
+            </th>`;
+            for (let w = 1; w <= 4; w++) {
+                headerRow2 += `<th style="padding: 6px; width: 45px; font-weight: 600; font-size: 11.5px; border-left: ${w===1 ? '1px' : '0'} solid var(--border-color); border-bottom: 1px solid var(--border-color);">${w}</th>`;
+            }
+        });
+    }
     headerRow1 += `<th rowspan="2" class="hide-accounting hide-customer" style="padding: 10px; width: 40px; border: 1px solid var(--border-color);">ลบ</th></tr>`;
     headerRow2 += `</tr>`;
     head.innerHTML = headerRow1 + headerRow2;
@@ -9624,14 +9771,14 @@ function renderSubnavActualProgress(project) {
     // Build Body
     body.innerHTML = "";
     if (project.scurveData.length === 0) {
-        body.innerHTML = `<tr><td colspan="${(hideBudget ? 5 : 6) + project.scurveMonths.length * 4}" style="text-align: center; color: var(--text-muted); padding: 24px;">ยังไม่มีรายการงาน</td></tr>`;
+        body.innerHTML = `<tr><td colspan="${(hideBudget ? 5 : 6) + numColumns}" style="text-align: center; color: var(--text-muted); padding: 24px;">ยังไม่มีรายการงาน</td></tr>`;
     } else {
         project.scurveData.forEach((item, idx) => {
-            if (!item.plan) item.plan = new Array(project.scurveMonths.length * 4).fill(0);
-            if (!item.actual) item.actual = new Array(project.scurveMonths.length * 4).fill(0);
+            if (!item.plan) item.plan = new Array(numColumns).fill(0);
+            if (!item.actual) item.actual = new Array(numColumns).fill(0);
             
-            while(item.plan.length < project.scurveMonths.length * 4) item.plan.push(0);
-            while(item.actual.length < project.scurveMonths.length * 4) item.actual.push(0);
+            while(item.plan.length < numColumns) item.plan.push(0);
+            while(item.actual.length < numColumns) item.actual.push(0);
  
             // Calculate sum for both plan and actual progress
             let currentTotal = 0;
@@ -9677,14 +9824,24 @@ function renderSubnavActualProgress(project) {
             const isEditableCell = canEdit && !isPlanMode;
             const cellReadonlyAttr = isEditableCell ? '' : 'readonly';
 
-            for (let m = 0; m < project.scurveMonths.length; m++) {
-                for (let w = 0; w < 4; w++) {
-                    let wIdx = (m * 4) + w;
+            if (isDaily) {
+                for (let wIdx = 0; wIdx < numColumns; wIdx++) {
                     let val = isPlanMode ? item.plan[wIdx] : item.actual[wIdx];
                     let valStr = val === 0 ? '' : (isPlanMode ? val.toFixed(1) : val);
-                    rowHtml += `<td style="padding: 6px; border-left: ${w===0 ? '1px' : '0'} solid var(--border-color); border-right: ${w===3 ? '1px' : '0'} solid var(--border-color);">
+                    rowHtml += `<td style="padding: 6px; border-left: 1px solid var(--border-color);">
                         <input type="number" class="scurve-cell-val" data-idx="${idx}" data-widx="${wIdx}" value="${valStr}" min="0" max="100" step="0.1" ${cellReadonlyAttr} ${isEditableCell ? editInputStyle : inputStyle} placeholder="${isEditableCell ? '-' : '0'}">
                     </td>`;
+                }
+            } else {
+                for (let m = 0; m < project.scurveMonths.length; m++) {
+                    for (let w = 0; w < 4; w++) {
+                        let wIdx = (m * 4) + w;
+                        let val = isPlanMode ? item.plan[wIdx] : item.actual[wIdx];
+                        let valStr = val === 0 ? '' : (isPlanMode ? val.toFixed(1) : val);
+                        rowHtml += `<td style="padding: 6px; border-left: ${w===0 ? '1px' : '0'} solid var(--border-color); border-right: ${w===3 ? '1px' : '0'} solid var(--border-color);">
+                            <input type="number" class="scurve-cell-val" data-idx="${idx}" data-widx="${wIdx}" value="${valStr}" min="0" max="100" step="0.1" ${cellReadonlyAttr} ${isEditableCell ? editInputStyle : inputStyle} placeholder="${isEditableCell ? '-' : '0'}">
+                        </td>`;
+                    }
                 }
             }
 
@@ -10084,9 +10241,19 @@ function renderSubnavCostTab(project) {
                 </td>
             `;
 
+            let fileLinkHTML = "";
+            if (e.file && e.fileUrl) {
+                fileLinkHTML = `
+                    <br/>
+                    <a href="#" onclick="event.preventDefault(); window.openPdfInNewTab('${e.fileUrl}', '${e.file}')" style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #2563eb; font-weight: 500; text-decoration: underline; margin-top: 4px;">
+                        <i class="fa-solid fa-paperclip"></i> ${e.file}
+                    </a>
+                `;
+            }
+
             tr.innerHTML = `
                 <td>${e.date}</td>
-                <td><strong>${e.title}</strong></td>
+                <td><strong>${e.title}</strong>${fileLinkHTML}</td>
                 <td><span class="badge-status ${e.type === "ค่าแรง" ? "success" : "warning"}">${e.type}</span></td>
                 <td>${statusHTML}</td>
                 <td class="text-right text-navy font-semibold">${formatNumber(e.amount)} บาท</td>
@@ -13045,6 +13212,13 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
+        const wrapper = document.getElementById("edit-expense-current-file-wrapper");
+        const nameSpan = document.getElementById("edit-expense-current-file-name");
+        const fileLink = document.getElementById("edit-expense-current-file-link");
+
+        window.editingExpenseCurrentFile = "";
+        window.editingExpenseCurrentFileUrl = "";
+
         if (editIdx === -1) {
             if (isDrawdownRequest) {
                 if (modalTitle) modalTitle.innerHTML = `<i class="fa-solid fa-paper-plane"></i> ขอเบิกงบโครงการใหม่`;
@@ -13057,6 +13231,7 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("exp-title").value = "";
             document.getElementById("exp-amount").value = "";
             document.getElementById("exp-type").value = "ค่าแรง";
+            if (wrapper) wrapper.style.display = "none";
         } else {
             const exp = project.expenses[editIdx];
             if (!exp) return;
@@ -13075,6 +13250,21 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("exp-title").value = exp.title || "";
             document.getElementById("exp-amount").value = exp.amount || "";
             document.getElementById("exp-type").value = exp.type || "ค่าแรง";
+
+            if (exp.file && exp.fileUrl) {
+                window.editingExpenseCurrentFile = exp.file;
+                window.editingExpenseCurrentFileUrl = exp.fileUrl;
+                if (nameSpan) nameSpan.textContent = exp.file;
+                if (fileLink) {
+                    fileLink.onclick = (event) => {
+                        event.preventDefault();
+                        window.openPdfInNewTab(exp.fileUrl, exp.file);
+                    };
+                }
+                if (wrapper) wrapper.style.display = "flex";
+            } else {
+                if (wrapper) wrapper.style.display = "none";
+            }
         }
         expenseModal.classList.add("active");
     };
@@ -13105,6 +13295,17 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     if (closeExpenseBtn) closeExpenseBtn.addEventListener("click", closeExpenseModal);
     if (cancelExpenseBtn) cancelExpenseBtn.addEventListener("click", closeExpenseModal);
+
+    const btnDeleteAttachment = document.getElementById("btn-delete-expense-attachment");
+    if (btnDeleteAttachment) {
+        btnDeleteAttachment.addEventListener("click", () => {
+            window.editingExpenseCurrentFile = "";
+            window.editingExpenseCurrentFileUrl = "";
+            const wrapper = document.getElementById("edit-expense-current-file-wrapper");
+            if (wrapper) wrapper.style.display = "none";
+            showToast("ลบไฟล์แนบชั่วคราวแล้ว (กรุณากดบันทึกการแก้ไขเพื่อบันทึกจริง)", "info");
+        });
+    }
 
     expenseForm.addEventListener("submit", async function(e) {
         e.preventDefault();
@@ -13158,9 +13359,9 @@ document.addEventListener("DOMContentLoaded", () => {
             if (editingExpenseIndex >= 0) {
                 // Edit existing expense
                 const oldExp = project.expenses[editingExpenseIndex];
-                if (!file && oldExp) {
-                    file = oldExp.file || "";
-                    fileUrl = oldExp.fileUrl || "";
+                if (!file) {
+                    file = window.editingExpenseCurrentFile || "";
+                    fileUrl = window.editingExpenseCurrentFileUrl || "";
                 }
                 const status = oldExp.status || (isDrawdownRequest ? "รออนุมัติ" : "จ่ายตรง");
                 project.expenses[editingExpenseIndex] = { date, title, type, amount, file, fileUrl, status, rejectReason: oldExp.rejectReason || "" };
@@ -16146,41 +16347,29 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         try {
-            // Direct download support for non-PDF/non-image base64 files (e.g. Excel)
             if (actualUrl.startsWith("data:")) {
-                const mimeType = actualUrl.split(";")[0].split(":")[1] || "";
-                if (mimeType !== "application/pdf" && !mimeType.startsWith("image/")) {
-                    const downloadLink = document.createElement("a");
-                    downloadLink.href = actualUrl;
-                    downloadLink.download = fileName || "document";
-                    document.body.appendChild(downloadLink);
-                    downloadLink.click();
-                    document.body.removeChild(downloadLink);
-                    showToast("เริ่มดาวน์โหลดไฟล์แล้ว", "success");
-                    return;
-                }
-            }
-
-            if (actualUrl.startsWith("data:application/pdf;base64,")) {
-                const base64Clean = actualUrl.split(",")[1];
+                const parts = actualUrl.split(",");
+                const mimeType = parts[0].split(";")[0].split(":")[1] || "application/octet-stream";
+                const base64Clean = parts[1];
                 const byteCharacters = atob(base64Clean);
                 const byteNumbers = new Array(byteCharacters.length);
                 for (let i = 0; i < byteCharacters.length; i++) {
                     byteNumbers[i] = byteCharacters.charCodeAt(i);
                 }
                 const byteArray = new Uint8Array(byteNumbers);
-                const blob = new Blob([byteArray], { type: "application/pdf" });
+                const blob = new Blob([byteArray], { type: mimeType });
                 const blobUrl = URL.createObjectURL(blob);
-                window.open(blobUrl, '_blank');
+                
+                const newWindow = window.open(blobUrl, '_blank');
+                if (!newWindow) {
+                    showToast("เบราว์เซอร์บล็อกป็อปอัป กรุณาอนุญาตให้เปิดป็อปอัป", "warning");
+                }
             } else {
                 window.open(actualUrl, '_blank');
             }
         } catch (e) {
-            console.error("Failed to open PDF in new tab, falling back to iframe:", e);
-            const win = window.open();
-            if (win) {
-                win.document.write(`<iframe src="${actualUrl}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
-            }
+            console.error("Failed to open file in new tab:", e);
+            window.open(actualUrl, '_blank');
         }
     };
 
