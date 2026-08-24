@@ -6353,11 +6353,16 @@ function populateSubnavHospitals() {
     // For customer/pe/tech role: filter to allowed hospitals only
     let hospitals = allHospitals;
     if (appState.currentRole === "customer" || appState.currentRole === "pe" || appState.currentRole === "technician" || appState.currentRole === "tech") {
-        const cUserKey = appState.currentCustomerUser || "user1";
-        const perms = appState.userPermissions[cUserKey] || { hospitals: [], projects: [] };
-        const effectiveHospitals = Object.values(projectsData)
-            .filter(p => isProjectAllowedForCustomer(p, perms))
-            .map(p => p.customer);
+        let effectiveProjects;
+        if (appState.allowedShareProjects && appState.allowedShareProjects.length > 0) {
+            // Share guest mode: use allowed projects list directly
+            effectiveProjects = Object.values(projectsData).filter(p => appState.allowedShareProjects.includes(p.code));
+        } else {
+            const cUserKey = appState.currentCustomerUser || "user1";
+            const perms = appState.userPermissions[cUserKey] || { hospitals: [], projects: [] };
+            effectiveProjects = Object.values(projectsData).filter(p => isProjectAllowedForCustomer(p, perms));
+        }
+        const effectiveHospitals = effectiveProjects.map(p => p.customer);
         const effectiveH = [...new Set(effectiveHospitals)];
         hospitals = allHospitals.filter(h => effectiveH.includes(h));
         const allOpt = document.createElement("option");
@@ -6419,9 +6424,13 @@ function populateSubnavProjects(yearFilter) {
 
     // For customer/pe/tech role: further filter strictly by permissions
     if (appState.currentRole === "customer" || appState.currentRole === "pe" || appState.currentRole === "technician" || appState.currentRole === "tech") {
-        const cUserKey = appState.currentCustomerUser || "user1";
-        const perms = appState.userPermissions[cUserKey] || { hospitals: [], projects: [] };
-        projects = projects.filter(p => isProjectAllowedForCustomer(p, perms));
+        if (appState.allowedShareProjects && appState.allowedShareProjects.length > 0) {
+            projects = projects.filter(p => appState.allowedShareProjects.includes(p.code));
+        } else {
+            const cUserKey = appState.currentCustomerUser || "user1";
+            const perms = appState.userPermissions[cUserKey] || { hospitals: [], projects: [] };
+            projects = projects.filter(p => isProjectAllowedForCustomer(p, perms));
+        }
     }
     
     if (projects.length === 0) {
@@ -12724,9 +12733,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Customer / PE / Tech role permissions restriction
         if (appState.currentRole === "customer" || appState.currentRole === "pe" || appState.currentRole === "technician" || appState.currentRole === "tech") {
-            const cUserKey = appState.currentCustomerUser || "user1";
-            const perms = appState.userPermissions[cUserKey] || { hospitals: [], projects: [] };
-            projects = projects.filter(p => isProjectAllowedForCustomer(p, perms));
+            if (appState.allowedShareProjects && appState.allowedShareProjects.length > 0) {
+                // Share guest mode: filter by the explicit allowedShareProjects list
+                projects = projects.filter(p => appState.allowedShareProjects.includes(p.code));
+            } else {
+                const cUserKey = appState.currentCustomerUser || "user1";
+                const perms = appState.userPermissions[cUserKey] || { hospitals: [], projects: [] };
+                projects = projects.filter(p => isProjectAllowedForCustomer(p, perms));
+            }
         }
 
         if (portalProjectsCount) portalProjectsCount.textContent = projects.length;
