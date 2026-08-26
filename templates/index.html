@@ -4291,6 +4291,54 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                         </div>
                     </div>
                 </section>
+
+                <!-- Hospital Management Section Card -->
+                <section class="section-card" style="margin-top: 24px;">
+                    <div class="section-header">
+                        <div>
+                            <h2 class="section-title"><i class="fa-solid fa-hospital text-blue mr-2"></i> ระบบจัดการรายชื่อโรงพยาบาล (Hospital Management)</h2>
+                            <span style="font-size: 12px; color: var(--text-muted); font-weight: 500;">เพิ่ม ลบ หรือแก้ไขรายชื่อโรงพยาบาลเพื่อใช้ในการจัดกลุ่มโครงการ</span>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                        <!-- Add Hospital Form -->
+                        <div style="border: 1px solid var(--border-color); border-radius: var(--radius-md); background: #ffffff; padding: 16px; box-shadow: var(--shadow-sm); height: fit-content;">
+                            <h4 style="font-size: 13.5px; font-weight: 700; color: var(--navy-dark); margin: 0 0 12px 0;">
+                                <i class="fa-solid fa-plus-circle text-blue mr-1"></i> เพิ่มโรงพยาบาลใหม่
+                            </h4>
+                            <div style="display: flex; gap: 10px;">
+                                <input type="text" id="new-hospital-name-input" class="form-control" placeholder="พิมพ์ชื่อโรงพยาบาล เช่น โรงพยาบาลเพชรเวช" style="font-family: 'Prompt'; font-size: 12.5px; flex: 1;">
+                                <button type="button" class="btn btn-primary" onclick="window.addNewHospital()" style="font-family: 'Prompt'; font-size: 12px; padding: 8px 16px; background: linear-gradient(135deg, #10b981, #059669); border: none; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                                    <i class="fa-solid fa-plus"></i> เพิ่มรายชื่อ
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Hospitals List Table -->
+                        <div style="border: 1px solid var(--border-color); border-radius: var(--radius-md); background: #ffffff; overflow: hidden; box-shadow: var(--shadow-sm);">
+                            <div style="background: var(--bg-light); padding: 10px 16px; border-bottom: 1px solid var(--border-color);">
+                                <h4 style="font-size: 13px; font-weight: 700; color: var(--navy-dark); margin: 0;">
+                                    <i class="fa-solid fa-list-ul text-blue mr-1"></i> รายการโรงพยาบาลในระบบ
+                                </h4>
+                            </div>
+                            <div style="max-height: 250px; overflow-y: auto; scrollbar-width: thin;">
+                                <table class="transaction-table" style="width: 100%;">
+                                    <thead style="position: sticky; top: 0; z-index: 2; background: #f8fafc; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                                        <tr>
+                                            <th style="width: 60px; text-align: center;">ลำดับ</th>
+                                            <th>ชื่อโรงพยาบาล</th>
+                                            <th style="text-align: center; width: 80px;">จัดการ</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="hospitals-management-tbody">
+                                        <!-- Populated dynamically -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </section>
             </div>
 
             <div id="projects-list-view" class="view-panel">
@@ -6080,6 +6128,18 @@ async function loadFromSupabase() {
             }
         } catch (e) {}
 
+        // Sync custom hospitals list from Supabase
+        try {
+            const { data: hospRes } = await supabaseClient.from('projects').select('data').eq('code', 'FILE:CUSTOM_HOSPITALS_LIST').single();
+            if (hospRes && hospRes.data && hospRes.data.hospitals) {
+                appState.hospitalsList = hospRes.data.hospitals;
+                localStorage.setItem("technical_water_hospitals_list", JSON.stringify(appState.hospitalsList));
+                if (typeof window.refreshHospitalsDependencies === "function") {
+                    window.refreshHospitalsDependencies();
+                }
+            }
+        } catch (e) {}
+
         // Sync customer accounts from Supabase
         try {
             const { data: accsRes } = await supabaseClient.from('projects').select('data').eq('code', 'FILE:CUSTOMER_ACCOUNTS_DATA').single();
@@ -6355,12 +6415,7 @@ function populateSubnavHospitals() {
     
     selector.innerHTML = "";
 
-    const allHospitals = [
-        "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
-        "โรงพยาบาลพญาไท บ่อวิน", "โรงพยาบาลพญาไท พหลโยธิน", "โรงพยาบาลพญาไท ศรีราชา", "โรงพยาบาลเปาโล พระประแดง",
-        "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4",
-        "อื่นๆ"
-    ];
+    const allHospitals = appState.hospitalsList || defaultHospitals;
 
     // For customer/pe/tech role: filter to allowed hospitals only
     let hospitals = allHospitals;
@@ -6411,11 +6466,7 @@ function populateSubnavProjects(yearFilter) {
     const selectedHospital = hospitalSelector.value;
     projectSelector.innerHTML = "";
     
-    const standardHospitals = [
-        "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
-        "โรงพยาบาลพญาไท บ่อวิน", "โรงพยาบาลพญาไท พหลโยธิน", "โรงพยาบาลพญาไท ศรีราชา", "โรงพยาบาลเปาโล พระประแดง",
-        "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4"
-    ];
+    const standardHospitals = (appState.hospitalsList || []).filter(h => h !== "อื่นๆ");
     
     // Filter projects based on hospital and year
     let projects = Object.values(projectsData).filter(p => {
@@ -6513,11 +6564,7 @@ function populateDashboardKpiProjects() {
     
     let filtered = combinedProjects;
     if (hospitalVal !== "all") {
-        const standardHospitals = [
-            "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
-            "โรงพยาบาลพญาไท บ่อวิน", "โรงพยาบาลพญาไท พหลโยธิน", "โรงพยาบาลพญาไท ศรีราชา", "โรงพยาบาลเปาโล พระประแดง",
-            "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4"
-        ];
+        const standardHospitals = (appState.hospitalsList || []).filter(h => h !== "อื่นๆ");
         if (hospitalVal === "อื่นๆ") {
             filtered = filtered.filter(p => !standardHospitals.includes(p.customer));
         } else {
@@ -6568,11 +6615,7 @@ function updateDashboardProgressAndFinancials() {
     
     let filtered = combinedProjects;
     if (hospitalVal !== "all") {
-        const standardHospitals = [
-            "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
-            "โรงพยาบาลพญาไท บ่อวิน", "โรงพยาบาลพญาไท พหลโยธิน", "โรงพยาบาลพญาไท ศรีราชา", "โรงพยาบาลเปาโล พระประแดง",
-            "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4"
-        ];
+        const standardHospitals = (appState.hospitalsList || []).filter(h => h !== "อื่นๆ");
         if (hospitalVal === "อื่นๆ") {
             filtered = filtered.filter(p => !standardHospitals.includes(p.customer));
         } else {
@@ -6673,7 +6716,8 @@ function renderOverallDashboard() {
     }
     document.getElementById("kpi-completed-jobs").textContent = completedJobs;
     document.getElementById("kpi-pending-approval-jobs").textContent = pendingApprovalJobs;
-    document.getElementById("kpi-total-branches").textContent = 12; // Always show total branches (12)
+    const totalBranchesCount = (appState.hospitalsList || []).filter(h => h !== "อื่นๆ").length;
+    document.getElementById("kpi-total-branches").textContent = totalBranchesCount;
     
     // Render Bottom Hospital Cards Grid (Show all projects that are not completed across all years)
     const gridProjects = Object.values(projectsData).filter(p => 
@@ -6682,12 +6726,7 @@ function renderOverallDashboard() {
     renderHospitalsGrid(gridProjects);
     
     // Prepare bar chart data for all hospitals
-    const hospitalsList = [
-        "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
-        "โรงพยาบาลพญาไท บ่อวิน", "โรงพยาบาลพญาไท พหลโยธิน", "โรงพยาบาลพญาไท ศรีราชา", "โรงพยาบาลเปาโล พระประแดง",
-        "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4",
-        "อื่นๆ"
-    ];
+    const hospitalsList = appState.hospitalsList || defaultHospitals;
     
     const inprogressCounts = Array(hospitalsList.length).fill(0);
     const finishedCounts = Array(hospitalsList.length).fill(0);
@@ -6821,12 +6860,7 @@ function populateCostHospitals() {
     allOpt.textContent = "ทั้งหมดทุกโรงพยาบาล";
     selector.appendChild(allOpt);
 
-    const hospitals = [
-        "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
-        "โรงพยาบาลพญาไท บ่อวิน", "โรงพยาบาลพญาไท พหลโยธิน", "โรงพยาบาลพญาไท ศรีราชา", "โรงพยาบาลเปาโล พระประแดง",
-        "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4",
-        "อื่นๆ"
-    ];
+    const hospitals = appState.hospitalsList || defaultHospitals;
     
     hospitals.forEach(h => {
         const opt = document.createElement("option");
@@ -6853,11 +6887,7 @@ function populateCostProjects() {
     
     projectSelector.innerHTML = "";
     
-    const standardHospitals = [
-        "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
-        "โรงพยาบาลพญาไท บ่อวิน", "โรงพยาบาลพญาไท พหลโยธิน", "โรงพยาบาลพญาไท ศรีราชา", "โรงพยาบาลเปาโล พระประแดง",
-        "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4"
-    ];
+    const standardHospitals = (appState.hospitalsList || []).filter(h => h !== "อื่นๆ");
     
     const projects = Object.values(projectsData).filter(p => {
         let hospitalMatch = false;
@@ -6925,8 +6955,26 @@ const appState = {
     userPermissions: null, // Loaded below
     customerAccounts: null, // Loaded below
     signerRolesHistory: ["Chief Engineer", "Supervisor", "Admin"],
-    signerNamesHistory: []
+    signerNamesHistory: [],
+    hospitalsList: [
+        "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
+        "โรงพยาบาลพญาไท บ่อวิน", "โรงพยาบาลพญาไท พหลโยธิน", "โรงพยาบาลพญาไท ศรีราชา", "โรงพยาบาลเปาโล พระประแดง",
+        "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4",
+        "โรงพยาบาลเพชรเวช", "อื่นๆ"
+    ]
 };
+
+const defaultHospitals = [
+    "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
+    "โรงพยาบาลพญาไท บ่อวิน", "โรงพยาบาลพญาไท พหลโยธิน", "โรงพยาบาลพญาไท ศรีราชา", "โรงพยาบาลเปาโล พระประแดง",
+    "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4",
+    "โรงพยาบาลเพชรเวช", "อื่นๆ"
+];
+
+try {
+    const rawHospitals = localStorage.getItem("technical_water_hospitals_list");
+    if (rawHospitals) appState.hospitalsList = JSON.parse(rawHospitals);
+} catch (e) {}
 
 try {
     const rawRoles = localStorage.getItem("technical_water_signer_roles_history");
@@ -6937,6 +6985,86 @@ try {
     const rawNames = localStorage.getItem("technical_water_signer_names_history");
     if (rawNames) appState.signerNamesHistory = JSON.parse(rawNames);
 } catch (e) {}
+
+window.populateKpiHospitalsDropdown = function() {
+    const selector = document.getElementById("kpi-filter-hospital");
+    if (!selector) return;
+    const currentVal = selector.value || "all";
+    selector.innerHTML = '<option value="all">ทั้งหมดทุกโรงพยาบาล</option>';
+    
+    (appState.hospitalsList || []).forEach(hosp => {
+        if (hosp === "อื่นๆ") return;
+        const opt = document.createElement("option");
+        opt.value = hosp;
+        opt.textContent = hosp;
+        selector.appendChild(opt);
+    });
+    
+    const otherOpt = document.createElement("option");
+    otherOpt.value = "อื่นๆ";
+    otherOpt.textContent = "อื่นๆ";
+    selector.appendChild(otherOpt);
+    
+    selector.value = currentVal;
+};
+
+window.populateProjectFormHospitals = function() {
+    const createSelect = document.getElementById("new-project-hospital");
+    const editSelect = document.getElementById("edit-project-customer");
+    
+    if (createSelect) {
+        const currentVal = createSelect.value;
+        createSelect.innerHTML = "";
+        (appState.hospitalsList || []).forEach(hosp => {
+            const opt = document.createElement("option");
+            opt.value = hosp;
+            opt.textContent = hosp;
+            createSelect.appendChild(opt);
+        });
+        if (currentVal && appState.hospitalsList.includes(currentVal)) {
+            createSelect.value = currentVal;
+        } else {
+            createSelect.selectedIndex = 0;
+        }
+    }
+    
+    if (editSelect) {
+        const currentVal = editSelect.value;
+        editSelect.innerHTML = "";
+        (appState.hospitalsList || []).forEach(hosp => {
+            const opt = document.createElement("option");
+            opt.value = hosp;
+            opt.textContent = hosp;
+            editSelect.appendChild(opt);
+        });
+        if (currentVal && appState.hospitalsList.includes(currentVal)) {
+            editSelect.value = currentVal;
+        } else {
+            editSelect.selectedIndex = 0;
+        }
+    }
+};
+
+window.populateHospitalsDatalist = function() {
+    const datalist = document.getElementById("all-hospitals-datalist");
+    if (!datalist) return;
+    datalist.innerHTML = "";
+    (appState.hospitalsList || []).forEach(hosp => {
+        const opt = document.createElement("option");
+        opt.value = hosp;
+        datalist.appendChild(opt);
+    });
+};
+
+window.refreshHospitalsDependencies = function() {
+    window.populateKpiHospitalsDropdown();
+    window.populateProjectFormHospitals();
+    window.populateHospitalsDatalist();
+    
+    if (typeof populateSubnavHospitals === "function") populateSubnavHospitals();
+    if (typeof renderPermissionsManagement === "function") renderPermissionsManagement();
+    if (typeof window.renderHospitalsManagementTable === "function") window.renderHospitalsManagementTable();
+};
 
 window.updateSignerNamesDatalist = function() {
     let dl = document.getElementById("signer-names-datalist");
@@ -7657,21 +7785,7 @@ function renderHospitalsGrid(activeProjects) {
     
     gridContainer.innerHTML = "";
     
-    const allHospitalsList = [
-        "โรงพยาบาลพญาไท 1",
-        "โรงพยาบาลพญาไท 2",
-        "โรงพยาบาลพญาไท 3",
-        "โรงพยาบาลพญาไท นวมินทร์",
-        "โรงพยาบาลพญาไท บ่อวิน",
-        "โรงพยาบาลพญาไท พหลโยธิน",
-        "โรงพยาบาลพญาไท ศรีราชา",
-        "โรงพยาบาลเปาโล พระประแดง",
-        "โรงพยาบาลเปาโล รังสิต",
-        "โรงพยาบาลเปาโล สมุทรปราการ",
-        "โรงพยาบาลเปาโล เกษตร",
-        "โรงพยาบาลเปาโล โชคชัย 4",
-        "อื่นๆ"
-    ];
+    const allHospitalsList = appState.hospitalsList || defaultHospitals;
     
     // Build a set of known/predefined hospitals for "อื่นๆ" matching
     const knownHospitals = new Set(allHospitalsList.filter(h => h !== "อื่นๆ"));
@@ -11469,12 +11583,7 @@ function renderCostOverallBarChart(projectsList) {
             costOverallBarChart.destroy();
         }
         
-        const hospitals = [
-            "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
-            "โรงพยาบาลพญาไท บ่อวิน", "โรงพยาบาลพญาไท พหลโยธิน", "โรงพยาบาลพญาไท ศรีราชา", "โรงพยาบาลเปาโล พระประแดง",
-            "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4",
-            "อื่นๆ"
-        ];
+        const hospitals = appState.hospitalsList || defaultHospitals;
         
         const labels = hospitals.map(h => h.replace("โรงพยาบาล", ""));
         const values = new Array(hospitals.length).fill(0);
@@ -12120,6 +12229,11 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
     
+    // Populate all hospital dropdowns and management table immediately from cached/default state
+    if (typeof window.refreshHospitalsDependencies === "function") {
+        window.refreshHospitalsDependencies();
+    }
+
     // Toggle "อื่นๆ" input fields for Create/Edit project hospital dropdowns
     const newHospSelect = document.getElementById("new-project-hospital");
     const newHospOtherGroup = document.getElementById("create-proj-hospital-other-group");
@@ -12692,11 +12806,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const selectedYear = portalYearFilter ? portalYearFilter.value : "all";
         const searchText = portalProjectSearch ? portalProjectSearch.value.trim().toLowerCase() : "";
 
-        const standardHospitals = [
-            "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
-            "โรงพยาบาลพญาไท บ่อวิน", "โรงพยาบาลพญาไท พหลโยธิน", "โรงพยาบาลพญาไท ศรีราชา", "โรงพยาบาลเปาโล พระประแดง",
-            "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4"
-        ];
+        const standardHospitals = (appState.hospitalsList || []).filter(h => h !== "อื่นๆ");
 
         // 2. Filter projects matching filters
         let projects = Object.values(projectsData).filter(p => {
@@ -14427,12 +14537,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const hospContainer = document.getElementById("share-hospitals-checkboxes");
         if (hospContainer) {
             hospContainer.innerHTML = "";
-            const allHospitals = [
-                "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
-                "โรงพยาบาลพญาไท บ่อวิน", "โรงพยาบาลพญาไท พหลโยธิน", "โรงพยาบาลพญาไท ศรีราชา", "โรงพยาบาลเปาโล พระประแดง",
-                "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4",
-                "อื่นๆ"
-            ];
+            const allHospitals = appState.hospitalsList || defaultHospitals;
             
             allHospitals.forEach(hosp => {
                 const projCount = Object.values(projectsData).filter(p => p.customer === hosp).length;
@@ -17613,11 +17718,7 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("edit-project-code-display").value = code;
         document.getElementById("edit-project-name").value = proj.name || "";
         
-        const standardHospitals = [
-            "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
-            "โรงพยาบาลพญาไท บ่อวิน", "โรงพยาบาลพญาไท พหลโยธิน", "โรงพยาบาลพญาไท ศรีราชา", "โรงพยาบาลเปาโล พระประแดง",
-            "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4"
-        ];
+        const standardHospitals = (appState.hospitalsList || []).filter(h => h !== "อื่นๆ");
         const customerEl = document.getElementById("edit-project-customer");
         const customerOtherGroup = document.getElementById("edit-proj-customer-other-group");
         const customerOtherInput = document.getElementById("edit-project-customer-other");
@@ -18571,12 +18672,7 @@ function renderPermissionsManagement() {
     populatePermUserSelector();
     window.renderCustomerAccountsTable();
 
-    const allHospitals = [
-        "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
-        "โรงพยาบาลพญาไท บ่อวิน", "โรงพยาบาลพญาไท พหลโยธิน", "โรงพยาบาลพญาไท ศรีราชา", "โรงพยาบาลเปาโล พระประแดง",
-        "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4",
-        "อื่นๆ"
-    ];
+    const allHospitals = appState.hospitalsList || defaultHospitals;
 
     let currentAllowedProjects = new Set();
 
@@ -18802,6 +18898,98 @@ function renderPermissionsManagement() {
         };
     }
 }
+
+// ============================================================
+// HOSPITAL MANAGEMENT FUNCTIONS
+// ============================================================
+
+window.renderHospitalsManagementTable = function() {
+    const tbody = document.getElementById("hospitals-management-tbody");
+    if (!tbody) return;
+    tbody.innerHTML = "";
+
+    const list = appState.hospitalsList || defaultHospitals;
+    if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding: 20px; color: var(--text-muted); font-size: 12px;">ไม่พบรายชื่อโรงพยาบาลในระบบ</td></tr>`;
+        return;
+    }
+
+    list.forEach((name, index) => {
+        const isProtected = name === "อื่นๆ";
+        const projCount = Object.values(projectsData || {}).filter(p => p.customer === name).length;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+            <td style="text-align: center; font-size: 12px; font-weight: 700; color: var(--text-muted);">${index + 1}</td>
+            <td>
+                <div style="font-size: 12.5px; font-weight: 600; color: var(--navy-dark);">${name}</div>
+                ${projCount > 0 ? `<div style="font-size: 10.5px; color: var(--text-muted); margin-top: 1px;"><i class="fa-solid fa-folder-open" style="font-size:9px;"></i> ${projCount} โครงการ</div>` : ""}
+            </td>
+            <td style="text-align: center;">
+                ${isProtected
+                    ? `<span style="font-size: 10px; color: var(--text-muted); font-style: italic;">ค่าเริ่มต้น</span>`
+                    : `<button type="button" class="btn btn-xs btn-outline-red" onclick="window.deleteHospital('${name.replace(/'/g, "\\'")}')" title="ลบโรงพยาบาลนี้" style="font-size: 10.5px; padding: 3px 8px;">
+                           <i class="fa-solid fa-trash-can"></i>
+                       </button>`
+                }
+            </td>`;
+        tbody.appendChild(tr);
+    });
+};
+
+window.addNewHospital = function() {
+    const input = document.getElementById("new-hospital-name-input");
+    if (!input) return;
+    const name = input.value.trim();
+    if (!name) {
+        showToast("⚠️ กรุณาพิมพ์ชื่อโรงพยาบาลก่อน", "warning");
+        return;
+    }
+    if ((appState.hospitalsList || []).includes(name)) {
+        showToast(`⚠️ "${name}" มีอยู่ในระบบแล้ว`, "warning");
+        return;
+    }
+    // Insert before "อื่นๆ" at the end
+    const idx = appState.hospitalsList.indexOf("อื่นๆ");
+    if (idx !== -1) {
+        appState.hospitalsList.splice(idx, 0, name);
+    } else {
+        appState.hospitalsList.push(name);
+    }
+    input.value = "";
+    localStorage.setItem("technical_water_hospitals_list", JSON.stringify(appState.hospitalsList));
+    window.saveHospitalsListToSupabase();
+    window.refreshHospitalsDependencies();
+    showToast(`✅ เพิ่มโรงพยาบาล "${name}" เรียบร้อยแล้ว`, "success");
+};
+
+window.deleteHospital = function(name) {
+    const usedProjects = Object.values(projectsData || {}).filter(p => p.customer === name);
+    if (usedProjects.length > 0) {
+        showToast(`❌ ไม่สามารถลบได้ — "${name}" ยังมี ${usedProjects.length} โครงการอยู่ในระบบ`, "error");
+        return;
+    }
+    if (!confirm(`ยืนยันการลบโรงพยาบาล "${name}" ออกจากระบบ?`)) return;
+    appState.hospitalsList = appState.hospitalsList.filter(h => h !== name);
+    localStorage.setItem("technical_water_hospitals_list", JSON.stringify(appState.hospitalsList));
+    window.saveHospitalsListToSupabase();
+    window.refreshHospitalsDependencies();
+    showToast(`🗑️ ลบโรงพยาบาล "${name}" เรียบร้อยแล้ว`, "success");
+};
+
+window.saveHospitalsListToSupabase = async function() {
+    try {
+        const { error } = await supabaseClient.from("projects").upsert({
+            code: "FILE:CUSTOM_HOSPITALS_LIST",
+            data: { hospitals: appState.hospitalsList },
+            updated_at: new Date().toISOString()
+        });
+        if (error) throw error;
+        console.log("Saved hospitals list to Supabase.");
+    } catch (e) {
+        console.error("Failed to save hospitals list:", e);
+        showToast("❌ บันทึกรายชื่อโรงพยาบาลไปยังระบบไม่สำเร็จ", "error");
+    }
+};
 
 // ============================================================
 // PO OUTSTANDING TABLE & APPROVAL PENDING TABLE
