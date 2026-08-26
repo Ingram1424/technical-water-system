@@ -8987,13 +8987,12 @@ function updateScurveTotals(project) {
 
     let displayWeeklySums = actualWeeklySums; // Always display actual weekly sums
     
-    const hideBudget = (appState.currentRole === "pe" || appState.currentRole === "customer" || appState.currentRole === "technician" || appState.currentRole === "tech");
-    const hideWeight = (appState.currentRole === "customer");
+    const hideBudget = false;
+    const hideWeight = false;
     const labelColspan = 2 + (hideBudget ? 0 : 1) + (hideWeight ? 0 : 1) + 1;
 
     let footerHtml = ``;
-    if (!hideWeight) {
-        footerHtml += `
+    footerHtml += `
             <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid var(--border-color);">
                 <td colspan="2" style="padding: 8px 10px; text-align: right;">รวม</td>
                 ${hideBudget ? '' : `<td style="padding: 8px 4px; text-align: center;">${totalBudget.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>`}
@@ -9005,7 +9004,7 @@ function updateScurveTotals(project) {
             footerHtml += `<td style="padding: 8px 4px; border-left: ${hasBorder ? '1px' : '0'} solid var(--border-color);"></td>`;
         });
         footerHtml += `<td class="hide-accounting hide-customer"></td></tr>`;
-    }
+    
 
     const labelPeriod = isDaily ? "ปริมาณงานต่อวัน (%)" : "ปริมาณงานต่อสัปดาห์ (%)";
     footerHtml += `
@@ -9734,8 +9733,8 @@ function renderSubnavActualProgress(project) {
     if (!head || !body) return;
 
     // Build Headers
-    const hideBudget = (appState.currentRole === "pe" || appState.currentRole === "customer" || appState.currentRole === "technician" || appState.currentRole === "tech");
-    const hideWeight = (appState.currentRole === "customer");
+    const hideBudget = false;
+    const hideWeight = false;
     let headerRow1 = `<tr style="background: #e0e7ff; border-bottom: 1px solid var(--border-color); text-align: center; font-size: 13.5px; font-weight: 700;">
         <th rowspan="2" style="padding: 10px; width: 55px; border: 1px solid var(--border-color);">Items</th>
         <th rowspan="2" style="padding: 10px; text-align: left; min-width: 350px; border: 1px solid var(--border-color);">Description</th>
@@ -15017,8 +15016,8 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             // Gather headers
-            const hideBudget = (appState.currentRole === "pe" || appState.currentRole === "customer" || appState.currentRole === "technician" || appState.currentRole === "tech");
-            const hideWeight = (appState.currentRole === "customer");
+            const hideBudget = false;
+            const hideWeight = false;
             
             const isPlanMode = currentScurveMode === 'plan';
             const modeTextTh = isPlanMode ? "แผนงาน (Plan)" : "ผลงานจริง (Actual)";
@@ -16890,7 +16889,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             <tr>
                                 <td style="text-align: center;">${isSub ? '' : (item.item || '')}</td>
                                 <td style="padding-left: ${isSub ? '20px' : '8px'}; font-weight: ${isSub ? 'normal' : '600'};">${isSub ? '- ' : ''}${item.name || ''}</td>
-                                ${isCustomer ? '' : `<td style="text-align: center;">${isSub ? '' : formatNumber(item.budget || 0)}</td>`}
+                                <td style="text-align: center;">${isSub ? '' : formatNumber(item.budget || 0)}</td>
                                 <td style="text-align: center;">${isSub ? '' : (item.weight || 0) + '%'}</td>
                                 <td style="text-align: center; font-weight: bold;">${isSub ? '' : (item.actual && item.actual.length > 0 ? item.actual.reduce((sum, v) => sum + (parseFloat(v) || 0), 0) : 0).toFixed(1) + '%'}</td>
                                 ${cells}
@@ -16937,7 +16936,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                 <tr style="background: #e0e7ff; text-align: center;">
                                     <th rowspan="2" style="width: 50px;">Items</th>
                                     <th rowspan="2">Description</th>
-                                    ${isCustomer ? '' : '<th rowspan="2" style="width: 80px;">Budget</th>'}
+                                    <th rowspan="2" style="width: 80px;">Budget</th>
                                     <th rowspan="2" style="width: 60px;">%</th>
                                     <th rowspan="2" style="width: 60px;">% (รวม)</th>
                                     ${headerCols}
@@ -16950,21 +16949,21 @@ document.addEventListener("DOMContentLoaded", () => {
                                 ${rows}
                                 <tr style="background: #f8fafc; font-weight: bold; border-top: 2px solid #cbd5e1;">
                                     <td colspan="2" style="text-align: right; padding: 6px 10px;">รวม</td>
-                                    ${isCustomer ? '' : `<td style="text-align: center;">${formatNumber(proj.scurveData.reduce((sum, item)=>sum+(item.isSubtask?0:item.budget||0),0))}</td>`}
+                                    <td style="text-align: center;">${formatNumber(proj.scurveData.reduce((sum, item)=>sum+(item.isSubtask?0:item.budget||0),0))}</td>
                                     <td style="text-align: center;">${totalWeight.toFixed(1)}%</td>
                                     <td></td>
                                     ${new Array(proj.scurveMonths.length * 4).fill('<td style="border-left: 1px solid #cbd5e1;"></td>').map((td, i) => i%4===0 ? td : '<td></td>').join("")}
                                 </tr>
                                 <tr style="background: #fff; font-weight: bold; border-top: 1px solid #cbd5e1;">
-                                    <td colspan="${isCustomer ? 4 : 5}" style="text-align: right; padding: 6px 10px; font-size: 11px;">ปริมาณงานต่อสัปดาห์ (%)</td>
+                                    <td colspan="5" style="text-align: right; padding: 6px 10px; font-size: 11px;">ปริมาณงานต่อสัปดาห์ (%)</td>
                                     ${weeklySumsCells}
                                 </tr>
                                 <tr style="background: #f1f5f9; font-weight: bold; border-top: 1px solid #cbd5e1;">
-                                    <td colspan="${isCustomer ? 4 : 5}" style="text-align: right; padding: 6px 10px; font-size: 11px;">สะสมปริมาณงาน (%)</td>
+                                    <td colspan="5" style="text-align: right; padding: 6px 10px; font-size: 11px;">สะสมปริมาณงาน (%)</td>
                                     ${weeklyCumCells}
                                 </tr>
                                 <tr style="background: #eef2f6; font-weight: bold; border-top: 1px solid #cbd5e1;">
-                                    <td colspan="${isCustomer ? 4 : 5}" style="text-align: right; padding: 6px 10px; font-size: 11px; color: #1e40af;">สะสมแผนงาน (%)</td>
+                                    <td colspan="5" style="text-align: right; padding: 6px 10px; font-size: 11px; color: #1e40af;">สะสมแผนงาน (%)</td>
                                     ${planCumCells}
                                 </tr>
                             </tbody>
