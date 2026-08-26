@@ -5293,25 +5293,14 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                     </div>
                     <div class="form-group mt-3" id="create-proj-hospital-group">
                         <label class="form-label" for="new-project-hospital">ระบุโรงพยาบาล <span class="required">*</span></label>
-                        <select id="new-project-hospital" class="form-control" required>
-                            <option value="โรงพยาบาลพญาไท 1">โรงพยาบาลพญาไท 1</option>
-                            <option value="โรงพยาบาลพญาไท 2">โรงพยาบาลพญาไท 2</option>
-                            <option value="โรงพยาบาลพญาไท 3">โรงพยาบาลพญาไท 3</option>
-                            <option value="โรงพยาบาลพญาไท นวมินทร์">โรงพยาบาลพญาไท นวมินทร์</option>
-                            <option value="โรงพยาบาลพญาไท บ่อวิน">โรงพยาบาลพญาไท บ่อวิน</option>
-                            <option value="โรงพยาบาลพญาไท พหลโยธิน">โรงพยาบาลพญาไท พหลโยธิน</option>
-                            <option value="โรงพยาบาลพญาไท ศรีราชา">โรงพยาบาลพญาไท ศรีราชา</option>
-                            <option value="โรงพยาบาลเปาโล พระประแดง">โรงพยาบาลเปาโล พระประแดง</option>
-                            <option value="โรงพยาบาลเปาโล รังสิต">โรงพยาบาลเปาโล รังสิต</option>
-                            <option value="โรงพยาบาลเปาโล สมุทรปราการ">โรงพยาบาลเปาโล สมุทรปราการ</option>
-                            <option value="โรงพยาบาลเปาโล เกษตร">โรงพยาบาลเปาโล เกษตร</option>
-                            <option value="โรงพยาบาลเปาโล โชคชัย 4">โรงพยาบาลเปาโล โชคชัย 4</option>
-                            <option value="อื่นๆ">อื่นๆ</option>
-                        </select>
-                    </div>
-                    <div class="form-group mt-2" id="create-proj-hospital-other-group" style="display: none;">
-                        <label class="form-label" for="new-project-hospital-other">ระบุชื่อโรงพยาบาล/สถานที่อื่นๆ <span class="required">*</span></label>
-                        <input type="text" id="new-project-hospital-other" class="form-control" placeholder="พิมพ์ระบุชื่อโรงพยาบาลหรือสถานที่อื่นๆ...">
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <select id="new-project-hospital" class="form-control" required style="flex: 1;">
+                                <!-- Populated dynamically by populateProjectFormHospitals() -->
+                            </select>
+                            <button type="button" class="btn btn-outline" onclick="window.openQuickAddHospitalModal()" title="เพิ่มโรงพยาบาลใหม่" style="padding: 8px 12px; font-size: 12px; white-space: nowrap; display: flex; align-items: center; gap: 4px; border-color: #10b981; color: #059669; flex-shrink: 0;">
+                                <i class="fa-solid fa-plus"></i> เพิ่มโรงพยาบาล
+                            </button>
+                        </div>
                     </div>
                     <div class="form-group mt-3" id="create-proj-manager-group">
                         <label class="form-label" for="new-project-manager">ผู้รับผิดชอบโครงการ <span class="required">*</span></label>
@@ -5585,25 +5574,14 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                     </div>
                     <div class="form-group mt-3" id="edit-proj-customer-group">
                         <label class="form-label" for="edit-project-customer">ระบุโรงพยาบาล <span class="required">*</span></label>
-                        <select id="edit-project-customer" class="form-control">
-                            <option value="โรงพยาบาลพญาไท 1">โรงพยาบาลพญาไท 1</option>
-                            <option value="โรงพยาบาลพญาไท 2">โรงพยาบาลพญาไท 2</option>
-                            <option value="โรงพยาบาลพญาไท 3">โรงพยาบาลพญาไท 3</option>
-                            <option value="โรงพยาบาลพญาไท นวมินทร์">โรงพยาบาลพญาไท นวมินทร์</option>
-                            <option value="โรงพยาบาลพญาไท บ่อวิน">โรงพยาบาลพญาไท บ่อวิน</option>
-                            <option value="โรงพยาบาลพญาไท พหลโยธิน">โรงพยาบาลพญาไท พหลโยธิน</option>
-                            <option value="โรงพยาบาลพญาไท ศรีราชา">โรงพยาบาลพญาไท ศรีราชา</option>
-                            <option value="โรงพยาบาลเปาโล พระประแดง">โรงพยาบาลเปาโล พระประแดง</option>
-                            <option value="โรงพยาบาลเปาโล รังสิต">โรงพยาบาลเปาโล รังสิต</option>
-                            <option value="โรงพยาบาลเปาโล สมุทรปราการ">โรงพยาบาลเปาโล สมุทรปราการ</option>
-                            <option value="โรงพยาบาลเปาโล เกษตร">โรงพยาบาลเปาโล เกษตร</option>
-                            <option value="โรงพยาบาลเปาโล โชคชัย 4">โรงพยาบาลเปาโล โชคชัย 4</option>
-                            <option value="อื่นๆ">อื่นๆ</option>
-                        </select>
-                    </div>
-                    <div class="form-group mt-2" id="edit-proj-customer-other-group" style="display: none;">
-                        <label class="form-label" for="edit-project-customer-other">ระบุชื่อโรงพยาบาล/สถานที่อื่นๆ <span class="required">*</span></label>
-                        <input type="text" id="edit-project-customer-other" class="form-control" placeholder="พิมพ์ระบุชื่อโรงพยาบาลหรือสถานที่อื่นๆ...">
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <select id="edit-project-customer" class="form-control" style="flex: 1;">
+                                <!-- Populated dynamically by populateProjectFormHospitals() -->
+                            </select>
+                            <button type="button" class="btn btn-outline" onclick="window.openQuickAddHospitalModal()" title="เพิ่มโรงพยาบาลใหม่" style="padding: 8px 12px; font-size: 12px; white-space: nowrap; display: flex; align-items: center; gap: 4px; border-color: #10b981; color: #059669; flex-shrink: 0;">
+                                <i class="fa-solid fa-plus"></i> เพิ่มโรงพยาบาล
+                            </button>
+                        </div>
                     </div>
                     <div class="form-group mt-3" id="edit-proj-manager-group">
                         <label class="form-label" for="edit-project-manager">ผู้รับผิดชอบโครงการ <span class="required">*</span></label>
@@ -5725,6 +5703,26 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                     <button type="submit" class="btn btn-primary">บันทึกการเปลี่ยนรหัส</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Quick Add Hospital Modal -->
+    <div class="modal-overlay" id="quick-add-hospital-modal" style="z-index: 1400; display: none;">
+        <div class="modal-card" style="max-width: 420px;">
+            <div class="modal-header">
+                <h3 class="modal-title"><i class="fa-solid fa-hospital-plus text-blue"></i> เพิ่มโรงพยาบาลใหม่</h3>
+                <button class="modal-close-btn" onclick="window.closeQuickAddHospitalModal()">&times;</button>
+            </div>
+            <div style="padding: 20px;">
+                <label class="form-label">ชื่อโรงพยาบาล <span class="required">*</span></label>
+                <input type="text" id="quick-add-hospital-input" class="form-control" placeholder="เช่น โรงพยาบาลสมิติเวช" style="font-family: 'Prompt'; font-size: 13px;" autocomplete="off">
+                <div style="display: flex; gap: 10px; margin-top: 16px; justify-content: flex-end;">
+                    <button type="button" class="btn btn-outline" onclick="window.closeQuickAddHospitalModal()" style="font-family: 'Prompt'; font-size: 12.5px;">ยกเลิก</button>
+                    <button type="button" class="btn btn-primary" onclick="window.submitQuickAddHospital()" style="font-family: 'Prompt'; font-size: 12.5px; background: linear-gradient(135deg, #10b981, #059669); border: none;">
+                        <i class="fa-solid fa-plus"></i> เพิ่มโรงพยาบาล
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -6401,6 +6399,30 @@ window.isProjectAllowedForCustomer = function(p, perms) {
     return false;
 };
 
+try {
+    const rawHospitals = localStorage.getItem("technical_water_hospitals_list");
+    if (rawHospitals) {
+        // Migrate: strip legacy "อื่นๆ" entry if present
+        appState.hospitalsList = JSON.parse(rawHospitals).filter(h => h !== "อื่นๆ");
+    }
+} catch (e) {}
+
+window.populateKpiHospitalsDropdown = function() {
+    const selector = document.getElementById("kpi-filter-hospital");
+    if (!selector) return;
+    const currentVal = selector.value || "all";
+    selector.innerHTML = '<option value="all">ทั้งหมดทุกโรงพยาบาล</option>';
+    
+    (appState.hospitalsList || []).forEach(hosp => {
+        const opt = document.createElement("option");
+        opt.value = hosp;
+        opt.textContent = hosp;
+        selector.appendChild(opt);
+    });
+    
+    selector.value = currentVal;
+};
+
 function populateSubnavHospitals() {
     const selector = document.getElementById("subnav-hospital-selector");
     if (!selector) return;
@@ -6960,7 +6982,7 @@ const appState = {
         "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
         "โรงพยาบาลพญาไท บ่อวิน", "โรงพยาบาลพญาไท พหลโยธิน", "โรงพยาบาลพญาไท ศรีราชา", "โรงพยาบาลเปาโล พระประแดง",
         "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4",
-        "โรงพยาบาลเพชรเวช", "อื่นๆ"
+        "โรงพยาบาลเพชรเวช"
     ]
 };
 
@@ -6968,12 +6990,15 @@ const defaultHospitals = [
     "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
     "โรงพยาบาลพญาไท บ่อวิน", "โรงพยาบาลพญาไท พหลโยธิน", "โรงพยาบาลพญาไท ศรีราชา", "โรงพยาบาลเปาโล พระประแดง",
     "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4",
-    "โรงพยาบาลเพชรเวช", "อื่นๆ"
+    "โรงพยาบาลเพชรเวช"
 ];
 
 try {
     const rawHospitals = localStorage.getItem("technical_water_hospitals_list");
-    if (rawHospitals) appState.hospitalsList = JSON.parse(rawHospitals);
+    if (rawHospitals) {
+        // Migrate: strip legacy "อื่นๆ" entry if present
+        appState.hospitalsList = JSON.parse(rawHospitals).filter(h => h !== "อื่นๆ");
+    }
 } catch (e) {}
 
 try {
@@ -6999,11 +7024,6 @@ window.populateKpiHospitalsDropdown = function() {
         opt.textContent = hosp;
         selector.appendChild(opt);
     });
-    
-    const otherOpt = document.createElement("option");
-    otherOpt.value = "อื่นๆ";
-    otherOpt.textContent = "อื่นๆ";
-    selector.appendChild(otherOpt);
     
     selector.value = currentVal;
 };
@@ -18936,30 +18956,64 @@ window.renderHospitalsManagementTable = function() {
     });
 };
 
-window.addNewHospital = function() {
-    const input = document.getElementById("new-hospital-name-input");
-    if (!input) return;
-    const name = input.value.trim();
+window.addNewHospital = function(nameOverride) {
+    const name = nameOverride || (() => {
+        const input = document.getElementById("new-hospital-name-input");
+        return input ? input.value.trim() : "";
+    })();
     if (!name) {
         showToast("⚠️ กรุณาพิมพ์ชื่อโรงพยาบาลก่อน", "warning");
-        return;
+        return false;
     }
     if ((appState.hospitalsList || []).includes(name)) {
         showToast(`⚠️ "${name}" มีอยู่ในระบบแล้ว`, "warning");
-        return;
+        return false;
     }
-    // Insert before "อื่นๆ" at the end
-    const idx = appState.hospitalsList.indexOf("อื่นๆ");
-    if (idx !== -1) {
-        appState.hospitalsList.splice(idx, 0, name);
-    } else {
-        appState.hospitalsList.push(name);
-    }
-    input.value = "";
+    appState.hospitalsList.push(name);
+    const mgmtInput = document.getElementById("new-hospital-name-input");
+    if (mgmtInput) mgmtInput.value = "";
     localStorage.setItem("technical_water_hospitals_list", JSON.stringify(appState.hospitalsList));
     window.saveHospitalsListToSupabase();
     window.refreshHospitalsDependencies();
     showToast(`✅ เพิ่มโรงพยาบาล "${name}" เรียบร้อยแล้ว`, "success");
+    return true;
+};
+
+window.openQuickAddHospitalModal = function() {
+    const modal = document.getElementById("quick-add-hospital-modal");
+    if (!modal) return;
+    modal.style.display = "flex";
+    const inp = document.getElementById("quick-add-hospital-input");
+    if (inp) { inp.value = ""; inp.focus(); }
+
+    // Submit on Enter key
+    if (inp && !inp._qahListener) {
+        inp._qahListener = true;
+        inp.addEventListener("keydown", function(e) {
+            if (e.key === "Enter") { e.preventDefault(); window.submitQuickAddHospital(); }
+        });
+    }
+};
+
+window.closeQuickAddHospitalModal = function() {
+    const modal = document.getElementById("quick-add-hospital-modal");
+    if (modal) modal.style.display = "none";
+};
+
+window.submitQuickAddHospital = function() {
+    const inp = document.getElementById("quick-add-hospital-input");
+    const name = inp ? inp.value.trim() : "";
+    if (window.addNewHospital(name)) {
+        window.closeQuickAddHospitalModal();
+        // Auto-select newly added hospital in open dropdowns
+        ["new-project-hospital", "edit-project-customer"].forEach(id => {
+            const sel = document.getElementById(id);
+            if (sel) {
+                const opt = [...sel.options].find(o => o.value === name);
+                if (opt) sel.value = name;
+            }
+        });
+    }
 };
 
 window.deleteHospital = function(name) {
