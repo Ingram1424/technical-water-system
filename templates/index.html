@@ -3228,15 +3228,6 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
 
 
 </style>
-<script>
-    (function() {
-        const hasSession = !!localStorage.getItem("tw_session");
-        const hasShare = window.location.search.includes("share=") || window.location.search.includes("project=");
-        if (hasSession || hasShare) {
-            document.write('<style>#login-overlay { display: none; }</style>');
-        }
-    })();
-</script>
 </head>
 <body class="role-pm">
     <!-- Login Overlay -->
@@ -3265,6 +3256,16 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
             </form>
         </div>
     </div>
+    <script>
+        (function() {
+            const hasSession = !!localStorage.getItem("tw_session");
+            const hasShare = window.location.search.includes("share=") || window.location.search.includes("project=");
+            if (hasSession || hasShare) {
+                const overlay = document.getElementById("login-overlay");
+                if (overlay) overlay.style.display = "none";
+            }
+        })();
+    </script>
 
     <!-- Public View Header (shown when ?project=xxx is in URL) -->
     <div id="public-view-header">
