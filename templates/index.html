@@ -3229,7 +3229,7 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
 
 </style>
 </head>
-<body class="role-pm">
+<body class="role-pm" style="opacity:0; transition: opacity 0.15s ease;">
     <!-- Login Overlay -->
     <div id="login-overlay" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: radial-gradient(circle at 10% 20%, rgba(90, 142, 233, 0.15) 0%, rgba(104, 128, 207, 0.15) 90%), url('https://images.unsplash.com/photo-1581092918056-0c4c3acd3789?auto=format&fit=crop&w=1950&q=80') no-repeat center center/cover; z-index: 9999; display: flex; align-items: center; justify-content: center; font-family: 'Prompt', sans-serif;">
         <div style="background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(16px) saturate(180%); -webkit-backdrop-filter: blur(16px) saturate(180%); border: 1px solid rgba(209, 213, 219, 0.3); border-radius: 16px; padding: 40px; width: 100%; max-width: 420px; box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15); display: flex; flex-direction: column; align-items: center;">
@@ -20058,6 +20058,10 @@ function showDraftBadge(modalId) {
             console.error("Router error:", err);
         } finally {
             isRouting = false;
+            // Reveal page only after routing is done — prevents flash of wrong content
+            if (document.body.style.opacity === "0") {
+                document.body.style.opacity = "1";
+            }
         }
     }
 
@@ -20124,8 +20128,8 @@ function showDraftBadge(modalId) {
 
     // Bootstrap run
     window.addEventListener("DOMContentLoaded", () => {
-        // Wait for main initialization scripts
-        setTimeout(handleRouting, 200);
+        // Wait for main initialization scripts (execute immediately on next tick)
+        setTimeout(handleRouting, 0);
     });
 
     // Handle login form redirects
