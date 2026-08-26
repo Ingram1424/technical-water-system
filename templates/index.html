@@ -5018,7 +5018,7 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                         </div>
                         
                         <!-- Subtab 7: Documents (เอกสารโครงการ) -->
-                        <div id="subtab-documents-tab-view" class="subtab-panel">
+                        <div id="subtab-documents-tab-view" class="subtab-panel hide-customer hide-technician">
                             <div class="doc-split-grid-subtab">
                                 <!-- Left: General Info Sheet -->
                                 <div class="general-info-sheet">
@@ -8337,9 +8337,9 @@ function renderSubnavProjectWorkspace() {
     }
     
     if (isCustomer) {
-        // For customer, make all views active (except cost) and render everything in a stacked list
+        // For customer, make all views active (except cost and documents) and render everything in a stacked list
         document.querySelectorAll(".subtab-panel").forEach(panel => {
-            if (panel.id !== "subtab-cost-tab-view") {
+            if (panel.id !== "subtab-cost-tab-view" && panel.id !== "subtab-documents-tab-view") {
                 panel.classList.add("active");
                 panel.style.marginBottom = "24px";
             } else {
@@ -8347,13 +8347,12 @@ function renderSubnavProjectWorkspace() {
             }
         });
         
-        // Render all views sequentially
+        // Render all views sequentially (exclude documents — hidden for customer/technician/guest)
         renderSubnavGeneralInfo(project);
         renderSubnavPlanWork(project);
         renderSubnavActualProgress(project);
         renderSubnavDailyReports(project);
         renderSubnavPhotosFiles(project);
-        renderSubnavDocumentsTab(project);
     } else {
         // Restore standard tab behaviors
         document.querySelectorAll(".subtab-panel").forEach(panel => {
@@ -8361,7 +8360,19 @@ function renderSubnavProjectWorkspace() {
         });
         
         // Load active subtab panel view
-        const activeSubtab = appState.activeProjectTab || "general-info";
+        let activeSubtab = appState.activeProjectTab || "general-info";
+        
+        // Restrict documents-tab for customer / technician / guest (public-view-mode)
+        const isRestrictedRole = (
+            appState.currentRole === "customer" ||
+            appState.currentRole === "technician" ||
+            appState.currentRole === "tech" ||
+            document.body.classList.contains("public-view-mode")
+        );
+        if (isRestrictedRole && activeSubtab === "documents-tab") {
+            activeSubtab = "photos-files";
+            appState.activeProjectTab = "photos-files";
+        }
         
         // Update active class on tab buttons
         document.querySelectorAll(".subnav-tab-item").forEach(btn => {
