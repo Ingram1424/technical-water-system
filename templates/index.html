@@ -15360,9 +15360,31 @@ document.addEventListener("DOMContentLoaded", () => {
             if (scurveCanvas) {
                 try {
                     const imgData = scurveCanvas.toDataURL("image/png");
+                    
+                    // Calculate actual cumulative progress %
+                    let printActualCumPct = 0;
+                    if (proj.scurveData && proj.scurveData.length > 0) {
+                        let printWeeklySums = new Array((proj.scurveMonths || []).length * 4).fill(0);
+                        let printParentW = 0;
+                        proj.scurveData.forEach(item => {
+                            if (!item.isSubtask) printParentW = parseFloat(item.weight) || 0;
+                            for (let i = 0; i < printWeeklySums.length; i++) {
+                                let aVal = (item.actual && item.actual[i] !== undefined && item.actual[i] !== null && item.actual[i] !== '' && item.actual[i] !== '-' && !isNaN(parseFloat(item.actual[i])) && parseFloat(item.actual[i]) > 0) ? parseFloat(item.actual[i]) : 0;
+                                printWeeklySums[i] += (printParentW * aVal / 100);
+                            }
+                        });
+                        printActualCumPct = printWeeklySums.reduce((s, v) => s + v, 0);
+                    }
+                    const printActualPctText = printActualCumPct.toFixed(1) + '%';
+                    
                     scurveImgHtml = `
-                        <div style="text-align: center; margin-bottom: 25px; page-break-inside: avoid;">
-                            <img src="${imgData}" style="max-width: 100%; height: auto; border: 1px solid #cbd5e1; padding: 10px; border-radius: 6px;" alt="S-Curve Chart">
+                        <div style="text-align: center; margin-bottom: 25px; page-break-inside: avoid; border: 1px solid #cbd5e1; padding: 16px; border-radius: 6px;">
+                            <div style="display: flex; justify-content: center; align-items: center; gap: 24px; margin-bottom: 10px; font-size: 11px; color: #475569; font-family: 'Prompt', sans-serif;">
+                                <span><span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #1d3557; margin-right: 4px;"></span>แผนงานสะสม (Plan %)</span>
+                                <span><span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #10b981; margin-right: 4px;"></span>งานจริงสะสม (Actual %)</span>
+                            </div>
+                            <div style="font-size: 36px; font-weight: 800; color: #10b981; margin-bottom: 12px; font-family: 'Prompt', sans-serif;">${printActualPctText}</div>
+                            <img src="${imgData}" style="max-width: 100%; height: auto;" alt="S-Curve Chart">
                         </div>
                     `;
                 } catch(e) {
