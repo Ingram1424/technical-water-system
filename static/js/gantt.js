@@ -1976,13 +1976,37 @@ function renderSubnavCostTab(project) {
 }
 
 function renderSubnavDocumentsTab(project) {
+    const isCustomerRole = (appState.currentRole === "customer");
+    
+    // Toggle filter buttons visibility based on role
+    const contractBtn = document.querySelector("#subtab-doc-tab-filters .doc-filter-btn[data-filter='Contract']");
+    const poBtn = document.querySelector("#subtab-doc-tab-filters .doc-filter-btn[data-filter='PO']");
+    if (contractBtn) contractBtn.style.display = isCustomerRole ? "none" : "";
+    if (poBtn) poBtn.style.display = isCustomerRole ? "none" : "";
+    
+    // If the active filter is hidden, reset it to 'all'
+    let activeBtn = document.querySelector("#subtab-doc-tab-filters .doc-filter-btn.active");
+    if (isCustomerRole && activeBtn && (activeBtn.getAttribute("data-filter") === "Contract" || activeBtn.getAttribute("data-filter") === "PO")) {
+        document.querySelectorAll("#subtab-doc-tab-filters .doc-filter-btn").forEach(btn => {
+            if (btn.getAttribute("data-filter") === "all") {
+                btn.classList.add("active");
+            } else {
+                btn.classList.remove("active");
+            }
+        });
+    }
+
     const filter = document.querySelector("#subtab-doc-tab-filters .doc-filter-btn.active")?.getAttribute("data-filter") || "all";
     const tableBody = document.getElementById("subtab-documents-table-body");
     if (!tableBody) return;
     
     tableBody.innerHTML = "";
     
-    const docs = project.documents || [];
+    let docs = project.documents || [];
+    if (isCustomerRole) {
+        docs = docs.filter(d => d.type === "BOQ" || d.type === "Drawings");
+    }
+    
     const filteredDocs = filter === "all" ? docs : docs.filter(d => d.type === filter);
     
     if (filteredDocs.length === 0) {
