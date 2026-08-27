@@ -15354,6 +15354,9 @@ document.addEventListener("DOMContentLoaded", () => {
             const proj = projectsData[code];
             if (!proj) return;
 
+            const printIsDaily = window.isProjectDailyMode(proj);
+            const printNumCols = window.getScurveColumnsCount(proj);
+
             // Generate S-Curve Chart Image
             const scurveCanvas = document.getElementById("scurve-chart-canvas");
             let scurveImgHtml = "";
@@ -15363,8 +15366,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     
                     // Calculate actual cumulative progress %
                     let printActualCumPct = 0;
-                    const printIsDaily = window.isProjectDailyMode(proj);
-                    const printNumCols = window.getScurveColumnsCount(proj);
                     if (proj.scurveData && proj.scurveData.length > 0) {
                         let actualSums = new Array(printNumCols).fill(0);
                         let parentW = 0;
