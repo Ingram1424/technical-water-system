@@ -17259,9 +17259,30 @@ document.addEventListener("DOMContentLoaded", () => {
                 let scurveChartHTML = "";
 
                 if (scurveChartImg) {
+                    // Calculate actual cumulative progress %
+                    let pdfActualCumPct = 0;
+                    if (proj.scurveData && proj.scurveData.length > 0) {
+                        let pdfWeeklySums = new Array((proj.scurveMonths || []).length * 4).fill(0);
+                        let pdfParentW = 0;
+                        proj.scurveData.forEach(item => {
+                            if (!item.isSubtask) pdfParentW = parseFloat(item.weight) || 0;
+                            for (let i = 0; i < pdfWeeklySums.length; i++) {
+                                let aVal = (item.actual && item.actual[i] !== undefined && item.actual[i] !== null && item.actual[i] !== '' && item.actual[i] !== '-' && !isNaN(parseFloat(item.actual[i])) && parseFloat(item.actual[i]) > 0) ? parseFloat(item.actual[i]) : 0;
+                                pdfWeeklySums[i] += (pdfParentW * aVal / 100);
+                            }
+                        });
+                        pdfActualCumPct = pdfWeeklySums.reduce((s, v) => s + v, 0);
+                    }
+                    const pdfActualPctText = pdfActualCumPct.toFixed(1) + '%';
+
                     scurveChartHTML = `
                         <div class="section-title"><i class="fa-solid fa-chart-line"></i> กราฟความคืบหน้าโครงการสะสม (S-Curve Chart)</div>
-                        <div style="text-align: center; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 16px; margin-bottom: 24px; display: flex; justify-content: center; align-items: center;">
+                        <div style="text-align: center; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 16px; margin-bottom: 24px;">
+                            <div style="display: flex; justify-content: center; align-items: center; gap: 24px; margin-bottom: 12px; font-size: 11px; color: #475569;">
+                                <span><span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #1d3557; margin-right: 4px;"></span>แผนงานสะสม (Plan %)</span>
+                                <span><span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #10b981; margin-right: 4px;"></span>งานจริงสะสม (Actual %)</span>
+                            </div>
+                            <div style="font-size: 32px; font-weight: 800; color: #10b981; margin-bottom: 12px;">${pdfActualPctText}</div>
                             <img src="${scurveChartImg}" style="max-width: 100%; max-height: 280px; object-fit: contain;">
                         </div>
                     `;
