@@ -9255,6 +9255,12 @@ function renderSCurveChart(project) {
             ctx.font = "13px 'Prompt', sans-serif";
             ctx.textAlign = "center";
             ctx.fillText("ยังไม่มีข้อมูลแผนงาน — เพิ่มรายการงานเพื่อดูกราฟ S-Curve", canvas.width / 2, canvas.height / 2);
+            
+            const pctEl = document.getElementById("scurve-latest-actual-percentage");
+            if (pctEl) {
+                pctEl.style.display = "none";
+                pctEl.textContent = "0.0%";
+            }
             return;
         }
         
