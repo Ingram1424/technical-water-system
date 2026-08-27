@@ -5186,7 +5186,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <head>
                     <meta charset="UTF-8">
                     <title>Project Report - ${code}</title>
-                    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+                    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
                     <style>
                         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
                         body {
