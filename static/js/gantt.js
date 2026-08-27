@@ -819,7 +819,7 @@ function updateScurveTotals(project) {
     project.scurvePlanCum.forEach((val, i) => {
         let valStr = val === 0 ? '' : val;
         footerHtml += `<td style="padding: 4px; border-left: ${i%4===0 ? '1px' : '0'} solid var(--border-color); min-width: 45px; width: 45px;">
-            <input type="number" class="scurve-plan-cum-val" data-widx="${i}" value="${valStr}" min="0" max="100" step="0.1" ${planReadonlyAttr} ${canEditPlan ? planEditInputStyle : planInputStyle} placeholder="0">
+            <input type="number" class="scurve-plan-cum-val" data-widx="${i}" value="${valStr}" min="0" max="100" step="0.1" ${planReadonlyAttr} ${canEditPlan ? planEditInputStyle : planInputStyle} placeholder="">
         </td>`;
     });
     footerHtml += `<td class="hide-accounting hide-customer"></td></tr>`;
@@ -1654,7 +1654,7 @@ function renderSubnavActualProgress(project) {
                     let val = isPlanMode ? item.plan[wIdx] : item.actual[wIdx];
                     let valStr = val === 0 ? '' : (isPlanMode ? val.toFixed(1) : val);
                     rowHtml += `<td style="padding: 6px; border-left: ${w===0 ? '1px' : '0'} solid var(--border-color); border-right: ${w===3 ? '1px' : '0'} solid var(--border-color);">
-                        <input type="number" class="scurve-cell-val" data-idx="${idx}" data-widx="${wIdx}" value="${valStr}" min="0" max="100" step="0.1" ${cellReadonlyAttr} ${isEditableCell ? editInputStyle : inputStyle} placeholder="${isEditableCell ? '-' : '0'}">
+                        <input type="number" class="scurve-cell-val" data-idx="${idx}" data-widx="${wIdx}" value="${valStr}" min="0" max="100" step="0.1" ${cellReadonlyAttr} ${isEditableCell ? editInputStyle : inputStyle} placeholder="">
                     </td>`;
                 }
             }
