@@ -1260,14 +1260,10 @@ function renderSubnavPhotosFiles(project) {
                         updateBulkDeleteCount();
                     }
                 } else {
-                    const overlay = document.createElement("div");
-                    overlay.style.cssText = "position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.85); display: flex; align-items: center; justify-content: center; z-index: 12000; cursor: zoom-out; backdrop-filter: blur(4px);";
-                    const largeImg = document.createElement("img");
-                    largeImg.src = imgEl.src;
-                    largeImg.style.cssText = "max-width: 90vw; max-height: 90vh; border-radius: 8px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);";
-                    overlay.appendChild(largeImg);
-                    overlay.addEventListener("click", () => overlay.remove());
-                    document.body.appendChild(overlay);
+                    // Collect all visible gallery image srcs
+                    const allGalleryImgs = Array.from(document.querySelectorAll("#subtab-gallery-grid img")).map(im => im.src).filter(s => s && !s.includes("data:image/svg"));
+                    const clickedIdx = allGalleryImgs.indexOf(imgEl.src);
+                    window.openGalleryLightbox(allGalleryImgs, clickedIdx >= 0 ? clickedIdx : 0);
                 }
             });
         });
@@ -3055,14 +3051,11 @@ function renderSubnavDailyReports(project) {
                 
                 // Click to view large image modal
                 imgEl.addEventListener("click", () => {
-                    const overlay = document.createElement("div");
-                    overlay.style.cssText = "position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.85); display: flex; align-items: center; justify-content: center; z-index: 12000; cursor: zoom-out; backdrop-filter: blur(4px);";
-                    const largeImg = document.createElement("img");
-                    largeImg.src = imgEl.src;
-                    largeImg.style.cssText = "max-width: 90vw; max-height: 90vh; border-radius: 8px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);";
-                    overlay.appendChild(largeImg);
-                    document.body.appendChild(overlay);
-                    overlay.addEventListener("click", () => overlay.remove());
+                    // Collect all photos in this report card
+                    const gallery = imgEl.closest(".daily-photo-gallery");
+                    const allImgs = gallery ? Array.from(gallery.querySelectorAll("img")).map(im => im.src).filter(s => s && !s.includes("data:image/svg")) : [imgEl.src];
+                    const clickedIdx = allImgs.indexOf(imgEl.src);
+                    window.openGalleryLightbox(allImgs, clickedIdx >= 0 ? clickedIdx : 0);
                 });
                 
                 photoGallery.appendChild(imgEl);
