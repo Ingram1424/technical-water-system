@@ -15363,17 +15363,28 @@ document.addEventListener("DOMContentLoaded", () => {
                     
                     // Calculate actual cumulative progress %
                     let printActualCumPct = 0;
+                    const printIsDaily = window.isProjectDailyMode(proj);
+                    const printNumCols = window.getScurveColumnsCount(proj);
                     if (proj.scurveData && proj.scurveData.length > 0) {
-                        let printWeeklySums = new Array((proj.scurveMonths || []).length * 4).fill(0);
-                        let printParentW = 0;
+                        let actualSums = new Array(printNumCols).fill(0);
+                        let parentW = 0;
+                        let lastActIdx = -1;
                         proj.scurveData.forEach(item => {
-                            if (!item.isSubtask) printParentW = parseFloat(item.weight) || 0;
-                            for (let i = 0; i < printWeeklySums.length; i++) {
-                                let aVal = (item.actual && item.actual[i] !== undefined && item.actual[i] !== null && item.actual[i] !== '' && item.actual[i] !== '-' && !isNaN(parseFloat(item.actual[i])) && parseFloat(item.actual[i]) > 0) ? parseFloat(item.actual[i]) : 0;
-                                printWeeklySums[i] += (printParentW * aVal / 100);
+                            if (!item.isSubtask) parentW = parseFloat(item.weight) || 0;
+                            for (let i = 0; i < printNumCols; i++) {
+                                let hasAct = (item.actual && item.actual[i] !== undefined && item.actual[i] !== null && item.actual[i] !== '' && item.actual[i] !== '-' && !isNaN(parseFloat(item.actual[i])) && parseFloat(item.actual[i]) > 0);
+                                let aVal = hasAct ? parseFloat(item.actual[i]) : 0;
+                                actualSums[i] += (parentW * aVal / 100);
+                                if (hasAct && i > lastActIdx) lastActIdx = i;
                             }
                         });
-                        printActualCumPct = printWeeklySums.reduce((s, v) => s + v, 0);
+                        let ca = 0;
+                        for (let i = 0; i < printNumCols; i++) {
+                            if (i <= lastActIdx) {
+                                ca += actualSums[i];
+                                printActualCumPct = ca;
+                            }
+                        }
                     }
                     const printActualPctText = printActualCumPct.toFixed(1) + '%';
                     
@@ -15402,12 +15413,51 @@ document.addEventListener("DOMContentLoaded", () => {
             // Build headers row
             let monthsHeaderHtml = "";
             let weeksHeaderHtml = "";
-            (proj.scurveMonths || ["Month 1"]).forEach((month, mIdx) => {
-                monthsHeaderHtml += `<th colspan="4" style="border: 1px solid #94a3b8; padding: 6px; background: #e2e8f0; font-size: 11px;">${month}</th>`;
-                for (let w = 1; w <= 4; w++) {
-                    weeksHeaderHtml += `<th style="border: 1px solid #94a3b8; padding: 4px 2px; font-size: 10px; font-weight: bold; width: 35px; text-align: center;">${w}</th>`;
+            if (printIsDaily && proj.ganttData.startDate && proj.ganttData.endDate) {
+                const [sy, sm, sd] = proj.ganttData.startDate.split('-').map(Number);
+                const [ey, em, ed] = proj.ganttData.endDate.split('-').map(Number);
+                const start = new Date(sy, sm - 1, sd);
+                const end = new Date(ey, em - 1, ed);
+                let current = new Date(start);
+                let dateList = [];
+                let count = 0;
+                while (current <= end && count < 750) {
+                    dateList.push(new Date(current));
+                    current.setDate(current.getDate() + 1);
+                    count++;
                 }
-            });
+
+                const monthThaiNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+                const monthsGroup = [];
+                let currentMonthName = "";
+                let currentGroup = null;
+
+                dateList.forEach((d, idx) => {
+                    const mIdx = d.getMonth();
+                    const yTh = d.getFullYear() + 543;
+                    const mName = monthThaiNames[mIdx] + " " + yTh;
+                    if (mName !== currentMonthName) {
+                        currentMonthName = mName;
+                        currentGroup = { monthName: mName, days: [], startIdx: idx };
+                        monthsGroup.push(currentGroup);
+                    }
+                    currentGroup.days.push(d.getDate());
+                });
+
+                monthsGroup.forEach((group) => {
+                    monthsHeaderHtml += `<th colspan="${group.days.length}" style="border: 1px solid #94a3b8; padding: 6px; background: #e2e8f0; font-size: 11px;">${group.monthName}</th>`;
+                    group.days.forEach(day => {
+                        weeksHeaderHtml += `<th style="border: 1px solid #94a3b8; padding: 4px 2px; font-size: 10px; font-weight: bold; width: 28px; text-align: center;">${day}</th>`;
+                    });
+                });
+            } else {
+                (proj.scurveMonths || ["Month 1"]).forEach((month, mIdx) => {
+                    monthsHeaderHtml += `<th colspan="4" style="border: 1px solid #94a3b8; padding: 6px; background: #e2e8f0; font-size: 11px;">${month}</th>`;
+                    for (let w = 1; w <= 4; w++) {
+                        weeksHeaderHtml += `<th style="border: 1px solid #94a3b8; padding: 4px 2px; font-size: 10px; font-weight: bold; width: 35px; text-align: center;">${w}</th>`;
+                    }
+                });
+            }
 
             // Build rows
             let rowsHtml = "";
@@ -15418,11 +15468,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 const nameWeight = isSub ? "normal" : "bold";
                 const rowBg = isSub ? "" : "background: #f8fafc;";
 
-                // Weekly cells
+                // Weekly/Daily cells
                 let weeklyCellsHtml = "";
                 const vals = isPlanMode ? (item.plan || []) : (item.actual || []);
-                const limit = (proj.scurveMonths || ["Month 1"]).length * 4;
-                for (let i = 0; i < limit; i++) {
+                for (let i = 0; i < printNumCols; i++) {
                     const val = vals[i] || 0;
                     const valStr = val === 0 ? "" : (isPlanMode ? val.toFixed(1) : val);
                     weeklyCellsHtml += `<td style="border: 1px solid #94a3b8; text-align: center; padding: 4px; font-size: 10.5px;">${valStr}</td>`;
@@ -17283,17 +17332,28 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (scurveChartImg) {
                     // Calculate actual cumulative progress %
                     let pdfActualCumPct = 0;
+                    const printIsDaily = window.isProjectDailyMode(proj);
+                    const printNumCols = window.getScurveColumnsCount(proj);
                     if (proj.scurveData && proj.scurveData.length > 0) {
-                        let pdfWeeklySums = new Array((proj.scurveMonths || []).length * 4).fill(0);
-                        let pdfParentW = 0;
+                        let actualSums = new Array(printNumCols).fill(0);
+                        let parentW = 0;
+                        let lastActIdx = -1;
                         proj.scurveData.forEach(item => {
-                            if (!item.isSubtask) pdfParentW = parseFloat(item.weight) || 0;
-                            for (let i = 0; i < pdfWeeklySums.length; i++) {
-                                let aVal = (item.actual && item.actual[i] !== undefined && item.actual[i] !== null && item.actual[i] !== '' && item.actual[i] !== '-' && !isNaN(parseFloat(item.actual[i])) && parseFloat(item.actual[i]) > 0) ? parseFloat(item.actual[i]) : 0;
-                                pdfWeeklySums[i] += (pdfParentW * aVal / 100);
+                            if (!item.isSubtask) parentW = parseFloat(item.weight) || 0;
+                            for (let i = 0; i < printNumCols; i++) {
+                                let hasAct = (item.actual && item.actual[i] !== undefined && item.actual[i] !== null && item.actual[i] !== '' && item.actual[i] !== '-' && !isNaN(parseFloat(item.actual[i])) && parseFloat(item.actual[i]) > 0);
+                                let aVal = hasAct ? parseFloat(item.actual[i]) : 0;
+                                actualSums[i] += (parentW * aVal / 100);
+                                if (hasAct && i > lastActIdx) lastActIdx = i;
                             }
                         });
-                        pdfActualCumPct = pdfWeeklySums.reduce((s, v) => s + v, 0);
+                        let ca = 0;
+                        for (let i = 0; i < printNumCols; i++) {
+                            if (i <= lastActIdx) {
+                                ca += actualSums[i];
+                                pdfActualCumPct = ca;
+                            }
+                        }
                     }
                     const pdfActualPctText = pdfActualCumPct.toFixed(1) + '%';
 
@@ -17406,7 +17466,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                     ${hideBudget ? '' : `<td style="text-align: center;">${formatNumber(proj.scurveData.reduce((sum, item)=>sum+(item.isSubtask?0:item.budget||0),0))}</td>`}
                                     ${hideWeight ? '' : `<td style="text-align: center;">${totalWeight.toFixed(1)}%</td>`}
                                     <td></td>
-                                    ${new Array(proj.scurveMonths.length * 4).fill('<td style="border-left: 1px solid #cbd5e1;"></td>').map((td, i) => i%4===0 ? td : '<td></td>').join("")}
+                                    ${new Array(printNumCols).fill('<td style="border-left: 1px solid #cbd5e1;"></td>').map((td, i) => (printIsDaily || i%4===0) ? td : '<td></td>').join("")}
                                 </tr>
                                 `}
                                 <tr style="background: #fff; font-weight: bold; border-top: 1px solid #cbd5e1;">
