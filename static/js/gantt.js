@@ -1875,19 +1875,52 @@ function renderSubnavCostTab(project) {
             subtabCostStructureDonut.destroy();
         }
         
-        const cs = project.costStructure || { labor: 0, material: 0, other: 0 };
-        const total = (cs.labor || 0) + (cs.material || 0) + (cs.other || 0);
-        const isEmpty = total === 0;
+        // Calculate actual amounts from expenses
+        let laborAmt = 0, materialAmt = 0, otherAmt = 0;
+        if (project.expenses && project.expenses.length > 0) {
+            project.expenses.forEach(e => {
+                if (e.status === "รออนุมัติ" || e.status === "ปฏิเสธ") return;
+                if (e.type === "ค่าแรง") laborAmt += e.amount;
+                else if (e.type === "ค่าวัสดุ") materialAmt += e.amount;
+                else otherAmt += e.amount;
+            });
+        }
+        const spentTotal = laborAmt + materialAmt + otherAmt;
+        const projectValue = project.value || 0;
+        const remaining = Math.max(0, projectValue - spentTotal);
+        const isEmpty = spentTotal === 0;
         
-        const chartData = isEmpty ? [1] : [cs.labor, cs.material, cs.other];
-        const chartLabels = isEmpty 
-            ? ["ยังไม่มีบันทึกต้นทุน"]
-            : [
-                `ค่าแรง ${(cs.labor || 0).toFixed(0)}%`, 
-                `ค่าวัสดุ ${(cs.material || 0).toFixed(0)}%`, 
-                `อื่นๆ ${(cs.other || 0).toFixed(0)}%`
-              ];
-        const chartColors = isEmpty ? ['#f1f5f9'] : ['#1d3557', '#457b9d', '#e63946'];
+        // Build chart data: actual amounts for each category + remaining as gray
+        let chartData, chartLabels, chartColors;
+        if (isEmpty) {
+            chartData = [1];
+            chartLabels = ["ยังไม่มีบันทึกต้นทุน"];
+            chartColors = ['#f1f5f9'];
+        } else {
+            chartData = [];
+            chartLabels = [];
+            chartColors = [];
+            if (laborAmt > 0) {
+                chartData.push(laborAmt);
+                chartLabels.push(`ค่าแรง ${formatNumber(laborAmt)} บาท`);
+                chartColors.push('#1d3557');
+            }
+            if (materialAmt > 0) {
+                chartData.push(materialAmt);
+                chartLabels.push(`ค่าวัสดุ ${formatNumber(materialAmt)} บาท`);
+                chartColors.push('#457b9d');
+            }
+            if (otherAmt > 0) {
+                chartData.push(otherAmt);
+                chartLabels.push(`อื่นๆ ${formatNumber(otherAmt)} บาท`);
+                chartColors.push('#e63946');
+            }
+            if (remaining > 0) {
+                chartData.push(remaining);
+                chartLabels.push(`คงเหลือ ${formatNumber(remaining)} บาท`);
+                chartColors.push('#e2e8f0');
+            }
+        }
         
         subtabCostStructureDonut = new Chart(ctx, {
             type: 'doughnut',
@@ -1896,8 +1929,8 @@ function renderSubnavCostTab(project) {
                 datasets: [{
                     data: chartData,
                     backgroundColor: chartColors,
-                    borderWidth: isEmpty ? 1 : 1,
-                    borderColor: isEmpty ? '#e2e8f0' : '#ffffff'
+                    borderWidth: 1,
+                    borderColor: '#ffffff'
                 }]
             },
             options: {
@@ -1907,10 +1940,21 @@ function renderSubnavCostTab(project) {
                 plugins: {
                     legend: {
                         position: 'bottom',
-                        labels: { boxWidth: 10, font: { size: 9, family: 'Prompt' } }
+                        labels: { 
+                            boxWidth: 10, 
+                            font: { size: 9, family: 'Prompt' },
+                            color: '#334155'
+                        }
                     },
                     tooltip: {
-                        enabled: !isEmpty
+                        enabled: !isEmpty,
+                        callbacks: {
+                            label: function(context) {
+                                const val = context.raw;
+                                const pct = projectValue > 0 ? ((val / projectValue) * 100).toFixed(1) : 0;
+                                return ` ${context.label} (${pct}%)`;
+                            }
+                        }
                     }
                 }
             }
