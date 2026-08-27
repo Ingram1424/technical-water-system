@@ -1251,6 +1251,29 @@ function renderSubnavPhotosFiles(project) {
             }
             
 
+
+
+            // Add zoom preview / selection click listener to gallery image
+            imgEl.style.cursor = "zoom-in";
+            imgEl.addEventListener("click", () => {
+                if (document.body.classList.contains("gallery-select-mode")) {
+                    const cb = card.querySelector(".gallery-select-cb");
+                    if (cb) {
+                        cb.checked = !cb.checked;
+                        updateBulkDeleteCount();
+                    }
+                } else {
+                    // Collect all visible gallery image srcs
+                    const allGalleryImgs = Array.from(document.querySelectorAll("#subtab-gallery-grid img")).map(im => im.src).filter(s => s && !s.includes("data:image/svg"));
+                    const clickedIdx = allGalleryImgs.indexOf(imgEl.src);
+                    window.openGalleryLightbox(allGalleryImgs, clickedIdx >= 0 ? clickedIdx : 0);
+                }
+            });
+        });
+    }
+}
+
+
 // ===== Gallery Lightbox with navigation =====
 window._galleryLightboxOverlay = null;
 window.openGalleryLightbox = function(imageSrcs, startIndex) {
@@ -1341,26 +1364,6 @@ window.openGalleryLightbox = function(imageSrcs, startIndex) {
     showImage(currentIdx);
 };
 // ===== End Gallery Lightbox =====
-
-            // Add zoom preview / selection click listener to gallery image
-            imgEl.style.cursor = "zoom-in";
-            imgEl.addEventListener("click", () => {
-                if (document.body.classList.contains("gallery-select-mode")) {
-                    const cb = card.querySelector(".gallery-select-cb");
-                    if (cb) {
-                        cb.checked = !cb.checked;
-                        updateBulkDeleteCount();
-                    }
-                } else {
-                    // Collect all visible gallery image srcs
-                    const allGalleryImgs = Array.from(document.querySelectorAll("#subtab-gallery-grid img")).map(im => im.src).filter(s => s && !s.includes("data:image/svg"));
-                    const clickedIdx = allGalleryImgs.indexOf(imgEl.src);
-                    window.openGalleryLightbox(allGalleryImgs, clickedIdx >= 0 ? clickedIdx : 0);
-                }
-            });
-        });
-    }
-}
 
 function syncScurveMonthsWithGantt(project) {
     if (project.ganttData && project.ganttData.startDate && project.ganttData.endDate) {
