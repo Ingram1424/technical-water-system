@@ -4877,7 +4877,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                     ${weeklyCumCells}
                                 </tr>
                                 <tr style="background: #eef2f6; font-weight: bold; border-top: 1px solid #cbd5e1;">
-                                    <td colspan="${isCustomer ? 4 : 5}" style="text-align: right; padding: 6px 10px; font-size: 11px; color: #1e40af;">สะสมแผนงาน (%)</td>
+                                    <td colspan="${isCustomer ? 4 : 5}" style="text-align: right; padding: 6px 10px; font-size: 11px; color: #1e40af;">เป้าหมายแผนงาน</td>
                                     ${planCumCells}
                                 </tr>
                             </tbody>

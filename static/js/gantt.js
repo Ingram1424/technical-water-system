@@ -737,6 +737,7 @@ function updateScurveTotals(project) {
     let actualWeeklySums = new Array(project.scurveMonths.length * 4).fill(0);
 
     let currentParentWeight = 0;
+    let lastActualIndex = -1;
     project.scurveData.forEach(item => {
         if (!item.isSubtask) {
             currentParentWeight = parseFloat(item.weight) || 0;
@@ -744,10 +745,15 @@ function updateScurveTotals(project) {
         
         for (let i = 0; i < planWeeklySums.length; i++) {
             let pVal = parseFloat(item.plan ? item.plan[i] : 0) || 0;
-            let aVal = (item.actual && item.actual[i] !== undefined && item.actual[i] !== null && item.actual[i] !== '') ? (parseFloat(item.actual[i]) || 0) : 0;
+            let hasActualData = (item.actual && item.actual[i] !== undefined && item.actual[i] !== null && item.actual[i] !== '' && item.actual[i] !== '-' && !isNaN(parseFloat(item.actual[i])) && parseFloat(item.actual[i]) > 0);
+            let aVal = hasActualData ? (parseFloat(item.actual[i]) || 0) : 0;
 
             planWeeklySums[i] += (currentParentWeight * pVal / 100);
             actualWeeklySums[i] += (currentParentWeight * aVal / 100);
+
+            if (hasActualData && i > lastActualIndex) {
+                lastActualIndex = i;
+            }
         }
     });
 
@@ -777,20 +783,24 @@ function updateScurveTotals(project) {
             <td colspan="${labelColspan}" style="padding: 8px 10px; text-align: right; font-weight: 600;">ปริมาณงานต่อสัปดาห์ (%)</td>
     `;
     displayWeeklySums.forEach((val, i) => {
-        footerHtml += `<td style="padding: 8px 4px; text-align: center; font-size: 10px; border-left: ${i%4===0 ? '1px' : '0'} solid var(--border-color);">${val === 0 ? '0.00%' : val.toFixed(2)+'%'}</td>`;
+        const cellText = (i <= lastActualIndex) ? (val === 0 ? '0.00%' : val.toFixed(2)+'%') : '';
+        footerHtml += `<td style="padding: 8px 4px; text-align: center; font-size: 10px; border-left: ${i%4===0 ? '1px' : '0'} solid var(--border-color);">${cellText}</td>`;
     });
     footerHtml += `<td class="hide-accounting hide-customer"></td></tr>`;
     
-    footerHtml += `
-        <tr style="background: #f1f5f9; border-top: 1px solid var(--border-color); font-weight: 700;">
-            <td colspan="${labelColspan}" style="padding: 8px 10px; text-align: right;">สะสมปริมาณงาน (%)</td>
-    `;
-    let cumSum = 0;
-    displayWeeklySums.forEach((val, i) => {
-        cumSum += val;
-        footerHtml += `<td style="padding: 8px 4px; text-align: center; font-size: 10px; border-left: ${i%4===0 ? '1px' : '0'} solid var(--border-color); color: var(--primary-blue);">${cumSum === 0 ? '0.0%' : cumSum.toFixed(1)+'%'}</td>`;
-    });
-    footerHtml += `<td class="hide-accounting hide-customer"></td></tr>`;
+    const hideActualCumRow = (appState.currentRole === "customer");
+    if (!hideActualCumRow) {
+        footerHtml += `
+            <tr style="background: #f1f5f9; border-top: 1px solid var(--border-color); font-weight: 700;">
+                <td colspan="${labelColspan}" style="padding: 8px 10px; text-align: right;">สะสมปริมาณงาน (%)</td>
+        `;
+        let cumSum = 0;
+        displayWeeklySums.forEach((val, i) => {
+            cumSum += val;
+            footerHtml += `<td style="padding: 8px 4px; text-align: center; font-size: 10px; border-left: ${i%4===0 ? '1px' : '0'} solid var(--border-color); color: var(--primary-blue);">${cumSum === 0 ? '0.0%' : cumSum.toFixed(1)+'%'}</td>`;
+        });
+        footerHtml += `<td class="hide-accounting hide-customer"></td></tr>`;
+    }
 
     // Add manually editable cumulative plan progress row
     const canEditPlan = (appState.currentRole === "pm" || appState.currentRole === "admin" || appState.currentRole === "pe") && appState.selectedDetailProject !== "all";
@@ -800,7 +810,7 @@ function updateScurveTotals(project) {
 
     footerHtml += `
         <tr style="background: #eef2f6; border-top: 1px solid var(--border-color); font-weight: 700;">
-            <td colspan="${labelColspan}" style="padding: 8px 10px; text-align: right; color: #1e40af;">สะสมแผนงาน (%)</td>
+            <td colspan="${labelColspan}" style="padding: 8px 10px; text-align: right; color: #1e40af;">เป้าหมายแผนงาน</td>
     `;
     
     if (!project.scurvePlanCum) project.scurvePlanCum = new Array(project.scurveMonths.length * 4).fill(0);
@@ -881,6 +891,21 @@ function renderSCurveChart(project) {
             }
         }
         
+        let latestActualCum = 0;
+        if (lastActualIndex !== -1 && cumActual[lastActualIndex + 1] !== undefined && cumActual[lastActualIndex + 1] !== null) {
+            latestActualCum = cumActual[lastActualIndex + 1];
+        }
+        
+        const pctEl = document.getElementById("scurve-latest-actual-percentage");
+        if (pctEl) {
+            if (appState.currentRole === "customer") {
+                pctEl.textContent = `${latestActualCum.toFixed(1)}%`;
+                pctEl.style.display = "block";
+            } else {
+                pctEl.style.display = "none";
+            }
+        }
+        
         const labels = ["เริ่มต้น"];
         project.scurveMonths.forEach(m => {
             for (let w = 1; w <= 4; w++) {
@@ -922,8 +947,7 @@ function renderSCurveChart(project) {
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
-                        position: "top",
-                        labels: { font: { family: "Prompt", size: 13, weight: "bold" }, usePointStyle: true, pointStyle: "circle" }
+                        display: false
                     },
                     tooltip: {
                         callbacks: {
