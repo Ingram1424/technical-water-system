@@ -16179,11 +16179,12 @@ document.addEventListener("DOMContentLoaded", () => {
                     </table>
                     
                     <!-- Print Footer showing Person in charge at the bottom of the last page -->
-                    <div style="margin-top: 40px; page-break-inside: avoid; display: flex; justify-content: flex-end; font-family: 'Prompt', sans-serif;">
-                        <div style="border: 1px solid #cbd5e1; padding: 15px; border-radius: 8px; width: 300px; background-color: #f8fafc; font-size: 11px; line-height: 1.6; text-align: left; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
-                            <div style="font-weight: bold; color: #1e3a8a; font-size: 12px; margin-bottom: 6px; border-bottom: 1.5px solid #1e3a8a; padding-bottom: 4px;">ผู้รับผิดชอบโครงการ (Project Manager)</div>
-                            <div style="margin-bottom: 4px;"><strong>ผู้รับผิดชอบ:</strong> ${proj.ganttData.header.manager || '-'}</div>
-                            <div><strong>เบอร์โทรติดต่อ:</strong> ${proj.ganttData.header.phone || '-'}</div>
+                    <div style="margin-top: 50px; page-break-inside: avoid; display: flex; justify-content: flex-end; font-family: 'Prompt', sans-serif; padding-right: 30px;">
+                        <div style="width: 320px; font-size: 12px; line-height: 1.8; text-align: left;">
+                            <div style="margin-bottom: 12px; text-align: center;">ลงชื่อ ......................................................................</div>
+                            <div style="margin-bottom: 12px; text-align: center;">( ${proj.ganttData.header.manager || '......................................................'} )</div>
+                            <div style="margin-bottom: 6px; padding-left: 30px;"><strong>ตำแหน่ง:</strong> ผู้รับผิดชอบโครงการ</div>
+                            <div style="padding-left: 30px;"><strong>เบอร์โทรติดต่อ:</strong> ${proj.ganttData.header.phone || '......................................................'}</div>
                         </div>
                     </div>
 
