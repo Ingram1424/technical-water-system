@@ -17199,6 +17199,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (proj.scurveData && proj.scurveData.length > 0 && proj.scurveMonths) {
                     const hideBudget = (appState.currentRole === "pe" || appState.currentRole === "customer" || appState.currentRole === "technician" || appState.currentRole === "tech");
                     const hideWeight = (appState.currentRole === "customer");
+                    const hideActualCumRow = true;
                     const labelColspan = 2 + (hideBudget ? 0 : 1) + (hideWeight ? 0 : 1) + 1;
                     let totalWeight = proj.scurveData.reduce((sum, item) => sum + (item.isSubtask ? 0 : parseFloat(item.weight) || 0), 0);
                     let headerCols = proj.scurveMonths.map(month => `
