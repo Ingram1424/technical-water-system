@@ -845,11 +845,20 @@ function renderSCurveChart(project) {
             ctx.font = "13px 'Prompt', sans-serif";
             ctx.textAlign = "center";
             ctx.fillText("ยังไม่มีข้อมูลแผนงาน — เพิ่มรายการงานเพื่อดูกราฟ S-Curve", canvas.width / 2, canvas.height / 2);
+            
+            const pctEl = document.getElementById("scurve-latest-actual-percentage");
+            if (pctEl) {
+                pctEl.style.display = "none";
+                pctEl.textContent = "0.0%";
+            }
             return;
         }
         
-        let planWeeklySums = new Array(project.scurveMonths.length * 4).fill(0);
-        let actualWeeklySums = new Array(project.scurveMonths.length * 4).fill(0);
+        const isDaily = window.isProjectDailyMode(project);
+        const numColumns = window.getScurveColumnsCount(project);
+
+        let planWeeklySums = new Array(numColumns).fill(0);
+        let actualWeeklySums = new Array(numColumns).fill(0);
         
         let currentParentWeight = 0;
         let lastActualIndex = -1;
@@ -873,8 +882,8 @@ function renderSCurveChart(project) {
         });
         
         const cumPlan = [0];
-        if (!project.scurvePlanCum) project.scurvePlanCum = new Array(project.scurveMonths.length * 4).fill(0);
-        while (project.scurvePlanCum.length < project.scurveMonths.length * 4) project.scurvePlanCum.push(0);
+        if (!project.scurvePlanCum) project.scurvePlanCum = new Array(numColumns).fill(0);
+        while (project.scurvePlanCum.length < numColumns) project.scurvePlanCum.push(0);
 
         project.scurvePlanCum.forEach(val => {
             cumPlan.push(parseFloat(val) || 0);
@@ -903,11 +912,30 @@ function renderSCurveChart(project) {
         }
         
         const labels = ["เริ่มต้น"];
-        project.scurveMonths.forEach(m => {
-            for (let w = 1; w <= 4; w++) {
-                labels.push(`${m} W${w}`);
+        if (isDaily) {
+            const [sy, sm, sd] = project.ganttData.startDate.split('-').map(Number);
+            const [ey, em, ed] = project.ganttData.endDate.split('-').map(Number);
+            const start = new Date(sy, sm - 1, sd);
+            const end = new Date(ey, em - 1, ed);
+
+            let current = new Date(start);
+            let count = 0;
+            const monthThaiShortNames = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
+            while (current <= end && count < 750) {
+                const day = current.getDate();
+                const mShort = monthThaiShortNames[current.getMonth()];
+                const yShort = (current.getFullYear() + 543).toString().substring(2);
+                labels.push(`${day} ${mShort} ${yShort}`);
+                current.setDate(current.getDate() + 1);
+                count++;
             }
-        });
+        } else {
+            project.scurveMonths.forEach(m => {
+                for (let w = 1; w <= 4; w++) {
+                    labels.push(`${m} W${w}`);
+                }
+            });
+        }
         
         scurveChartInstance = new Chart(ctx, {
             type: "line",
