@@ -4783,6 +4783,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
                 if (proj.scurveData && proj.scurveData.length > 0 && proj.scurveMonths) {
+                    const hideActualCumRow = true;
                     let totalWeight = proj.scurveData.reduce((sum, item) => sum + (item.isSubtask ? 0 : parseFloat(item.weight) || 0), 0);
                     let headerCols = proj.scurveMonths.map(month => `
                         <th colspan="4" style="border-left: 1px solid #cbd5e1; text-align: center; padding: 6px;">${month}</th>
@@ -4814,19 +4815,26 @@ document.addEventListener("DOMContentLoaded", () => {
                     // Calc weekly sums for actual
                     let weeklyActualSums = new Array(proj.scurveMonths.length * 4).fill(0);
                     let currentParentWeightValAct = 0;
+                    let lastActualIndexValAct = -1;
                     proj.scurveData.forEach(item => {
                         if (!item.isSubtask) {
                             currentParentWeightValAct = parseFloat(item.weight) || 0;
                         }
                         for (let i = 0; i < weeklyActualSums.length; i++) {
-                            let aVal = (item.actual && item.actual[i] !== undefined && item.actual[i] !== null && item.actual[i] !== '') ? (parseFloat(item.actual[i]) || 0) : 0;
+                            let hasActualData = (item.actual && item.actual[i] !== undefined && item.actual[i] !== null && item.actual[i] !== '' && item.actual[i] !== '-' && !isNaN(parseFloat(item.actual[i])) && parseFloat(item.actual[i]) > 0);
+                            let aVal = hasActualData ? (parseFloat(item.actual[i]) || 0) : 0;
                             weeklyActualSums[i] += (currentParentWeightValAct * aVal / 100);
+
+                            if (hasActualData && i > lastActualIndexValAct) {
+                                lastActualIndexValAct = i;
+                            }
                         }
                     });
                     
-                    let weeklySumsCells = weeklyActualSums.map((val, i) => `
-                        <td style="border-left: ${i%4===0 ? '1px solid #cbd5e1' : 'none'}; text-align: center; font-size: 10px; font-weight: bold;">${val === 0 ? '0.0%' : val.toFixed(1) + '%'}</td>
-                    `).join("");
+                    let weeklySumsCells = weeklyActualSums.map((val, i) => {
+                        const cellText = (i <= lastActualIndexValAct) ? (val === 0 ? '0.0%' : val.toFixed(1) + '%') : '';
+                        return `<td style="border-left: ${i%4===0 ? '1px solid #cbd5e1' : 'none'}; text-align: center; font-size: 10px; font-weight: bold;">${cellText}</td>`;
+                    }).join("");
                     
                     let actualCum = 0;
                     let weeklyCumCells = weeklyActualSums.map((val, i) => {
@@ -4872,10 +4880,12 @@ document.addEventListener("DOMContentLoaded", () => {
                                     <td colspan="${isCustomer ? 4 : 5}" style="text-align: right; padding: 6px 10px; font-size: 11px;">ปริมาณงานต่อสัปดาห์ (%)</td>
                                     ${weeklySumsCells}
                                 </tr>
+                                ${hideActualCumRow ? '' : `
                                 <tr style="background: #f1f5f9; font-weight: bold; border-top: 1px solid #cbd5e1;">
                                     <td colspan="${isCustomer ? 4 : 5}" style="text-align: right; padding: 6px 10px; font-size: 11px;">สะสมปริมาณงาน (%)</td>
                                     ${weeklyCumCells}
                                 </tr>
+                                `}
                                 <tr style="background: #eef2f6; font-weight: bold; border-top: 1px solid #cbd5e1;">
                                     <td colspan="${isCustomer ? 4 : 5}" style="text-align: right; padding: 6px 10px; font-size: 11px; color: #1e40af;">เป้าหมายแผนงาน</td>
                                     ${planCumCells}

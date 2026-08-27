@@ -788,7 +788,7 @@ function updateScurveTotals(project) {
     });
     footerHtml += `<td class="hide-accounting hide-customer"></td></tr>`;
     
-    const hideActualCumRow = (appState.currentRole === "customer");
+    const hideActualCumRow = true;
     if (!hideActualCumRow) {
         footerHtml += `
             <tr style="background: #f1f5f9; border-top: 1px solid var(--border-color); font-weight: 700;">
@@ -898,12 +898,8 @@ function renderSCurveChart(project) {
         
         const pctEl = document.getElementById("scurve-latest-actual-percentage");
         if (pctEl) {
-            if (appState.currentRole === "customer") {
-                pctEl.textContent = `${latestActualCum.toFixed(1)}%`;
-                pctEl.style.display = "block";
-            } else {
-                pctEl.style.display = "none";
-            }
+            pctEl.textContent = `${latestActualCum.toFixed(1)}%`;
+            pctEl.style.display = "block";
         }
         
         const labels = ["เริ่มต้น"];
