@@ -9168,18 +9168,20 @@ function updateScurveTotals(project) {
     const labelColspan = 2 + (hideBudget ? 0 : 1) + (hideWeight ? 0 : 1) + 1;
 
     let footerHtml = ``;
-    footerHtml += `
-            <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid var(--border-color);">
-                <td colspan="2" style="padding: 8px 10px; text-align: right;">รวม</td>
-                ${hideBudget ? '' : `<td style="padding: 8px 4px; text-align: center;">${totalBudget.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>`}
-                ${hideWeight ? '' : `<td style="padding: 8px 4px; text-align: center; color: ${totalWeight === 100 ? '#10b981' : '#e63946'};">${totalWeight.toFixed(2)}%</td>`}
-                <td style="padding: 8px 4px; text-align: center;"></td>
-        `;
-        displayWeeklySums.forEach((val, i) => {
-            const hasBorder = isDaily || (i % 4 === 0);
-            footerHtml += `<td style="padding: 8px 4px; border-left: ${hasBorder ? '1px' : '0'} solid var(--border-color);"></td>`;
-        });
-        footerHtml += `<td class="hide-accounting hide-customer"></td></tr>`;
+    if (!(hideBudget && hideWeight)) {
+        footerHtml += `
+                <tr style="background: #f8fafc; font-weight: 700; border-top: 2px solid var(--border-color);">
+                    <td colspan="2" style="padding: 8px 10px; text-align: right;">รวม</td>
+                    ${hideBudget ? '' : `<td style="padding: 8px 4px; text-align: center;">${totalBudget.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>`}
+                    ${hideWeight ? '' : `<td style="padding: 8px 4px; text-align: center; color: ${totalWeight === 100 ? '#10b981' : '#e63946'};">${totalWeight.toFixed(2)}%</td>`}
+                    <td style="padding: 8px 4px; text-align: center;"></td>
+            `;
+            displayWeeklySums.forEach((val, i) => {
+                const hasBorder = isDaily || (i % 4 === 0);
+                footerHtml += `<td style="padding: 8px 4px; border-left: ${hasBorder ? '1px' : '0'} solid var(--border-color);"></td>`;
+            });
+            footerHtml += `<td class="hide-accounting hide-customer"></td></tr>`;
+    }
     
 
     const labelPeriod = isDaily ? "ปริมาณงานต่อวัน (%)" : "ปริมาณงานต่อสัปดาห์ (%)";
@@ -17355,6 +17357,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             </thead>
                             <tbody>
                                 ${rows}
+                                ${hideBudget && hideWeight ? '' : `
                                 <tr style="background: #f8fafc; font-weight: bold; border-top: 2px solid #cbd5e1;">
                                     <td colspan="2" style="text-align: right; padding: 6px 10px;">รวม</td>
                                     ${hideBudget ? '' : `<td style="text-align: center;">${formatNumber(proj.scurveData.reduce((sum, item)=>sum+(item.isSubtask?0:item.budget||0),0))}</td>`}
@@ -17362,6 +17365,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                     <td></td>
                                     ${new Array(proj.scurveMonths.length * 4).fill('<td style="border-left: 1px solid #cbd5e1;"></td>').map((td, i) => i%4===0 ? td : '<td></td>').join("")}
                                 </tr>
+                                `}
                                 <tr style="background: #fff; font-weight: bold; border-top: 1px solid #cbd5e1;">
                                     <td colspan="${labelColspan}" style="text-align: right; padding: 6px 10px; font-size: 11px;">ปริมาณงานต่อสัปดาห์ (%)</td>
                                     ${weeklySumsCells}
