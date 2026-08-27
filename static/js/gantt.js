@@ -784,7 +784,7 @@ function updateScurveTotals(project) {
     `;
     displayWeeklySums.forEach((val, i) => {
         const cellText = (i <= lastActualIndex) ? (val === 0 ? '0.00%' : val.toFixed(2)+'%') : '';
-        footerHtml += `<td style="padding: 8px 4px; text-align: center; font-size: 10px; border-left: ${i%4===0 ? '1px' : '0'} solid var(--border-color);">${cellText}</td>`;
+        footerHtml += `<td style="padding: 8px 4px; text-align: center; font-size: 10px; border-left: ${i%4===0 ? '1px' : '0'} solid var(--border-color); min-width: 45px; width: 45px;">${cellText}</td>`;
     });
     footerHtml += `<td class="hide-accounting hide-customer"></td></tr>`;
     
@@ -818,7 +818,7 @@ function updateScurveTotals(project) {
 
     project.scurvePlanCum.forEach((val, i) => {
         let valStr = val === 0 ? '' : val;
-        footerHtml += `<td style="padding: 4px; border-left: ${i%4===0 ? '1px' : '0'} solid var(--border-color);">
+        footerHtml += `<td style="padding: 4px; border-left: ${i%4===0 ? '1px' : '0'} solid var(--border-color); min-width: 45px; width: 45px;">
             <input type="number" class="scurve-plan-cum-val" data-widx="${i}" value="${valStr}" min="0" max="100" step="0.1" ${planReadonlyAttr} ${canEditPlan ? planEditInputStyle : planInputStyle} placeholder="0">
         </td>`;
     });
