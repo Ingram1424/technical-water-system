@@ -15393,7 +15393,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             // Gather headers
-            const hideBudget = (appState.currentRole === "pe" || appState.currentRole === "customer" || appState.currentRole === "technician" || appState.currentRole === "tech");
+            const hideBudget = true; // Force hide budget in S-Curve print table
             const hideWeight = (appState.currentRole === "customer");
             
             const isPlanMode = currentScurveMode === 'plan';
@@ -15584,7 +15584,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         <thead>
                             <tr style="background: #e2e8f0;">
                                 <th rowspan="2" style="width: 50px;">Items</th>
-                                <th rowspan="2">Description</th>
+                                <th rowspan="2" style="width: 200px;">Description</th>
                                 ${hideBudget ? '' : '<th rowspan="2" style="width: 95px;">Budget</th>'}
                                 ${hideWeight ? '' : '<th rowspan="2" style="width: 55px;">%</th>'}
                                 <th rowspan="2" style="width: 65px;">% (รวม)</th>
@@ -17311,7 +17311,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
 
                 if (proj.scurveData && proj.scurveData.length > 0 && proj.scurveMonths) {
-                    const hideBudget = (appState.currentRole === "pe" || appState.currentRole === "customer" || appState.currentRole === "technician" || appState.currentRole === "tech");
+                    const hideBudget = true; // Force hide budget in S-Curve print table
                     const hideWeight = (appState.currentRole === "customer");
                     const hideActualCumRow = true;
                     const labelColspan = 2 + (hideBudget ? 0 : 1) + (hideWeight ? 0 : 1) + 1;
@@ -17388,7 +17388,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             <thead>
                                 <tr style="background: #e0e7ff; text-align: center;">
                                     <th rowspan="2" style="width: 50px;">Items</th>
-                                    <th rowspan="2">Description</th>
+                                    <th rowspan="2" style="width: 200px;">Description</th>
                                     ${hideBudget ? '' : '<th rowspan="2" style="width: 80px;">Budget</th>'}
                                     ${hideWeight ? '' : '<th rowspan="2" style="width: 60px;">%</th>'}
                                     <th rowspan="2" style="width: 60px;">% (รวม)</th>
