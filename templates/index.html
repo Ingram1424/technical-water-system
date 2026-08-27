@@ -26,7 +26,7 @@
         <style>
         .gantt-doc-headers-grid {
             display: grid;
-            grid-template-columns: 1.2fr 2.5fr 1.3fr;
+            grid-template-columns: 1fr 2fr 1.2fr 1.2fr 1fr;
             gap: 12px;
             margin-bottom: 20px;
             padding: 12px;
@@ -4792,6 +4792,14 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                                     <div>
                                         <label style="font-size: 13.5px; font-weight: 700; color: var(--navy-dark); display: block; margin-bottom: 6px;">เอกสารอ้างอิง (Ref PO):</label>
                                         <input type="text" id="gantt-doc-ref" class="form-control" style="width: 100%; font-size: 13px; padding: 6px 10px; height: auto; font-weight: 600; border-radius: 6px;" placeholder="เช่น PO.22026002729">
+                                    </div>
+                                    <div>
+                                        <label style="font-size: 13.5px; font-weight: 700; color: var(--navy-dark); display: block; margin-bottom: 6px;">ผู้รับผิดชอบงาน:</label>
+                                        <input type="text" id="gantt-doc-manager" class="form-control" style="width: 100%; font-size: 13px; padding: 6px 10px; height: auto; font-weight: 600; border-radius: 6px;" placeholder="ระบุผู้รับผิดชอบ">
+                                    </div>
+                                    <div>
+                                        <label style="font-size: 13.5px; font-weight: 700; color: var(--navy-dark); display: block; margin-bottom: 6px;">เบอร์โทร:</label>
+                                        <input type="text" id="gantt-doc-phone" class="form-control" style="width: 100%; font-size: 13px; padding: 6px 10px; height: auto; font-weight: 600; border-radius: 6px;" placeholder="ระบุเบอร์โทรศัพท์">
                                     </div>
                                     <input type="hidden" id="gantt-doc-to">
                                 </div>
@@ -10758,7 +10766,9 @@ function renderSubnavPlanWork(project) {
                 date: new Date().toLocaleDateString('th-TH'),
                 subject: "แผนการดำเนินงาน " + (project.name || ""),
                 to: "",
-                refPo: project.code || ""
+                refPo: project.code || "",
+                manager: project.manager || "",
+                phone: ""
             },
             startDate: project.startDate || formatDateLocal(new Date()),
             endDate: project.endDate || formatDateLocal(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)),
@@ -10773,6 +10783,8 @@ function renderSubnavPlanWork(project) {
     const docSubjectInput = document.getElementById("gantt-doc-subject");
     const docToInput = document.getElementById("gantt-doc-to");
     const docRefInput = document.getElementById("gantt-doc-ref");
+    const docManagerInput = document.getElementById("gantt-doc-manager");
+    const docPhoneInput = document.getElementById("gantt-doc-phone");
 
     const canEdit = (appState.currentRole === "pm" || appState.currentRole === "admin" || appState.currentRole === "pe") && appState.selectedDetailProject !== "all";
 
@@ -10803,6 +10815,19 @@ function renderSubnavPlanWork(project) {
         docRefInput.value = project.ganttData.header.refPo || "";
         docRefInput.disabled = !canEdit;
         docRefInput.oninput = function() { project.ganttData.header.refPo = this.value.trim(); window.ganttIsDirty = true; };
+    }
+    if (docManagerInput) {
+        if (project.ganttData.header.manager === undefined) {
+            project.ganttData.header.manager = project.manager || "";
+        }
+        docManagerInput.value = project.ganttData.header.manager;
+        docManagerInput.disabled = !canEdit;
+        docManagerInput.oninput = function() { project.ganttData.header.manager = this.value.trim(); window.ganttIsDirty = true; };
+    }
+    if (docPhoneInput) {
+        docPhoneInput.value = project.ganttData.header.phone || "";
+        docPhoneInput.disabled = !canEdit;
+        docPhoneInput.oninput = function() { project.ganttData.header.phone = this.value.trim(); window.ganttIsDirty = true; };
     }
 
     // Bind and set View Mode
@@ -16153,6 +16178,14 @@ document.addEventListener("DOMContentLoaded", () => {
                         </tbody>
                     </table>
                     
+                    <!-- Print Footer showing Person in charge at the bottom of the last page -->
+                    <div style="margin-top: 40px; page-break-inside: avoid; display: flex; justify-content: flex-end; font-family: 'Prompt', sans-serif;">
+                        <div style="border: 1px solid #cbd5e1; padding: 15px; border-radius: 8px; width: 300px; background-color: #f8fafc; font-size: 11px; line-height: 1.6; text-align: left; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
+                            <div style="font-weight: bold; color: #1e3a8a; font-size: 12px; margin-bottom: 6px; border-bottom: 1.5px solid #1e3a8a; padding-bottom: 4px;">ผู้รับผิดชอบโครงการ (Project Manager)</div>
+                            <div style="margin-bottom: 4px;"><strong>ผู้รับผิดชอบ:</strong> ${proj.ganttData.header.manager || '-'}</div>
+                            <div><strong>เบอร์โทรติดต่อ:</strong> ${proj.ganttData.header.phone || '-'}</div>
+                        </div>
+                    </div>
 
                 </body>
                 </html>
