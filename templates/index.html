@@ -17190,6 +17190,8 @@ document.addEventListener("DOMContentLoaded", () => {
             let projectsHTML = "";
             for (let idx = 0; idx < projectsToExport.length; idx++) {
                 const proj = projectsToExport[idx];
+                const printIsDaily = window.isProjectDailyMode(proj);
+                const printNumCols = window.getScurveColumnsCount(proj);
 
                 // Build Gantt Chart HTML for Plan Work (Gantt Chart Scheduler style - like Screenshot 1)
                 let ganttChartHTML = "";
@@ -17333,8 +17335,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (scurveChartImg) {
                     // Calculate actual cumulative progress %
                     let pdfActualCumPct = 0;
-                    const printIsDaily = window.isProjectDailyMode(proj);
-                    const printNumCols = window.getScurveColumnsCount(proj);
                     if (proj.scurveData && proj.scurveData.length > 0) {
                         let actualSums = new Array(printNumCols).fill(0);
                         let parentW = 0;
