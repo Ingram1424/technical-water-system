@@ -737,6 +737,7 @@ function updateScurveTotals(project) {
     let actualWeeklySums = new Array(project.scurveMonths.length * 4).fill(0);
 
     let currentParentWeight = 0;
+    let lastActualIndex = -1;
     project.scurveData.forEach(item => {
         if (!item.isSubtask) {
             currentParentWeight = parseFloat(item.weight) || 0;
@@ -744,10 +745,15 @@ function updateScurveTotals(project) {
         
         for (let i = 0; i < planWeeklySums.length; i++) {
             let pVal = parseFloat(item.plan ? item.plan[i] : 0) || 0;
-            let aVal = (item.actual && item.actual[i] !== undefined && item.actual[i] !== null && item.actual[i] !== '') ? (parseFloat(item.actual[i]) || 0) : 0;
+            let hasActualData = (item.actual && item.actual[i] !== undefined && item.actual[i] !== null && item.actual[i] !== '' && item.actual[i] !== '-' && !isNaN(parseFloat(item.actual[i])) && parseFloat(item.actual[i]) > 0);
+            let aVal = hasActualData ? (parseFloat(item.actual[i]) || 0) : 0;
 
             planWeeklySums[i] += (currentParentWeight * pVal / 100);
             actualWeeklySums[i] += (currentParentWeight * aVal / 100);
+
+            if (hasActualData && i > lastActualIndex) {
+                lastActualIndex = i;
+            }
         }
     });
 
@@ -777,20 +783,24 @@ function updateScurveTotals(project) {
             <td colspan="${labelColspan}" style="padding: 8px 10px; text-align: right; font-weight: 600;">ปริมาณงานต่อสัปดาห์ (%)</td>
     `;
     displayWeeklySums.forEach((val, i) => {
-        footerHtml += `<td style="padding: 8px 4px; text-align: center; font-size: 10px; border-left: ${i%4===0 ? '1px' : '0'} solid var(--border-color);">${val === 0 ? '0.00%' : val.toFixed(2)+'%'}</td>`;
+        const cellText = (i <= lastActualIndex) ? (val === 0 ? '0.00%' : val.toFixed(2)+'%') : '';
+        footerHtml += `<td style="padding: 8px 4px; text-align: center; font-size: 10px; border-left: ${i%4===0 ? '1px' : '0'} solid var(--border-color); min-width: 45px; width: 45px;">${cellText}</td>`;
     });
     footerHtml += `<td class="hide-accounting hide-customer"></td></tr>`;
     
-    footerHtml += `
-        <tr style="background: #f1f5f9; border-top: 1px solid var(--border-color); font-weight: 700;">
-            <td colspan="${labelColspan}" style="padding: 8px 10px; text-align: right;">สะสมปริมาณงาน (%)</td>
-    `;
-    let cumSum = 0;
-    displayWeeklySums.forEach((val, i) => {
-        cumSum += val;
-        footerHtml += `<td style="padding: 8px 4px; text-align: center; font-size: 10px; border-left: ${i%4===0 ? '1px' : '0'} solid var(--border-color); color: var(--primary-blue);">${cumSum === 0 ? '0.0%' : cumSum.toFixed(1)+'%'}</td>`;
-    });
-    footerHtml += `<td class="hide-accounting hide-customer"></td></tr>`;
+    const hideActualCumRow = true;
+    if (!hideActualCumRow) {
+        footerHtml += `
+            <tr style="background: #f1f5f9; border-top: 1px solid var(--border-color); font-weight: 700;">
+                <td colspan="${labelColspan}" style="padding: 8px 10px; text-align: right;">สะสมปริมาณงาน (%)</td>
+        `;
+        let cumSum = 0;
+        displayWeeklySums.forEach((val, i) => {
+            cumSum += val;
+            footerHtml += `<td style="padding: 8px 4px; text-align: center; font-size: 10px; border-left: ${i%4===0 ? '1px' : '0'} solid var(--border-color); color: var(--primary-blue);">${cumSum === 0 ? '0.0%' : cumSum.toFixed(1)+'%'}</td>`;
+        });
+        footerHtml += `<td class="hide-accounting hide-customer"></td></tr>`;
+    }
 
     // Add manually editable cumulative plan progress row
     const canEditPlan = (appState.currentRole === "pm" || appState.currentRole === "admin" || appState.currentRole === "pe") && appState.selectedDetailProject !== "all";
@@ -800,7 +810,7 @@ function updateScurveTotals(project) {
 
     footerHtml += `
         <tr style="background: #eef2f6; border-top: 1px solid var(--border-color); font-weight: 700;">
-            <td colspan="${labelColspan}" style="padding: 8px 10px; text-align: right; color: #1e40af;">สะสมแผนงาน (%)</td>
+            <td colspan="${labelColspan}" style="padding: 8px 10px; text-align: right; color: #1e40af;">เป้าหมายแผนงาน</td>
     `;
     
     if (!project.scurvePlanCum) project.scurvePlanCum = new Array(project.scurveMonths.length * 4).fill(0);
@@ -808,7 +818,7 @@ function updateScurveTotals(project) {
 
     project.scurvePlanCum.forEach((val, i) => {
         let valStr = val === 0 ? '' : val;
-        footerHtml += `<td style="padding: 4px; border-left: ${i%4===0 ? '1px' : '0'} solid var(--border-color);">
+        footerHtml += `<td style="padding: 4px; border-left: ${i%4===0 ? '1px' : '0'} solid var(--border-color); min-width: 45px; width: 45px;">
             <input type="number" class="scurve-plan-cum-val" data-widx="${i}" value="${valStr}" min="0" max="100" step="0.1" ${planReadonlyAttr} ${canEditPlan ? planEditInputStyle : planInputStyle} placeholder="0">
         </td>`;
     });
@@ -881,6 +891,17 @@ function renderSCurveChart(project) {
             }
         }
         
+        let latestActualCum = 0;
+        if (lastActualIndex !== -1 && cumActual[lastActualIndex + 1] !== undefined && cumActual[lastActualIndex + 1] !== null) {
+            latestActualCum = cumActual[lastActualIndex + 1];
+        }
+        
+        const pctEl = document.getElementById("scurve-latest-actual-percentage");
+        if (pctEl) {
+            pctEl.textContent = `${latestActualCum.toFixed(1)}%`;
+            pctEl.style.display = "block";
+        }
+        
         const labels = ["เริ่มต้น"];
         project.scurveMonths.forEach(m => {
             for (let w = 1; w <= 4; w++) {
@@ -922,8 +943,7 @@ function renderSCurveChart(project) {
                 maintainAspectRatio: false,
                 plugins: {
                     legend: {
-                        position: "top",
-                        labels: { font: { family: "Prompt", size: 13, weight: "bold" }, usePointStyle: true, pointStyle: "circle" }
+                        display: false
                     },
                     tooltip: {
                         callbacks: {
@@ -1230,6 +1250,9 @@ function renderSubnavPhotosFiles(project) {
                 imgEl.src = item.img;
             }
             
+
+
+
             // Add zoom preview / selection click listener to gallery image
             imgEl.style.cursor = "zoom-in";
             imgEl.addEventListener("click", () => {
@@ -1240,19 +1263,107 @@ function renderSubnavPhotosFiles(project) {
                         updateBulkDeleteCount();
                     }
                 } else {
-                    const overlay = document.createElement("div");
-                    overlay.style.cssText = "position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.85); display: flex; align-items: center; justify-content: center; z-index: 12000; cursor: zoom-out; backdrop-filter: blur(4px);";
-                    const largeImg = document.createElement("img");
-                    largeImg.src = imgEl.src;
-                    largeImg.style.cssText = "max-width: 90vw; max-height: 90vh; border-radius: 8px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);";
-                    overlay.appendChild(largeImg);
-                    overlay.addEventListener("click", () => overlay.remove());
-                    document.body.appendChild(overlay);
+                    // Collect all visible gallery image srcs
+                    const allGalleryImgs = Array.from(document.querySelectorAll("#subtab-gallery-grid img")).map(im => im.src).filter(s => s && !s.includes("data:image/svg"));
+                    const clickedIdx = allGalleryImgs.indexOf(imgEl.src);
+                    window.openGalleryLightbox(allGalleryImgs, clickedIdx >= 0 ? clickedIdx : 0);
                 }
             });
         });
     }
 }
+
+
+// ===== Gallery Lightbox with navigation =====
+window._galleryLightboxOverlay = null;
+window.openGalleryLightbox = function(imageSrcs, startIndex) {
+    if (window._galleryLightboxOverlay) window._galleryLightboxOverlay.remove();
+    let currentIdx = startIndex || 0;
+    const total = imageSrcs.length;
+
+    const overlay = document.createElement("div");
+    overlay.id = "gallery-lightbox-overlay";
+    overlay.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,0.88);display:flex;align-items:center;justify-content:center;z-index:12000;backdrop-filter:blur(4px);";
+    window._galleryLightboxOverlay = overlay;
+
+    const closeBtn = document.createElement("button");
+    closeBtn.innerHTML = '\u2715';
+    closeBtn.style.cssText = "position:absolute;top:18px;right:24px;background:rgba(255,255,255,0.15);border:none;color:#fff;font-size:22px;width:42px;height:42px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:12010;transition:background 0.2s;";
+    closeBtn.onmouseenter = function(){ closeBtn.style.background = "rgba(255,255,255,0.3)"; };
+    closeBtn.onmouseleave = function(){ closeBtn.style.background = "rgba(255,255,255,0.15)"; };
+    closeBtn.onclick = function(e){ e.stopPropagation(); overlay.remove(); window._galleryLightboxOverlay = null; };
+    overlay.appendChild(closeBtn);
+
+    const counter = document.createElement("div");
+    counter.style.cssText = "position:absolute;top:22px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.7);font-size:14px;font-family:Prompt,sans-serif;z-index:12010;";
+    overlay.appendChild(counter);
+
+    const imgContainer = document.createElement("div");
+    imgContainer.style.cssText = "display:flex;align-items:center;justify-content:center;width:100%;height:100%;";
+    overlay.appendChild(imgContainer);
+
+    const largeImg = document.createElement("img");
+    largeImg.style.cssText = "max-width:85vw;max-height:85vh;border-radius:8px;box-shadow:0 20px 25px -5px rgba(0,0,0,0.5);transition:opacity 0.2s;user-select:none;pointer-events:none;";
+    imgContainer.appendChild(largeImg);
+
+    function makeArrow(icon, side) {
+        const btn = document.createElement("button");
+        btn.innerHTML = icon;
+        btn.style.cssText = "position:absolute;top:50%;transform:translateY(-50%);" + side + ":16px;background:rgba(255,255,255,0.12);border:none;color:#fff;font-size:28px;width:48px;height:48px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:12010;transition:background 0.2s;";
+        btn.onmouseenter = function(){ btn.style.background = "rgba(255,255,255,0.3)"; };
+        btn.onmouseleave = function(){ btn.style.background = "rgba(255,255,255,0.12)"; };
+        return btn;
+    }
+
+    const prevBtn = makeArrow("\u276E", "left");
+    const nextBtn = makeArrow("\u276F", "right");
+    overlay.appendChild(prevBtn);
+    overlay.appendChild(nextBtn);
+
+    function showImage(idx) {
+        currentIdx = idx;
+        largeImg.style.opacity = "0";
+        setTimeout(function(){
+            largeImg.src = imageSrcs[currentIdx];
+            largeImg.style.opacity = "1";
+        }, 100);
+        counter.textContent = (currentIdx + 1) + " / " + total;
+        prevBtn.style.display = currentIdx > 0 ? "flex" : "none";
+        nextBtn.style.display = currentIdx < total - 1 ? "flex" : "none";
+    }
+
+    prevBtn.onclick = function(e){ e.stopPropagation(); if (currentIdx > 0) showImage(currentIdx - 1); };
+    nextBtn.onclick = function(e){ e.stopPropagation(); if (currentIdx < total - 1) showImage(currentIdx + 1); };
+
+    overlay.addEventListener("click", function(e){
+        if (e.target === overlay || e.target === imgContainer) {
+            overlay.remove();
+            window._galleryLightboxOverlay = null;
+        }
+    });
+
+    function onKey(e) {
+        if (!document.body.contains(overlay)) { document.removeEventListener("keydown", onKey); return; }
+        if (e.key === "ArrowLeft" && currentIdx > 0) { showImage(currentIdx - 1); e.preventDefault(); }
+        else if (e.key === "ArrowRight" && currentIdx < total - 1) { showImage(currentIdx + 1); e.preventDefault(); }
+        else if (e.key === "Escape") { overlay.remove(); window._galleryLightboxOverlay = null; document.removeEventListener("keydown", onKey); }
+    }
+    document.addEventListener("keydown", onKey);
+
+    var touchStartX = 0;
+    overlay.addEventListener("touchstart", function(e){ touchStartX = e.changedTouches[0].screenX; }, {passive: true});
+    overlay.addEventListener("touchend", function(e){
+        var diff = e.changedTouches[0].screenX - touchStartX;
+        if (Math.abs(diff) > 50) {
+            if (diff < 0 && currentIdx < total - 1) showImage(currentIdx + 1);
+            else if (diff > 0 && currentIdx > 0) showImage(currentIdx - 1);
+        }
+    }, {passive: true});
+
+    document.body.appendChild(overlay);
+    showImage(currentIdx);
+};
+// ===== End Gallery Lightbox =====
 
 function syncScurveMonthsWithGantt(project) {
     if (project.ganttData && project.ganttData.startDate && project.ganttData.endDate) {
@@ -1855,19 +1966,52 @@ function renderSubnavCostTab(project) {
             subtabCostStructureDonut.destroy();
         }
         
-        const cs = project.costStructure || { labor: 0, material: 0, other: 0 };
-        const total = (cs.labor || 0) + (cs.material || 0) + (cs.other || 0);
-        const isEmpty = total === 0;
+        // Calculate actual amounts from expenses
+        let laborAmt = 0, materialAmt = 0, otherAmt = 0;
+        if (project.expenses && project.expenses.length > 0) {
+            project.expenses.forEach(e => {
+                if (e.status === "รออนุมัติ" || e.status === "ปฏิเสธ") return;
+                if (e.type === "ค่าแรง") laborAmt += e.amount;
+                else if (e.type === "ค่าวัสดุ") materialAmt += e.amount;
+                else otherAmt += e.amount;
+            });
+        }
+        const spentTotal = laborAmt + materialAmt + otherAmt;
+        const projectValue = project.value || 0;
+        const remaining = Math.max(0, projectValue - spentTotal);
+        const isEmpty = spentTotal === 0;
         
-        const chartData = isEmpty ? [1] : [cs.labor, cs.material, cs.other];
-        const chartLabels = isEmpty 
-            ? ["ยังไม่มีบันทึกต้นทุน"]
-            : [
-                `ค่าแรง ${(cs.labor || 0).toFixed(0)}%`, 
-                `ค่าวัสดุ ${(cs.material || 0).toFixed(0)}%`, 
-                `อื่นๆ ${(cs.other || 0).toFixed(0)}%`
-              ];
-        const chartColors = isEmpty ? ['#f1f5f9'] : ['#1d3557', '#457b9d', '#e63946'];
+        // Build chart data: actual amounts for each category + remaining as gray
+        let chartData, chartLabels, chartColors;
+        if (isEmpty) {
+            chartData = [1];
+            chartLabels = ["ยังไม่มีบันทึกต้นทุน"];
+            chartColors = ['#f1f5f9'];
+        } else {
+            chartData = [];
+            chartLabels = [];
+            chartColors = [];
+            if (laborAmt > 0) {
+                chartData.push(laborAmt);
+                chartLabels.push(`ค่าแรง ${formatNumber(laborAmt)} บาท`);
+                chartColors.push('#1d3557');
+            }
+            if (materialAmt > 0) {
+                chartData.push(materialAmt);
+                chartLabels.push(`ค่าวัสดุ ${formatNumber(materialAmt)} บาท`);
+                chartColors.push('#457b9d');
+            }
+            if (otherAmt > 0) {
+                chartData.push(otherAmt);
+                chartLabels.push(`อื่นๆ ${formatNumber(otherAmt)} บาท`);
+                chartColors.push('#e63946');
+            }
+            if (remaining > 0) {
+                chartData.push(remaining);
+                chartLabels.push(`คงเหลือ ${formatNumber(remaining)} บาท`);
+                chartColors.push('#e2e8f0');
+            }
+        }
         
         subtabCostStructureDonut = new Chart(ctx, {
             type: 'doughnut',
@@ -1876,8 +2020,8 @@ function renderSubnavCostTab(project) {
                 datasets: [{
                     data: chartData,
                     backgroundColor: chartColors,
-                    borderWidth: isEmpty ? 1 : 1,
-                    borderColor: isEmpty ? '#e2e8f0' : '#ffffff'
+                    borderWidth: 1,
+                    borderColor: '#ffffff'
                 }]
             },
             options: {
@@ -1887,10 +2031,21 @@ function renderSubnavCostTab(project) {
                 plugins: {
                     legend: {
                         position: 'bottom',
-                        labels: { boxWidth: 10, font: { size: 9, family: 'Prompt' } }
+                        labels: { 
+                            boxWidth: 10, 
+                            font: { size: 9, family: 'Prompt' },
+                            color: '#334155'
+                        }
                     },
                     tooltip: {
-                        enabled: !isEmpty
+                        enabled: !isEmpty,
+                        callbacks: {
+                            label: function(context) {
+                                const val = context.raw;
+                                const pct = projectValue > 0 ? ((val / projectValue) * 100).toFixed(1) : 0;
+                                return ` ${context.label} (${pct}%)`;
+                            }
+                        }
                     }
                 }
             }
@@ -1976,13 +2131,37 @@ function renderSubnavCostTab(project) {
 }
 
 function renderSubnavDocumentsTab(project) {
+    const isCustomerRole = (appState.currentRole === "customer");
+    
+    // Toggle filter buttons visibility based on role
+    const contractBtn = document.querySelector("#subtab-doc-tab-filters .doc-filter-btn[data-filter='Contract']");
+    const poBtn = document.querySelector("#subtab-doc-tab-filters .doc-filter-btn[data-filter='PO']");
+    if (contractBtn) contractBtn.style.display = isCustomerRole ? "none" : "";
+    if (poBtn) poBtn.style.display = isCustomerRole ? "none" : "";
+    
+    // If the active filter is hidden, reset it to 'all'
+    let activeBtn = document.querySelector("#subtab-doc-tab-filters .doc-filter-btn.active");
+    if (isCustomerRole && activeBtn && (activeBtn.getAttribute("data-filter") === "Contract" || activeBtn.getAttribute("data-filter") === "PO")) {
+        document.querySelectorAll("#subtab-doc-tab-filters .doc-filter-btn").forEach(btn => {
+            if (btn.getAttribute("data-filter") === "all") {
+                btn.classList.add("active");
+            } else {
+                btn.classList.remove("active");
+            }
+        });
+    }
+
     const filter = document.querySelector("#subtab-doc-tab-filters .doc-filter-btn.active")?.getAttribute("data-filter") || "all";
     const tableBody = document.getElementById("subtab-documents-table-body");
     if (!tableBody) return;
     
     tableBody.innerHTML = "";
     
-    const docs = project.documents || [];
+    let docs = project.documents || [];
+    if (isCustomerRole) {
+        docs = docs.filter(d => d.type === "BOQ" || d.type === "Drawings");
+    }
+    
     const filteredDocs = filter === "all" ? docs : docs.filter(d => d.type === filter);
     
     if (filteredDocs.length === 0) {
@@ -2967,14 +3146,11 @@ function renderSubnavDailyReports(project) {
                 
                 // Click to view large image modal
                 imgEl.addEventListener("click", () => {
-                    const overlay = document.createElement("div");
-                    overlay.style.cssText = "position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15,23,42,0.85); display: flex; align-items: center; justify-content: center; z-index: 12000; cursor: zoom-out; backdrop-filter: blur(4px);";
-                    const largeImg = document.createElement("img");
-                    largeImg.src = imgEl.src;
-                    largeImg.style.cssText = "max-width: 90vw; max-height: 90vh; border-radius: 8px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.5);";
-                    overlay.appendChild(largeImg);
-                    document.body.appendChild(overlay);
-                    overlay.addEventListener("click", () => overlay.remove());
+                    // Collect all photos in this report card
+                    const gallery = imgEl.closest(".daily-photo-gallery");
+                    const allImgs = gallery ? Array.from(gallery.querySelectorAll("img")).map(im => im.src).filter(s => s && !s.includes("data:image/svg")) : [imgEl.src];
+                    const clickedIdx = allImgs.indexOf(imgEl.src);
+                    window.openGalleryLightbox(allImgs, clickedIdx >= 0 ? clickedIdx : 0);
                 });
                 
                 photoGallery.appendChild(imgEl);
