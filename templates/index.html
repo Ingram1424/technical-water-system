@@ -15396,13 +15396,13 @@ document.addEventListener("DOMContentLoaded", () => {
                     const printActualPctText = printActualCumPct.toFixed(1) + '%';
                     
                     scurveImgHtml = `
-                        <div style="text-align: center; margin-bottom: 25px; page-break-inside: avoid; border: 1px solid #cbd5e1; padding: 16px; border-radius: 6px;">
-                            <div style="display: flex; justify-content: center; align-items: center; gap: 24px; margin-bottom: 10px; font-size: 11px; color: #475569; font-family: 'Prompt', sans-serif;">
-                                <span><span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #1d3557; margin-right: 4px;"></span>แผนงานสะสม (Plan %)</span>
-                                <span><span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #10b981; margin-right: 4px;"></span>งานจริงสะสม (Actual %)</span>
+                        <div style="text-align: center; margin-bottom: 12px; page-break-inside: avoid; border: 1px solid #cbd5e1; padding: 10px; border-radius: 6px;">
+                            <div style="display: flex; justify-content: center; align-items: center; gap: 20px; margin-bottom: 6px; font-size: 10px; color: #475569; font-family: 'Prompt', sans-serif;">
+                                <span><span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #1d3557; margin-right: 4px;"></span>แผนงานสะสม (Plan %)</span>
+                                <span><span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #10b981; margin-right: 4px;"></span>งานจริงสะสม (Actual %)</span>
                             </div>
-                            <div style="font-size: 36px; font-weight: 800; color: #10b981; margin-bottom: 12px; font-family: 'Prompt', sans-serif;">${printActualPctText}</div>
-                            <img src="${imgData}" style="max-width: 100%; height: auto;" alt="S-Curve Chart">
+                            <div style="font-size: 26px; font-weight: 800; color: #10b981; margin-bottom: 6px; font-family: 'Prompt', sans-serif;">${printActualPctText}</div>
+                            <img src="${imgData}" style="max-width: 80%; max-height: 200px; object-fit: contain;" alt="S-Curve Chart">
                         </div>
                     `;
                 } catch(e) {
@@ -15535,11 +15535,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 rowsHtml += `
                     <tr style="${rowBg}">
-                        <td style="text-align: center; border: 1px solid #94a3b8; font-size: 9px; padding: 4px 2px;">${isSub ? '' : (item.item || '')}</td>
-                        <td style="border: 1px solid #94a3b8; padding: 4px 6px; text-align: left; font-size: 9px; font-weight: ${nameWeight}; ${indentStyle} white-space: normal; word-break: break-word;">${prefix}${item.name || ''}</td>
-                        ${hideBudget ? '' : `<td style="border: 1px solid #94a3b8; text-align: right; padding: 4px 6px; font-size: 9px;">${isSub ? '' : (item.budget ? formatNumber(item.budget) : '0')}</td>`}
-                        ${hideWeight ? '' : `<td style="border: 1px solid #94a3b8; text-align: center; padding: 4px 2px; font-size: 9px; font-weight: bold;">${isSub ? '' : (item.weight ? item.weight.toFixed(2) : '0.00')}</td>`}
-                        <td style="border: 1px solid #94a3b8; text-align: center; padding: 4px 2px; font-size: 9px; font-weight: bold;">${isSub ? '' : (item.totalPercent || 0)}%</td>
+                        <td style="text-align: center; border: 1px solid #94a3b8; font-size: 8px; padding: 3px 2px;">${isSub ? '' : (item.item || '')}</td>
+                        <td style="border: 1px solid #94a3b8; padding: 3px 4px; text-align: left; font-size: 8px; font-weight: ${nameWeight}; ${indentStyle} white-space: normal; word-break: break-word;">${prefix}${item.name || ''}</td>
+                        ${hideBudget ? '' : `<td style="border: 1px solid #94a3b8; text-align: right; padding: 3px 4px; font-size: 8px;">${isSub ? '' : (item.budget ? formatNumber(item.budget) : '0')}</td>`}
+                        ${hideWeight ? '' : `<td style="border: 1px solid #94a3b8; text-align: center; padding: 3px 2px; font-size: 8px; font-weight: bold;">${isSub ? '' : (item.weight ? item.weight.toFixed(2) : '0.00')}</td>`}
+                        <td style="border: 1px solid #94a3b8; text-align: center; padding: 3px 2px; font-size: 8px; font-weight: bold;">${isSub ? '' : (item.totalPercent || 0)}%</td>
                         ${weeklyCellsHtml}
                     </tr>
                 `;
@@ -15557,41 +15557,41 @@ document.addEventListener("DOMContentLoaded", () => {
                         @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700&display=swap');
                         body {
                             font-family: 'Prompt', sans-serif;
-                            padding: 20px;
+                            padding: 10px;
                             color: #334155;
                             background: #fff;
                         }
                         .company-header {
                             display: flex;
                             align-items: center;
-                            gap: 15px;
-                            border-bottom: 2px solid #1e3a8a;
-                            padding-bottom: 12px;
-                            margin-bottom: 15px;
+                            gap: 12px;
+                            border-bottom: 1.5px solid #1e3a8a;
+                            padding-bottom: 6px;
+                            margin-bottom: 8px;
                         }
                         .company-info {
                             text-align: left;
                         }
                         .company-info h1 {
-                            font-size: 14px;
+                            font-size: 11.5px;
                             color: #1e3a8a;
-                            margin: 0 0 4px 0;
+                            margin: 0 0 3px 0;
                             font-weight: 700;
                         }
                         .company-info p {
-                            font-size: 9px;
+                            font-size: 7.5px;
                             color: #64748b;
                             margin: 0;
                         }
                         .doc-meta {
                             display: grid;
                             grid-template-columns: 1fr 1fr;
-                            gap: 10px;
-                            font-size: 11px;
-                            margin-bottom: 15px;
+                            gap: 6px;
+                            font-size: 9.5px;
+                            margin-bottom: 8px;
                             border: 1px solid #cbd5e1;
-                            padding: 10px;
-                            border-radius: 6px;
+                            padding: 6px;
+                            border-radius: 4px;
                         }
                         .doc-meta-item {
                             display: flex;
@@ -15600,26 +15600,26 @@ document.addEventListener("DOMContentLoaded", () => {
                         .doc-meta-label {
                             font-weight: 600;
                             color: #334155;
-                            min-width: 90px;
+                            min-width: 80px;
                         }
                         .report-title {
-                            font-size: 14px;
+                            font-size: 11.5px;
                             font-weight: 700;
                             text-align: center;
-                            margin-bottom: 15px;
+                            margin-bottom: 8px;
                             color: #1e3a8a;
                             text-decoration: underline;
                         }
                         table {
                             width: 100%;
                             border-collapse: collapse;
-                            font-size: 10.5px;
-                            margin-top: 10px;
+                            font-size: 8px;
+                            margin-top: 8px;
                             table-layout: fixed;
                         }
                         th, td {
                             border: 1px solid #94a3b8;
-                            padding: 5px;
+                            padding: 3px 2px;
                             text-align: center;
                         }
                         th {
