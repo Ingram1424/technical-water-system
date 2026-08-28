@@ -15417,6 +15417,30 @@ document.addEventListener("DOMContentLoaded", () => {
             const isPlanMode = currentScurveMode === 'plan';
             const modeTextTh = isPlanMode ? "แผนงาน (Plan)" : "ผลงานจริง (Actual)";
 
+            // Helper function to shorten Thai month names for print compatibility
+            const getShortThaiMonthName = (longMonth) => {
+                if (!longMonth) return "";
+                const monthsMap = {
+                    "มกราคม": "ม.ค.", "กุมภาพันธ์": "ก.พ.", "มีนาคม": "มี.ค.",
+                    "เมษายน": "เม.ย.", "พฤษภาคม": "พ.ค.", "มิถุนายน": "มิ.ย.",
+                    "กรกฎาคม": "ก.ค.", "สิงหาคม": "ส.ค.", "กันยายน": "ก.ย.",
+                    "ตุลาคม": "ต.ค.", "พฤศจิกายน": "พ.ย.", "ธันวาคม": "ธ.ค."
+                };
+                let result = longMonth;
+                for (const [long, short] of Object.entries(monthsMap)) {
+                    if (longMonth.includes(long)) {
+                        const yearMatch = longMonth.match(/\d+/);
+                        if (yearMatch) {
+                            result = `${short} ${yearMatch[0].slice(-2)}`;
+                        } else {
+                            result = short;
+                        }
+                        break;
+                    }
+                }
+                return result;
+            };
+
             // Build headers row
             let monthsHeaderHtml = "";
             let weeksHeaderHtml = "";
@@ -15452,16 +15476,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
 
                 monthsGroup.forEach((group) => {
-                    monthsHeaderHtml += `<th colspan="${group.days.length}" style="border: 1px solid #94a3b8; padding: 6px; background: #e2e8f0; font-size: 11px;">${group.monthName}</th>`;
+                    monthsHeaderHtml += `<th colspan="${group.days.length}" style="border: 1px solid #94a3b8; padding: 6px; background: #e2e8f0; font-size: 11px;">${getShortThaiMonthName(group.monthName)}</th>`;
                     group.days.forEach(day => {
-                        weeksHeaderHtml += `<th style="border: 1px solid #94a3b8; padding: 4px 0px; font-size: 7.5px; font-weight: normal; width: 12px; min-width: 12px; max-width: 12px; text-align: center; letter-spacing: -0.3px;">${day}</th>`;
+                        weeksHeaderHtml += `<th style="border: 1px solid #94a3b8; padding: 4px 0px; font-size: 7.5px; font-weight: normal; width: 12px; text-align: center; letter-spacing: -0.3px;">${day}</th>`;
                     });
                 });
             } else {
                 (proj.scurveMonths || ["Month 1"]).forEach((month, mIdx) => {
-                    monthsHeaderHtml += `<th colspan="4" style="border: 1px solid #94a3b8; padding: 6px; background: #e2e8f0; font-size: 11px;">${month}</th>`;
+                    monthsHeaderHtml += `<th colspan="4" style="border: 1px solid #94a3b8; padding: 6px; background: #e2e8f0; font-size: 11px;">${getShortThaiMonthName(month)}</th>`;
                     for (let w = 1; w <= 4; w++) {
-                        weeksHeaderHtml += `<th style="border: 1px solid #94a3b8; padding: 4px 0px; font-size: 9px; font-weight: bold; width: 25px; min-width: 25px; max-width: 25px; text-align: center;">${w}</th>`;
+                        weeksHeaderHtml += `<th style="border: 1px solid #94a3b8; padding: 4px 0px; font-size: 9px; font-weight: bold; width: 25px; text-align: center;">${w}</th>`;
                     }
                 });
             }
@@ -15481,13 +15505,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 for (let i = 0; i < printNumCols; i++) {
                     const val = vals[i] || 0;
                     const valStr = val === 0 ? "" : (isPlanMode ? val.toFixed(1) : val);
-                    weeklyCellsHtml += `<td style="border: 1px solid #94a3b8; text-align: center; padding: 4px 0px; font-size: 10px; width: 25px; min-width: 25px; max-width: 25px;">${valStr}</td>`;
+                    weeklyCellsHtml += `<td style="border: 1px solid #94a3b8; text-align: center; padding: 4px 0px; font-size: 10px; width: ${printIsDaily ? '12px' : '25px'};">${valStr}</td>`;
                 }
 
                 rowsHtml += `
                     <tr style="${rowBg}">
                         <td style="text-align: center; border: 1px solid #94a3b8; font-size: 11px; width: 35px; min-width: 35px; max-width: 35px;">${isSub ? '' : (item.item || '')}</td>
-                        <td style="border: 1px solid #94a3b8; padding: 6px; text-align: left; font-size: 11px; font-weight: ${nameWeight}; ${indentStyle} width: 250px; min-width: 250px; max-width: 250px; white-space: normal; word-break: break-word;">${prefix}${item.name || ''}</td>
+                        <td style="border: 1px solid #94a3b8; padding: 6px; text-align: left; font-size: 11px; font-weight: ${nameWeight}; ${indentStyle} width: 200px; min-width: 200px; max-width: 200px; white-space: normal; word-break: break-word;">${prefix}${item.name || ''}</td>
                         ${hideBudget ? '' : `<td style="border: 1px solid #94a3b8; text-align: right; padding: 6px; font-size: 11px; width: 85px; min-width: 85px; max-width: 85px;">${isSub ? '' : (item.budget ? formatNumber(item.budget) : '0')}</td>`}
                         ${hideWeight ? '' : `<td style="border: 1px solid #94a3b8; text-align: center; padding: 6px; font-size: 11px; font-weight: bold; width: 38px; min-width: 38px; max-width: 38px;">${isSub ? '' : (item.weight ? item.weight.toFixed(2) : '0.00')}</td>`}
                         <td style="border: 1px solid #94a3b8; text-align: center; padding: 6px; font-size: 11px; font-weight: bold; width: 48px; min-width: 48px; max-width: 48px;">${isSub ? '' : (item.totalPercent || 0)}%</td>
@@ -15641,7 +15665,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         <thead>
                             <tr style="background: #e2e8f0;">
                                 <th rowspan="2" style="width: 35px; min-width: 35px; max-width: 35px;">Items</th>
-                                <th rowspan="2" style="width: 250px; min-width: 250px; max-width: 250px; text-align: left; padding-left: 8px;">Description</th>
+                                <th rowspan="2" style="width: 200px; min-width: 200px; max-width: 200px; text-align: left; padding-left: 8px;">Description</th>
                                 ${hideBudget ? '' : '<th rowspan="2" style="width: 85px; min-width: 85px; max-width: 85px;">Budget</th>'}
                                 ${hideWeight ? '' : '<th rowspan="2" style="width: 38px; min-width: 38px; max-width: 38px;">%</th>'}
                                 <th rowspan="2" style="width: 48px; min-width: 48px; max-width: 48px;">% (รวม)</th>
