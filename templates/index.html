@@ -15441,134 +15441,106 @@ document.addEventListener("DOMContentLoaded", () => {
                 return result;
             };
 
-            // Build table chunks for horizontal page-splitting (Option 1)
-            const chunkMonthsCount = printIsDaily ? 2 : 6;
-            const monthsList = printIsDaily ? monthsGroup : (proj.scurveMonths || ["Month 1"]);
-            const numChunks = Math.ceil(monthsList.length / chunkMonthsCount);
-            let tablesHtml = "";
-
-            for (let chunkIdx = 0; chunkIdx < numChunks; chunkIdx++) {
-                const startM = chunkIdx * chunkMonthsCount;
-                const endM = Math.min((chunkIdx + 1) * chunkMonthsCount, monthsList.length);
-                const chunkMonths = monthsList.slice(startM, endM);
-
-                // Build chunk headers
-                let chunkMonthsHeaderHtml = "";
-                let chunkWeeksHeaderHtml = "";
-                let startColIdx = 0;
-                let endColIdx = 0;
-
-                if (printIsDaily) {
-                    let dayOffset = 0;
-                    for (let m = 0; m < startM; m++) {
-                        dayOffset += monthsList[m].days.length;
-                    }
-                    startColIdx = dayOffset;
-                    
-                    let chunkDaysCount = 0;
-                    chunkMonths.forEach(group => {
-                        chunkMonthsHeaderHtml += `<th colspan="${group.days.length}" style="border: 1px solid #94a3b8; padding: 5px; background: #e2e8f0; font-size: 10px;">${getShortThaiMonthName(group.monthName)}</th>`;
-                        group.days.forEach(day => {
-                            chunkWeeksHeaderHtml += `<th style="border: 1px solid #94a3b8; padding: 3px 0px; font-size: 7px; font-weight: normal; text-align: center; letter-spacing: -0.3px;">${day}</th>`;
-                        });
-                        chunkDaysCount += group.days.length;
-                    });
-                    endColIdx = startColIdx + chunkDaysCount;
-                } else {
-                    startColIdx = startM * 4;
-                    endColIdx = endM * 4;
-                    chunkMonths.forEach(month => {
-                        chunkMonthsHeaderHtml += `<th colspan="4" style="border: 1px solid #94a3b8; padding: 5px; background: #e2e8f0; font-size: 10px;">${getShortThaiMonthName(month)}</th>`;
-                        for (let w = 1; w <= 4; w++) {
-                            chunkWeeksHeaderHtml += `<th style="border: 1px solid #94a3b8; padding: 3px 0px; font-size: 8px; font-weight: bold; text-align: center;">${w}</th>`;
-                        }
-                    });
+            // Build headers row
+            let monthsHeaderHtml = "";
+            let weeksHeaderHtml = "";
+            if (printIsDaily && proj.ganttData.startDate && proj.ganttData.endDate) {
+                const [sy, sm, sd] = proj.ganttData.startDate.split('-').map(Number);
+                const [ey, em, ed] = proj.ganttData.endDate.split('-').map(Number);
+                const start = new Date(sy, sm - 1, sd);
+                const end = new Date(ey, em - 1, ed);
+                let current = new Date(start);
+                let dateList = [];
+                let count = 0;
+                while (current <= end && count < 750) {
+                    dateList.push(new Date(current));
+                    current.setDate(current.getDate() + 1);
+                    count++;
                 }
 
-                // Build colgroup HTML for this chunk
-                let chunkColGroupHtml = "";
-                chunkColGroupHtml += `<col style="width: 35px;">`; // Items
-                chunkColGroupHtml += `<col style="width: 200px;">`; // Description
-                if (!hideBudget) chunkColGroupHtml += `<col style="width: 85px;">`; // Budget
-                if (!hideWeight) chunkColGroupHtml += `<col style="width: 38px;">`; // %
-                chunkColGroupHtml += `<col style="width: 48px;">`; // % (รวม)
-                
-                const chunkColsCount = endColIdx - startColIdx;
-                const singleColWidth = printIsDaily ? "12px" : "25px";
-                for (let i = 0; i < chunkColsCount; i++) {
-                    chunkColGroupHtml += `<col style="width: ${singleColWidth};">`;
-                }
+                const monthThaiNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+                const monthsGroup = [];
+                let currentMonthName = "";
+                let currentGroup = null;
 
-                // Build rows for this chunk
-                let chunkRowsHtml = "";
-                (proj.scurveData || []).forEach((item, idx) => {
-                    const isSub = item.isSubtask;
-                    const indentStyle = isSub ? "padding-left: 15px;" : "";
-                    const prefix = isSub ? "- " : "";
-                    const nameWeight = isSub ? "normal" : "bold";
-                    const rowBg = isSub ? "" : "background: #f8fafc;";
-
-                    // Slice cells for this chunk
-                    let weeklyCellsHtml = "";
-                    const vals = isPlanMode ? (item.plan || []) : (item.actual || []);
-                    for (let i = startColIdx; i < endColIdx; i++) {
-                        const val = vals[i] || 0;
-                        const valStr = val === 0 ? "" : (isPlanMode ? val.toFixed(1) : val);
-                        weeklyCellsHtml += `<td style="border: 1px solid #94a3b8; text-align: center; padding: 3px 0px; font-size: 8px; letter-spacing: -0.5px; line-height: 1.1; overflow: hidden; white-space: nowrap;">${valStr}</td>`;
+                dateList.forEach((d, idx) => {
+                    const mIdx = d.getMonth();
+                    const yTh = d.getFullYear() + 543;
+                    const mName = monthThaiNames[mIdx] + " " + yTh;
+                    if (mName !== currentMonthName) {
+                        currentMonthName = mName;
+                        currentGroup = { monthName: mName, days: [], startIdx: idx };
+                        monthsGroup.push(currentGroup);
                     }
-
-                    chunkRowsHtml += `
-                        <tr style="${rowBg}">
-                            <td style="text-align: center; border: 1px solid #94a3b8; font-size: 9.5px; padding: 4px 2px;">${isSub ? '' : (item.item || '')}</td>
-                            <td style="border: 1px solid #94a3b8; padding: 4px 6px; text-align: left; font-size: 9.5px; font-weight: ${nameWeight}; ${indentStyle} white-space: normal; word-break: break-word;">${prefix}${item.name || ''}</td>
-                            ${hideBudget ? '' : `<td style="border: 1px solid #94a3b8; text-align: right; padding: 4px 6px; font-size: 9.5px;">${isSub ? '' : (item.budget ? formatNumber(item.budget) : '0')}</td>`}
-                            ${hideWeight ? '' : `<td style="border: 1px solid #94a3b8; text-align: center; padding: 4px 2px; font-size: 9.5px; font-weight: bold;">${isSub ? '' : (item.weight ? item.weight.toFixed(2) : '0.00')}</td>`}
-                            <td style="border: 1px solid #94a3b8; text-align: center; padding: 4px 2px; font-size: 9.5px; font-weight: bold;">${isSub ? '' : (item.totalPercent || 0)}%</td>
-                            ${weeklyCellsHtml}
-                        </tr>
-                    `;
+                    currentGroup.days.push(d.getDate());
                 });
 
-                // Get chunk month boundaries for title
-                let chunkTitleStart = "";
-                let chunkTitleEnd = "";
-                if (printIsDaily) {
-                    chunkTitleStart = chunkMonths[0].monthName;
-                    chunkTitleEnd = chunkMonths[chunkMonths.length - 1].monthName;
-                } else {
-                    chunkTitleStart = chunkMonths[0];
-                    chunkTitleEnd = chunkMonths[chunkMonths.length - 1];
+                monthsGroup.forEach((group) => {
+                    monthsHeaderHtml += `<th colspan="${group.days.length}" style="border: 1px solid #94a3b8; padding: 5px; background: #e2e8f0; font-size: 10px;">${getShortThaiMonthName(group.monthName)}</th>`;
+                    group.days.forEach(day => {
+                        weeksHeaderHtml += `<th style="border: 1px solid #94a3b8; padding: 3px 0px; font-size: 7px; font-weight: normal; text-align: center; letter-spacing: -0.3px;">${day}</th>`;
+                    });
+                });
+            } else {
+                (proj.scurveMonths || ["Month 1"]).forEach((month, mIdx) => {
+                    monthsHeaderHtml += `<th colspan="4" style="border: 1px solid #94a3b8; padding: 5px; background: #e2e8f0; font-size: 10px;">${getShortThaiMonthName(month)}</th>`;
+                    for (let w = 1; w <= 4; w++) {
+                        weeksHeaderHtml += `<th style="border: 1px solid #94a3b8; padding: 3px 0px; font-size: 8px; font-weight: bold; text-align: center;">${w}</th>`;
+                    }
+                });
+            }
+
+            // Build colgroup HTML
+            let colGroupHtml = "";
+            colGroupHtml += `<col style="width: 30px;">`; // Items
+            colGroupHtml += `<col style="width: 180px;">`; // Description
+            if (!hideBudget) colGroupHtml += `<col style="width: 75px;">`; // Budget
+            if (!hideWeight) colGroupHtml += `<col style="width: 35px;">`; // %
+            colGroupHtml += `<col style="width: 40px;">`; // % (รวม)
+            for (let i = 0; i < printNumCols; i++) {
+                colGroupHtml += `<col>`; // Share remaining width equally
+            }
+
+            // Determine optimal font size based on column count to avoid overlapping
+            let weekFontSize = "8px";
+            let weekLetterSpacing = "-0.4px";
+            if (printNumCols > 50) {
+                weekFontSize = "6.5px";
+                weekLetterSpacing = "-0.6px";
+            } else if (printNumCols > 35) {
+                weekFontSize = "7.5px";
+                weekLetterSpacing = "-0.5px";
+            }
+
+            // Build rows
+            let rowsHtml = "";
+            (proj.scurveData || []).forEach((item, idx) => {
+                const isSub = item.isSubtask;
+                const indentStyle = isSub ? "padding-left: 15px;" : "";
+                const prefix = isSub ? "- " : "";
+                const nameWeight = isSub ? "normal" : "bold";
+                const rowBg = isSub ? "" : "background: #f8fafc;";
+
+                // Weekly/Daily cells
+                let weeklyCellsHtml = "";
+                const vals = isPlanMode ? (item.plan || []) : (item.actual || []);
+                for (let i = 0; i < printNumCols; i++) {
+                    const val = vals[i] || 0;
+                    const valStr = val === 0 ? "" : (isPlanMode ? val.toFixed(1) : val);
+                    weeklyCellsHtml += `<td style="border: 1px solid #94a3b8; text-align: center; padding: 3px 0px; font-size: ${weekFontSize}; letter-spacing: ${weekLetterSpacing}; line-height: 1.1; overflow: hidden; white-space: nowrap;">${valStr}</td>`;
                 }
 
-                tablesHtml += `
-                    <div style="page-break-before: always; break-before: page; margin-top: 25px;">
-                        <div style="font-size: 11.5px; font-weight: bold; margin-bottom: 8px; color: #1e3a8a; text-align: left; font-family: 'Prompt', sans-serif;">
-                            📊 รายละเอียดความคืบหน้ารายแผนงาน - ช่วงที่ ${chunkIdx + 1}: ${getShortThaiMonthName(chunkTitleStart)} ถึง ${getShortThaiMonthName(chunkTitleEnd)}
-                        </div>
-                        <table style="width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 10px;">
-                            <colgroup>
-                                ${chunkColGroupHtml}
-                            </colgroup>
-                            <thead>
-                                <tr style="background: #e2e8f0;">
-                                    <th rowspan="2">Items</th>
-                                    <th rowspan="2" style="text-align: left; padding-left: 8px;">Description</th>
-                                    ${hideBudget ? '' : '<th>Budget</th>'}
-                                    ${hideWeight ? '' : '<th>%</th>'}
-                                    <th>% (รวม)</th>
-                                    ${chunkMonthsHeaderHtml}
-                                </tr>
-                                <tr>
-                                    ${chunkWeeksHeaderHtml}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${chunkRowsHtml}
-                            </tbody>
-                        </table>
-                    </div>
+                rowsHtml += `
+                    <tr style="${rowBg}">
+                        <td style="text-align: center; border: 1px solid #94a3b8; font-size: 9px; padding: 4px 2px;">${isSub ? '' : (item.item || '')}</td>
+                        <td style="border: 1px solid #94a3b8; padding: 4px 6px; text-align: left; font-size: 9px; font-weight: ${nameWeight}; ${indentStyle} white-space: normal; word-break: break-word;">${prefix}${item.name || ''}</td>
+                        ${hideBudget ? '' : `<td style="border: 1px solid #94a3b8; text-align: right; padding: 4px 6px; font-size: 9px;">${isSub ? '' : (item.budget ? formatNumber(item.budget) : '0')}</td>`}
+                        ${hideWeight ? '' : `<td style="border: 1px solid #94a3b8; text-align: center; padding: 4px 2px; font-size: 9px; font-weight: bold;">${isSub ? '' : (item.weight ? item.weight.toFixed(2) : '0.00')}</td>`}
+                        <td style="border: 1px solid #94a3b8; text-align: center; padding: 4px 2px; font-size: 9px; font-weight: bold;">${isSub ? '' : (item.totalPercent || 0)}%</td>
+                        ${weeklyCellsHtml}
+                    </tr>
                 `;
-            }
+            });
 
             // Open print window
             const printWindow = window.open("", "_blank");
@@ -15666,6 +15638,14 @@ document.addEventListener("DOMContentLoaded", () => {
                                 width: 100% !important;
                                 max-width: 100% !important;
                                 table-layout: fixed !important;
+                                border-collapse: collapse !important;
+                            }
+                            thead {
+                                display: table-header-group !important;
+                            }
+                            tr {
+                                page-break-inside: avoid !important;
+                                break-inside: avoid !important;
                             }
                         }
                         @media screen {
@@ -15710,8 +15690,28 @@ document.addEventListener("DOMContentLoaded", () => {
                     <!-- Canvas Chart rendered as Image -->
                     ${scurveImgHtml}
 
-                    <!-- Progress Table Chunks (Page split) -->
-                    ${tablesHtml}
+                    <!-- Progress Table -->
+                    <table style="width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 10px; margin-top: 15px;">
+                        <colgroup>
+                            ${colGroupHtml}
+                        </colgroup>
+                        <thead>
+                            <tr style="background: #e2e8f0;">
+                                <th rowspan="2">Items</th>
+                                <th rowspan="2" style="text-align: left; padding-left: 8px;">Description</th>
+                                ${hideBudget ? '' : '<th>Budget</th>'}
+                                ${hideWeight ? '' : '<th>%</th>'}
+                                <th>% (รวม)</th>
+                                ${monthsHeaderHtml}
+                            </tr>
+                            <tr>
+                                ${weeksHeaderHtml}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHtml}
+                        </tbody>
+                    </table>
                 </body>
                 </html>
             `);
