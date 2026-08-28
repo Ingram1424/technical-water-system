@@ -6462,16 +6462,18 @@ function populateSubnavHospitals() {
 
     const allHospitals = appState.hospitalsList || defaultHospitals;
 
-    // For customer/pe/tech role: filter to allowed hospitals only
+    // Filter to allowed hospitals if role is restricted or has explicit custom permissions configured
     let hospitals = allHospitals;
-    if (appState.currentRole === "customer" || appState.currentRole === "pe" || appState.currentRole === "technician" || appState.currentRole === "tech") {
+    const cUserKey = appState.currentCustomerUser || "user1";
+    const perms = appState.userPermissions[cUserKey] || { hospitals: [], projects: [] };
+    const hasExplicitPerms = (perms.hospitals && perms.hospitals.length > 0) || (perms.projects && perms.projects.length > 0);
+
+    if (appState.currentRole === "customer" || appState.currentRole === "pe" || appState.currentRole === "technician" || appState.currentRole === "tech" || hasExplicitPerms) {
         let effectiveProjects;
         if (appState.allowedShareProjects && appState.allowedShareProjects.length > 0) {
             // Share guest mode: use allowed projects list directly
             effectiveProjects = Object.values(projectsData).filter(p => appState.allowedShareProjects.includes(p.code));
         } else {
-            const cUserKey = appState.currentCustomerUser || "user1";
-            const perms = appState.userPermissions[cUserKey] || { hospitals: [], projects: [] };
             effectiveProjects = Object.values(projectsData).filter(p => isProjectAllowedForCustomer(p, perms));
         }
         const effectiveHospitals = effectiveProjects.map(p => p.customer);
@@ -6482,7 +6484,7 @@ function populateSubnavHospitals() {
         allOpt.textContent = "ทั้งหมดทุกโรงพยาบาลที่ได้รับสิทธิ์";
         selector.appendChild(allOpt);
     } else {
-        // Add "All Hospitals" option for non-customer roles
+        // Add "All Hospitals" option for non-restricted roles
         const allOpt = document.createElement("option");
         allOpt.value = "all";
         allOpt.textContent = "ทั้งหมดทุกโรงพยาบาล";
@@ -6530,13 +6532,15 @@ function populateSubnavProjects(yearFilter) {
         return hospitalMatch && yearMatch && quotingMatch;
     });
 
-    // For customer/pe/tech role: further filter strictly by permissions
-    if (appState.currentRole === "customer" || appState.currentRole === "pe" || appState.currentRole === "technician" || appState.currentRole === "tech") {
+    // Further filter strictly by permissions if role is restricted or has explicit custom permissions configured
+    const cUserKey = appState.currentCustomerUser || "user1";
+    const perms = appState.userPermissions[cUserKey] || { hospitals: [], projects: [] };
+    const hasExplicitPerms = (perms.hospitals && perms.hospitals.length > 0) || (perms.projects && perms.projects.length > 0);
+
+    if (appState.currentRole === "customer" || appState.currentRole === "pe" || appState.currentRole === "technician" || appState.currentRole === "tech" || hasExplicitPerms) {
         if (appState.allowedShareProjects && appState.allowedShareProjects.length > 0) {
             projects = projects.filter(p => appState.allowedShareProjects.includes(p.code));
         } else {
-            const cUserKey = appState.currentCustomerUser || "user1";
-            const perms = appState.userPermissions[cUserKey] || { hospitals: [], projects: [] };
             projects = projects.filter(p => isProjectAllowedForCustomer(p, perms));
         }
     }
@@ -13108,14 +13112,16 @@ document.addEventListener("DOMContentLoaded", () => {
             return hospitalMatch && yearMatch && quotingMatch && statusMatch && searchMatch;
         });
 
-        // Customer / PE / Tech role permissions restriction
-        if (appState.currentRole === "customer" || appState.currentRole === "pe" || appState.currentRole === "technician" || appState.currentRole === "tech") {
+        // Filter strictly by permissions if role is restricted or has explicit custom permissions configured
+        const cUserKey = appState.currentCustomerUser || "user1";
+        const perms = appState.userPermissions[cUserKey] || { hospitals: [], projects: [] };
+        const hasExplicitPerms = (perms.hospitals && perms.hospitals.length > 0) || (perms.projects && perms.projects.length > 0);
+
+        if (appState.currentRole === "customer" || appState.currentRole === "pe" || appState.currentRole === "technician" || appState.currentRole === "tech" || hasExplicitPerms) {
             if (appState.allowedShareProjects && appState.allowedShareProjects.length > 0) {
                 // Share guest mode: filter by the explicit allowedShareProjects list
                 projects = projects.filter(p => appState.allowedShareProjects.includes(p.code));
             } else {
-                const cUserKey = appState.currentCustomerUser || "user1";
-                const perms = appState.userPermissions[cUserKey] || { hospitals: [], projects: [] };
                 projects = projects.filter(p => isProjectAllowedForCustomer(p, perms));
             }
         }
@@ -19113,14 +19119,14 @@ function renderPermissionsManagement() {
             let roleBadgeHTML = "";
             let permBtnHTML = "";
             if (role === "admin") {
-                roleBadgeHTML = `<span style="font-size: 10.5px; font-weight: 700; padding: 2.5px 8px; border-radius: 12px; background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-shield-halved"></i> Admin</span>`;
-                permBtnHTML = `<button type="button" class="btn btn-xs btn-outline" style="font-size: 10.5px; padding: 4px 8px; opacity: 0.5; cursor: not-allowed;" disabled><i class="fa-solid fa-sliders"></i> จัดการสิทธิ์ไม่ได้</button>`;
+                roleBadgeHTML = `<span style="font-size: 10.5px; font-weight: 700; padding: 2.5px 8px; border-radius: 12px; background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-shield-halved"></i> Admin (${hCount} รพ. / ${pCount} งาน)</span>`;
+                permBtnHTML = `<button type="button" class="btn btn-xs btn-outline" onclick="window.selectUserForPermission('${key}')" title="เลือกบัญชีนี้เพื่อปรับสิทธิ์" style="font-size: 10.5px; padding: 4px 8px;"><i class="fa-solid fa-sliders"></i> จัดการสิทธิ์</button>`;
             } else if (role === "pm") {
-                roleBadgeHTML = `<span style="font-size: 10.5px; font-weight: 700; padding: 2.5px 8px; border-radius: 12px; background: #dcfce7; color: #15803d; border: 1px solid #86efac; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-user-lock"></i> PM (Project)</span>`;
-                permBtnHTML = `<button type="button" class="btn btn-xs btn-outline" style="font-size: 10.5px; padding: 4px 8px; opacity: 0.5; cursor: not-allowed;" disabled><i class="fa-solid fa-sliders"></i> จัดการสิทธิ์ไม่ได้</button>`;
+                roleBadgeHTML = `<span style="font-size: 10.5px; font-weight: 700; padding: 2.5px 8px; border-radius: 12px; background: #dcfce7; color: #15803d; border: 1px solid #86efac; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-user-lock"></i> PM (${hCount} รพ. / ${pCount} งาน)</span>`;
+                permBtnHTML = `<button type="button" class="btn btn-xs btn-outline" onclick="window.selectUserForPermission('${key}')" title="เลือกบัญชีนี้เพื่อปรับสิทธิ์" style="font-size: 10.5px; padding: 4px 8px;"><i class="fa-solid fa-sliders"></i> จัดการสิทธิ์</button>`;
             } else if (role === "accounting") {
-                roleBadgeHTML = `<span style="font-size: 10.5px; font-weight: 700; padding: 2.5px 8px; border-radius: 12px; background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-file-invoice-dollar"></i> AC (Account)</span>`;
-                permBtnHTML = `<button type="button" class="btn btn-xs btn-outline" style="font-size: 10.5px; padding: 4px 8px; opacity: 0.5; cursor: not-allowed;" disabled><i class="fa-solid fa-sliders"></i> จัดการสิทธิ์ไม่ได้</button>`;
+                roleBadgeHTML = `<span style="font-size: 10.5px; font-weight: 700; padding: 2.5px 8px; border-radius: 12px; background: #e0f2fe; color: #0369a1; border: 1px solid #7dd3fc; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-file-invoice-dollar"></i> AC (${hCount} รพ. / ${pCount} งาน)</span>`;
+                permBtnHTML = `<button type="button" class="btn btn-xs btn-outline" onclick="window.selectUserForPermission('${key}')" title="เลือกบัญชีนี้เพื่อปรับสิทธิ์" style="font-size: 10.5px; padding: 4px 8px;"><i class="fa-solid fa-sliders"></i> จัดการสิทธิ์</button>`;
             } else if (role === "pe") {
                 roleBadgeHTML = `<span style="font-size: 10.5px; font-weight: 700; padding: 2.5px 8px; border-radius: 12px; background: #fef3c7; color: #d97706; border: 1px solid #fcd34d; display: inline-flex; align-items: center; gap: 4px;"><i class="fa-solid fa-helmet-safety"></i> PE (${hCount} รพ. / ${pCount} งาน)</span>`;
                 permBtnHTML = `<button type="button" class="btn btn-xs btn-outline" onclick="window.selectUserForPermission('${key}')" title="เลือกบัญชีนี้เพื่อปรับสิทธิ์" style="font-size: 10.5px; padding: 4px 8px;"><i class="fa-solid fa-sliders"></i> จัดการสิทธิ์</button>`;
