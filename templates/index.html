@@ -15502,14 +15502,17 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             // Determine optimal font size based on column count to avoid overlapping
-            let weekFontSize = "8px";
-            let weekLetterSpacing = "-0.4px";
-            if (printNumCols > 50) {
-                weekFontSize = "6.5px";
-                weekLetterSpacing = "-0.6px";
-            } else if (printNumCols > 35) {
-                weekFontSize = "7.5px";
+            let weekFontSize = "8.5px";
+            let weekLetterSpacing = "-0.3px";
+            if (printNumCols > 55) {
+                weekFontSize = "6.2px";
+                weekLetterSpacing = "-0.7px";
+            } else if (printNumCols > 40) {
+                weekFontSize = "7.2px";
                 weekLetterSpacing = "-0.5px";
+            } else if (printNumCols > 25) {
+                weekFontSize = "8px";
+                weekLetterSpacing = "-0.4px";
             }
 
             // Build rows
@@ -15699,9 +15702,9 @@ document.addEventListener("DOMContentLoaded", () => {
                             <tr style="background: #e2e8f0;">
                                 <th rowspan="2">Items</th>
                                 <th rowspan="2" style="text-align: left; padding-left: 8px;">Description</th>
-                                ${hideBudget ? '' : '<th>Budget</th>'}
-                                ${hideWeight ? '' : '<th>%</th>'}
-                                <th>% (รวม)</th>
+                                ${hideBudget ? '' : '<th rowspan="2">Budget</th>'}
+                                ${hideWeight ? '' : '<th rowspan="2">%</th>'}
+                                <th rowspan="2">% (รวม)</th>
                                 ${monthsHeaderHtml}
                             </tr>
                             <tr>
