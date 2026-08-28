@@ -15501,15 +15501,15 @@ document.addEventListener("DOMContentLoaded", () => {
                 colGroupHtml += `<col>`; // Share remaining width equally
             }
 
-            // Determine optimal font size based on column count to avoid overlapping, keeping it readable
-            let weekFontSize = "9.5px";
-            let weekLetterSpacing = "-0.2px";
+            // Determine base week cell font size based on column count
+            let baseFontSize = 9.5;
+            let baseLetterSpacing = -0.2;
             if (printNumCols > 50) {
-                weekFontSize = "8px";
-                weekLetterSpacing = "-0.4px";
+                baseFontSize = 8;
+                baseLetterSpacing = -0.4;
             } else if (printNumCols > 35) {
-                weekFontSize = "8.8px";
-                weekLetterSpacing = "-0.3px";
+                baseFontSize = 8.8;
+                baseLetterSpacing = -0.3;
             }
 
             // Build rows
@@ -15526,8 +15526,24 @@ document.addEventListener("DOMContentLoaded", () => {
                 const vals = isPlanMode ? (item.plan || []) : (item.actual || []);
                 for (let i = 0; i < printNumCols; i++) {
                     const val = vals[i] || 0;
-                    const valStr = val === 0 ? "" : (isPlanMode ? val.toFixed(1) : val);
-                    weeklyCellsHtml += `<td style="border: 1px solid #94a3b8; text-align: center; padding: 3px 0px; font-size: ${weekFontSize}; letter-spacing: ${weekLetterSpacing}; line-height: 1.1; overflow: hidden; white-space: nowrap;">${valStr}</td>`;
+                    const valStr = val === 0 ? "" : (isPlanMode ? val.toFixed(1) : val.toString());
+                    
+                    let cellFontSize = baseFontSize;
+                    let cellLetterSpacing = baseLetterSpacing;
+                    
+                    // Specific scale down for longer character values in individual cells
+                    if (valStr.length >= 5) {
+                        cellFontSize = Math.min(cellFontSize, 6.8);
+                        cellLetterSpacing = -0.6;
+                    } else if (valStr.length === 4) {
+                        cellFontSize = Math.min(cellFontSize, 7.8);
+                        cellLetterSpacing = -0.4;
+                    } else if (valStr.length === 3) {
+                        cellFontSize = Math.min(cellFontSize, 8.5);
+                        cellLetterSpacing = -0.3;
+                    }
+
+                    weeklyCellsHtml += `<td style="border: 1px solid #94a3b8; text-align: center; padding: 3px 0px; font-size: ${cellFontSize}px; letter-spacing: ${cellLetterSpacing}px; line-height: 1.1; overflow: hidden; white-space: nowrap;">${valStr}</td>`;
                 }
 
                 rowsHtml += `
