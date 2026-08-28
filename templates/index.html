@@ -15486,11 +15486,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 rowsHtml += `
                     <tr style="${rowBg}">
-                        <td style="text-align: center; border: 1px solid #94a3b8; font-size: 11px; width: 45px; min-width: 45px; max-width: 45px;">${isSub ? '' : (item.item || '')}</td>
+                        <td style="text-align: center; border: 1px solid #94a3b8; font-size: 11px; width: 35px; min-width: 35px; max-width: 35px;">${isSub ? '' : (item.item || '')}</td>
                         <td style="border: 1px solid #94a3b8; padding: 6px; text-align: left; font-size: 11px; font-weight: ${nameWeight}; ${indentStyle} width: 250px; min-width: 250px; max-width: 250px; white-space: normal; word-break: break-word;">${prefix}${item.name || ''}</td>
                         ${hideBudget ? '' : `<td style="border: 1px solid #94a3b8; text-align: right; padding: 6px; font-size: 11px; width: 85px; min-width: 85px; max-width: 85px;">${isSub ? '' : (item.budget ? formatNumber(item.budget) : '0')}</td>`}
-                        ${hideWeight ? '' : `<td style="border: 1px solid #94a3b8; text-align: center; padding: 6px; font-size: 11px; font-weight: bold; width: 50px; min-width: 50px; max-width: 50px;">${isSub ? '' : (item.weight ? item.weight.toFixed(2) : '0.00')}</td>`}
-                        <td style="border: 1px solid #94a3b8; text-align: center; padding: 6px; font-size: 11px; font-weight: bold; width: 60px; min-width: 60px; max-width: 60px;">${isSub ? '' : (item.totalPercent || 0)}%</td>
+                        ${hideWeight ? '' : `<td style="border: 1px solid #94a3b8; text-align: center; padding: 6px; font-size: 11px; font-weight: bold; width: 38px; min-width: 38px; max-width: 38px;">${isSub ? '' : (item.weight ? item.weight.toFixed(2) : '0.00')}</td>`}
+                        <td style="border: 1px solid #94a3b8; text-align: center; padding: 6px; font-size: 11px; font-weight: bold; width: 48px; min-width: 48px; max-width: 48px;">${isSub ? '' : (item.totalPercent || 0)}%</td>
                         ${weeklyCellsHtml}
                     </tr>
                 `;
@@ -15640,11 +15640,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     <table>
                         <thead>
                             <tr style="background: #e2e8f0;">
-                                <th rowspan="2" style="width: 45px; min-width: 45px; max-width: 45px;">Items</th>
+                                <th rowspan="2" style="width: 35px; min-width: 35px; max-width: 35px;">Items</th>
                                 <th rowspan="2" style="width: 250px; min-width: 250px; max-width: 250px; text-align: left; padding-left: 8px;">Description</th>
                                 ${hideBudget ? '' : '<th rowspan="2" style="width: 85px; min-width: 85px; max-width: 85px;">Budget</th>'}
-                                ${hideWeight ? '' : '<th rowspan="2" style="width: 50px; min-width: 50px; max-width: 50px;">%</th>'}
-                                <th rowspan="2" style="width: 60px; min-width: 60px; max-width: 60px;">% (รวม)</th>
+                                ${hideWeight ? '' : '<th rowspan="2" style="width: 38px; min-width: 38px; max-width: 38px;">%</th>'}
+                                <th rowspan="2" style="width: 48px; min-width: 48px; max-width: 48px;">% (รวม)</th>
                                 ${monthsHeaderHtml}
                             </tr>
                             <tr>
