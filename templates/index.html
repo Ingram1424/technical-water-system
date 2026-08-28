@@ -15383,7 +15383,7 @@ document.addEventListener("DOMContentLoaded", () => {
             (proj.scurveMonths || ["Month 1"]).forEach((month, mIdx) => {
                 monthsHeaderHtml += `<th colspan="4" style="border: 1px solid #94a3b8; padding: 6px; background: #e2e8f0; font-size: 11px;">${month}</th>`;
                 for (let w = 1; w <= 4; w++) {
-                    weeksHeaderHtml += `<th style="border: 1px solid #94a3b8; padding: 4px 2px; font-size: 10px; font-weight: bold; width: 35px; text-align: center;">${w}</th>`;
+                    weeksHeaderHtml += `<th style="border: 1px solid #94a3b8; padding: 4px 0px; font-size: 9px; font-weight: bold; width: 25px; min-width: 25px; max-width: 25px; text-align: center;">${w}</th>`;
                 }
             });
 
@@ -15403,16 +15403,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 for (let i = 0; i < limit; i++) {
                     const val = vals[i] || 0;
                     const valStr = val === 0 ? "" : (isPlanMode ? val.toFixed(1) : val);
-                    weeklyCellsHtml += `<td style="border: 1px solid #94a3b8; text-align: center; padding: 4px; font-size: 10.5px;">${valStr}</td>`;
+                    weeklyCellsHtml += `<td style="border: 1px solid #94a3b8; text-align: center; padding: 4px 0px; font-size: 10px; width: 25px; min-width: 25px; max-width: 25px;">${valStr}</td>`;
                 }
 
                 rowsHtml += `
                     <tr style="${rowBg}">
-                        <td style="text-align: center; border: 1px solid #94a3b8; font-size: 11px;">${isSub ? '' : (item.item || '')}</td>
-                        <td style="border: 1px solid #94a3b8; padding: 6px; text-align: left; font-size: 11px; font-weight: ${nameWeight}; ${indentStyle}">${prefix}${item.name || ''}</td>
-                        ${hideBudget ? '' : `<td style="border: 1px solid #94a3b8; text-align: right; padding: 6px; font-size: 11px;">${isSub ? '' : (item.budget ? formatNumber(item.budget) : '0')}</td>`}
-                        ${hideWeight ? '' : `<td style="border: 1px solid #94a3b8; text-align: center; padding: 6px; font-size: 11px; font-weight: bold;">${isSub ? '' : (item.weight ? item.weight.toFixed(2) : '0.00')}</td>`}
-                        <td style="border: 1px solid #94a3b8; text-align: center; padding: 6px; font-size: 11px; font-weight: bold;">${isSub ? '' : (item.totalPercent || 0)}%</td>
+                        <td style="text-align: center; border: 1px solid #94a3b8; font-size: 11px; width: 45px; min-width: 45px; max-width: 45px;">${isSub ? '' : (item.item || '')}</td>
+                        <td style="border: 1px solid #94a3b8; padding: 6px; text-align: left; font-size: 11px; font-weight: ${nameWeight}; ${indentStyle} width: 250px; min-width: 250px; max-width: 250px; white-space: normal; word-break: break-word;">${prefix}${item.name || ''}</td>
+                        ${hideBudget ? '' : `<td style="border: 1px solid #94a3b8; text-align: right; padding: 6px; font-size: 11px; width: 85px; min-width: 85px; max-width: 85px;">${isSub ? '' : (item.budget ? formatNumber(item.budget) : '0')}</td>`}
+                        ${hideWeight ? '' : `<td style="border: 1px solid #94a3b8; text-align: center; padding: 6px; font-size: 11px; font-weight: bold; width: 50px; min-width: 50px; max-width: 50px;">${isSub ? '' : (item.weight ? item.weight.toFixed(2) : '0.00')}</td>`}
+                        <td style="border: 1px solid #94a3b8; text-align: center; padding: 6px; font-size: 11px; font-weight: bold; width: 60px; min-width: 60px; max-width: 60px;">${isSub ? '' : (item.totalPercent || 0)}%</td>
                         ${weeklyCellsHtml}
                     </tr>
                 `;
@@ -15488,6 +15488,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             border-collapse: collapse;
                             font-size: 10.5px;
                             margin-top: 10px;
+                            table-layout: fixed;
                         }
                         th, td {
                             border: 1px solid #94a3b8;
@@ -15512,7 +15513,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             table {
                                 width: 100% !important;
                                 max-width: 100% !important;
-                                table-layout: auto !important;
+                                table-layout: fixed !important;
                             }
                         }
                         @media screen {
@@ -15561,11 +15562,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     <table>
                         <thead>
                             <tr style="background: #e2e8f0;">
-                                <th rowspan="2" style="width: 50px;">Items</th>
-                                <th rowspan="2">Description</th>
-                                ${hideBudget ? '' : '<th rowspan="2" style="width: 95px;">Budget</th>'}
-                                ${hideWeight ? '' : '<th rowspan="2" style="width: 55px;">%</th>'}
-                                <th rowspan="2" style="width: 65px;">% (รวม)</th>
+                                <th rowspan="2" style="width: 45px; min-width: 45px; max-width: 45px;">Items</th>
+                                <th rowspan="2" style="width: 250px; min-width: 250px; max-width: 250px; text-align: left; padding-left: 8px;">Description</th>
+                                ${hideBudget ? '' : '<th rowspan="2" style="width: 85px; min-width: 85px; max-width: 85px;">Budget</th>'}
+                                ${hideWeight ? '' : '<th rowspan="2" style="width: 50px; min-width: 50px; max-width: 50px;">%</th>'}
+                                <th rowspan="2" style="width: 60px; min-width: 60px; max-width: 60px;">% (รวม)</th>
                                 ${monthsHeaderHtml}
                             </tr>
                             <tr>
