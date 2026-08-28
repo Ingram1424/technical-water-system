@@ -2071,7 +2071,9 @@ select.form-control {
 .only-customer {
     display: none;
 }
-.role-customer .only-customer {
+.role-customer .only-customer,
+.role-technician .only-customer,
+.role-tech .only-customer {
     display: block !important;
 }
 
@@ -3128,7 +3130,9 @@ body.public-view-mode .profile-trigger .caret {
 }
 
 
-body.role-customer .show-customer {
+body.role-customer .show-customer,
+body.role-technician .show-customer,
+body.role-tech .show-customer {
     display: flex !important;
 }
 
@@ -3401,7 +3405,7 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                         <a href="#" class="subnav-tab-item" data-subtab="photos-files">
                             <i class="fa-solid fa-images"></i> รูปภาพ / ไฟล์
                         </a>
-                        <a href="#" class="subnav-tab-item hide-customer" data-subtab="cost-tab">
+                        <a href="#" class="subnav-tab-item hide-customer hide-technician hide-tech" data-subtab="cost-tab">
                             <i class="fa-solid fa-hand-holding-dollar"></i> ค่าใช้จ่ายโครงการ
                         </a>
                         <a href="#" class="subnav-tab-item hide-technician" data-subtab="documents-tab">
@@ -3736,7 +3740,7 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                                 <!-- Right Column: Financials -->
                                 <div>
                                     <h4 class="chart-title">สรุปค่าใช้จ่ายโครงการ</h4>
-                                    <div class="financial-summary-widget hide-customer" style="margin-top: 8px;">
+                                    <div class="financial-summary-widget hide-customer hide-technician hide-tech" style="margin-top: 8px;">
                                         <div class="fin-row">
                                             <div class="fin-box" style="padding: 10px;">
                                                 <span class="fin-lbl">ต้นทุนรวม</span>
@@ -4450,7 +4454,7 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                                     </button>
 
                                     <!-- Status Selector Box -->
-                                    <div class="action-card hide-customer" style="display: flex; align-items: center; gap: 8px;">
+                                    <div class="action-card hide-customer hide-technician hide-tech" style="display: flex; align-items: center; gap: 8px;">
                                         <span style="font-size: 12px; font-weight: 700; color: var(--navy-dark); white-space: nowrap;">สถานะโครงการ:</span>
                                         <select id="subnav-project-status-selector-inline" class="form-control" style="font-size: 12px; padding: 6px 12px; height: 36px; font-weight: 600; background-color: #ffffff; border: 1px solid var(--border-color); border-radius: 6px; width: 180px;">
                                             <option value="งานที่กำลังดำเนินการ">🟢 งานที่กำลังดำเนินการ</option>
@@ -4595,9 +4599,9 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
 
                                 <!-- Project charts -->
                                 <div class="project-charts-row">
-                                    <div class="chart-container-card hide-customer">
+                                    <div class="chart-container-card hide-customer hide-technician hide-tech">
                                         <h4 class="chart-title">สรุปค่าใช้จ่ายโครงการ</h4>
-                                        <div class="financial-summary-widget hide-customer">
+                                        <div class="financial-summary-widget hide-customer hide-technician hide-tech">
                                             <div class="fin-row">
                                                 <div class="fin-box">
                                                     <span class="fin-lbl">ต้นทุนรวม</span>
@@ -5067,7 +5071,7 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                                             <div class="info-col label">ระยะเวลาสัญญา</div>
                                             <div class="info-col val" id="subnav-doc-dates">-</div>
                                         </div>
-                                        <div class="info-row hide-customer">
+                                        <div class="info-row hide-customer hide-technician hide-tech">
                                             <div class="info-col label">มูลค่าโครงการ</div>
                                             <div class="info-col val highlight-val" id="subnav-doc-value">0 บาท</div>
                                         </div>
