@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- FontAwesome for Premium Icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
     <!-- Error boundary for debugging JS errors on the user side -->
     <script>
         window.addEventListener('error', function(e) {
@@ -9229,7 +9229,7 @@ function updateScurveTotals(project) {
         let valStr = val === 0 ? '' : val;
         const hasBorder = isDaily || (i % 4 === 0);
         footerHtml += `<td style="padding: 4px; border-left: ${hasBorder ? '1px' : '0'} solid var(--border-color); min-width: 45px; width: 45px;">
-            <input type="number" class="scurve-plan-cum-val" data-widx="${i}" value="${valStr}" min="0" max="100" step="0.1" ${planReadonlyAttr} ${canEditPlan ? planEditInputStyle : planInputStyle} placeholder="0">
+            <input type="number" class="scurve-plan-cum-val" data-widx="${i}" value="${valStr}" min="0" max="100" step="0.1" ${planReadonlyAttr} ${canEditPlan ? planEditInputStyle : planInputStyle} placeholder="">
         </td>`;
     });
     footerHtml += `<td class="hide-accounting hide-customer"></td></tr>`;
@@ -9255,6 +9255,12 @@ function renderSCurveChart(project) {
             ctx.font = "13px 'Prompt', sans-serif";
             ctx.textAlign = "center";
             ctx.fillText("ยังไม่มีข้อมูลแผนงาน — เพิ่มรายการงานเพื่อดูกราฟ S-Curve", canvas.width / 2, canvas.height / 2);
+            
+            const pctEl = document.getElementById("scurve-latest-actual-percentage");
+            if (pctEl) {
+                pctEl.style.display = "none";
+                pctEl.textContent = "0.0%";
+            }
             return;
         }
         
@@ -10143,7 +10149,7 @@ function renderSubnavActualProgress(project) {
                     let val = isPlanMode ? item.plan[wIdx] : item.actual[wIdx];
                     let valStr = val === 0 ? '' : (isPlanMode ? val.toFixed(1) : val);
                     rowHtml += `<td style="padding: 6px; border-left: 1px solid var(--border-color); min-width: 45px; width: 45px;">
-                        <input type="number" class="scurve-cell-val" data-idx="${idx}" data-widx="${wIdx}" value="${valStr}" min="0" max="100" step="0.1" ${cellReadonlyAttr} ${isEditableCell ? editInputStyle : inputStyle} placeholder="${isEditableCell ? '-' : '0'}">
+                        <input type="number" class="scurve-cell-val" data-idx="${idx}" data-widx="${wIdx}" value="${valStr}" min="0" max="100" step="0.1" ${cellReadonlyAttr} ${isEditableCell ? editInputStyle : inputStyle} placeholder="">
                     </td>`;
                 }
             } else {
@@ -10153,7 +10159,7 @@ function renderSubnavActualProgress(project) {
                         let val = isPlanMode ? item.plan[wIdx] : item.actual[wIdx];
                         let valStr = val === 0 ? '' : (isPlanMode ? val.toFixed(1) : val);
                         rowHtml += `<td style="padding: 6px; border-left: ${w===0 ? '1px' : '0'} solid var(--border-color); border-right: ${w===3 ? '1px' : '0'} solid var(--border-color); min-width: 45px; width: 45px;">
-                            <input type="number" class="scurve-cell-val" data-idx="${idx}" data-widx="${wIdx}" value="${valStr}" min="0" max="100" step="0.1" ${cellReadonlyAttr} ${isEditableCell ? editInputStyle : inputStyle} placeholder="${isEditableCell ? '-' : '0'}">
+                            <input type="number" class="scurve-cell-val" data-idx="${idx}" data-widx="${wIdx}" value="${valStr}" min="0" max="100" step="0.1" ${cellReadonlyAttr} ${isEditableCell ? editInputStyle : inputStyle} placeholder="">
                         </td>`;
                     }
                 }
@@ -15354,15 +15360,49 @@ document.addEventListener("DOMContentLoaded", () => {
             const proj = projectsData[code];
             if (!proj) return;
 
+            const printIsDaily = window.isProjectDailyMode(proj);
+            const printNumCols = window.getScurveColumnsCount(proj);
+
             // Generate S-Curve Chart Image
             const scurveCanvas = document.getElementById("scurve-chart-canvas");
             let scurveImgHtml = "";
             if (scurveCanvas) {
                 try {
                     const imgData = scurveCanvas.toDataURL("image/png");
+                    
+                    // Calculate actual cumulative progress %
+                    let printActualCumPct = 0;
+                    if (proj.scurveData && proj.scurveData.length > 0) {
+                        let actualSums = new Array(printNumCols).fill(0);
+                        let parentW = 0;
+                        let lastActIdx = -1;
+                        proj.scurveData.forEach(item => {
+                            if (!item.isSubtask) parentW = parseFloat(item.weight) || 0;
+                            for (let i = 0; i < printNumCols; i++) {
+                                let hasAct = (item.actual && item.actual[i] !== undefined && item.actual[i] !== null && item.actual[i] !== '' && item.actual[i] !== '-' && !isNaN(parseFloat(item.actual[i])) && parseFloat(item.actual[i]) > 0);
+                                let aVal = hasAct ? parseFloat(item.actual[i]) : 0;
+                                actualSums[i] += (parentW * aVal / 100);
+                                if (hasAct && i > lastActIdx) lastActIdx = i;
+                            }
+                        });
+                        let ca = 0;
+                        for (let i = 0; i < printNumCols; i++) {
+                            if (i <= lastActIdx) {
+                                ca += actualSums[i];
+                                printActualCumPct = ca;
+                            }
+                        }
+                    }
+                    const printActualPctText = printActualCumPct.toFixed(1) + '%';
+                    
                     scurveImgHtml = `
-                        <div style="text-align: center; margin-bottom: 25px; page-break-inside: avoid;">
-                            <img src="${imgData}" style="max-width: 100%; height: auto; border: 1px solid #cbd5e1; padding: 10px; border-radius: 6px;" alt="S-Curve Chart">
+                        <div style="text-align: center; margin-bottom: 25px; page-break-inside: avoid; border: 1px solid #cbd5e1; padding: 16px; border-radius: 6px;">
+                            <div style="display: flex; justify-content: center; align-items: center; gap: 24px; margin-bottom: 10px; font-size: 11px; color: #475569; font-family: 'Prompt', sans-serif;">
+                                <span><span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #1d3557; margin-right: 4px;"></span>แผนงานสะสม (Plan %)</span>
+                                <span><span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #10b981; margin-right: 4px;"></span>งานจริงสะสม (Actual %)</span>
+                            </div>
+                            <div style="font-size: 36px; font-weight: 800; color: #10b981; margin-bottom: 12px; font-family: 'Prompt', sans-serif;">${printActualPctText}</div>
+                            <img src="${imgData}" style="max-width: 100%; height: auto;" alt="S-Curve Chart">
                         </div>
                     `;
                 } catch(e) {
@@ -15371,7 +15411,7 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             // Gather headers
-            const hideBudget = (appState.currentRole === "pe" || appState.currentRole === "customer" || appState.currentRole === "technician" || appState.currentRole === "tech");
+            const hideBudget = true; // Force hide budget in S-Curve print table
             const hideWeight = (appState.currentRole === "customer");
             
             const isPlanMode = currentScurveMode === 'plan';
@@ -15380,12 +15420,51 @@ document.addEventListener("DOMContentLoaded", () => {
             // Build headers row
             let monthsHeaderHtml = "";
             let weeksHeaderHtml = "";
-            (proj.scurveMonths || ["Month 1"]).forEach((month, mIdx) => {
-                monthsHeaderHtml += `<th colspan="4" style="border: 1px solid #94a3b8; padding: 6px; background: #e2e8f0; font-size: 11px;">${month}</th>`;
-                for (let w = 1; w <= 4; w++) {
-                    weeksHeaderHtml += `<th style="border: 1px solid #94a3b8; padding: 4px 0px; font-size: 9px; font-weight: bold; width: 25px; min-width: 25px; max-width: 25px; text-align: center;">${w}</th>`;
+            if (printIsDaily && proj.ganttData.startDate && proj.ganttData.endDate) {
+                const [sy, sm, sd] = proj.ganttData.startDate.split('-').map(Number);
+                const [ey, em, ed] = proj.ganttData.endDate.split('-').map(Number);
+                const start = new Date(sy, sm - 1, sd);
+                const end = new Date(ey, em - 1, ed);
+                let current = new Date(start);
+                let dateList = [];
+                let count = 0;
+                while (current <= end && count < 750) {
+                    dateList.push(new Date(current));
+                    current.setDate(current.getDate() + 1);
+                    count++;
                 }
-            });
+
+                const monthThaiNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+                const monthsGroup = [];
+                let currentMonthName = "";
+                let currentGroup = null;
+
+                dateList.forEach((d, idx) => {
+                    const mIdx = d.getMonth();
+                    const yTh = d.getFullYear() + 543;
+                    const mName = monthThaiNames[mIdx] + " " + yTh;
+                    if (mName !== currentMonthName) {
+                        currentMonthName = mName;
+                        currentGroup = { monthName: mName, days: [], startIdx: idx };
+                        monthsGroup.push(currentGroup);
+                    }
+                    currentGroup.days.push(d.getDate());
+                });
+
+                monthsGroup.forEach((group) => {
+                    monthsHeaderHtml += `<th colspan="${group.days.length}" style="border: 1px solid #94a3b8; padding: 6px; background: #e2e8f0; font-size: 11px;">${group.monthName}</th>`;
+                    group.days.forEach(day => {
+                        weeksHeaderHtml += `<th style="border: 1px solid #94a3b8; padding: 4px 0px; font-size: 7.5px; font-weight: normal; width: 12px; min-width: 12px; max-width: 12px; text-align: center; letter-spacing: -0.3px;">${day}</th>`;
+                    });
+                });
+            } else {
+                (proj.scurveMonths || ["Month 1"]).forEach((month, mIdx) => {
+                    monthsHeaderHtml += `<th colspan="4" style="border: 1px solid #94a3b8; padding: 6px; background: #e2e8f0; font-size: 11px;">${month}</th>`;
+                    for (let w = 1; w <= 4; w++) {
+                        weeksHeaderHtml += `<th style="border: 1px solid #94a3b8; padding: 4px 0px; font-size: 9px; font-weight: bold; width: 25px; min-width: 25px; max-width: 25px; text-align: center;">${w}</th>`;
+                    }
+                });
+            }
 
             // Build rows
             let rowsHtml = "";
@@ -15396,11 +15475,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 const nameWeight = isSub ? "normal" : "bold";
                 const rowBg = isSub ? "" : "background: #f8fafc;";
 
-                // Weekly cells
+                // Weekly/Daily cells
                 let weeklyCellsHtml = "";
                 const vals = isPlanMode ? (item.plan || []) : (item.actual || []);
-                const limit = (proj.scurveMonths || ["Month 1"]).length * 4;
-                for (let i = 0; i < limit; i++) {
+                for (let i = 0; i < printNumCols; i++) {
                     const val = vals[i] || 0;
                     const valStr = val === 0 ? "" : (isPlanMode ? val.toFixed(1) : val);
                     weeklyCellsHtml += `<td style="border: 1px solid #94a3b8; text-align: center; padding: 4px 0px; font-size: 10px; width: 25px; min-width: 25px; max-width: 25px;">${valStr}</td>`;
@@ -17119,6 +17197,8 @@ document.addEventListener("DOMContentLoaded", () => {
             let projectsHTML = "";
             for (let idx = 0; idx < projectsToExport.length; idx++) {
                 const proj = projectsToExport[idx];
+                const printIsDaily = window.isProjectDailyMode(proj);
+                const printNumCols = window.getScurveColumnsCount(proj);
 
                 // Build Gantt Chart HTML for Plan Work (Gantt Chart Scheduler style - like Screenshot 1)
                 let ganttChartHTML = "";
@@ -17260,16 +17340,46 @@ document.addEventListener("DOMContentLoaded", () => {
                 let scurveChartHTML = "";
 
                 if (scurveChartImg) {
+                    // Calculate actual cumulative progress %
+                    let pdfActualCumPct = 0;
+                    if (proj.scurveData && proj.scurveData.length > 0) {
+                        let actualSums = new Array(printNumCols).fill(0);
+                        let parentW = 0;
+                        let lastActIdx = -1;
+                        proj.scurveData.forEach(item => {
+                            if (!item.isSubtask) parentW = parseFloat(item.weight) || 0;
+                            for (let i = 0; i < printNumCols; i++) {
+                                let hasAct = (item.actual && item.actual[i] !== undefined && item.actual[i] !== null && item.actual[i] !== '' && item.actual[i] !== '-' && !isNaN(parseFloat(item.actual[i])) && parseFloat(item.actual[i]) > 0);
+                                let aVal = hasAct ? parseFloat(item.actual[i]) : 0;
+                                actualSums[i] += (parentW * aVal / 100);
+                                if (hasAct && i > lastActIdx) lastActIdx = i;
+                            }
+                        });
+                        let ca = 0;
+                        for (let i = 0; i < printNumCols; i++) {
+                            if (i <= lastActIdx) {
+                                ca += actualSums[i];
+                                pdfActualCumPct = ca;
+                            }
+                        }
+                    }
+                    const pdfActualPctText = pdfActualCumPct.toFixed(1) + '%';
+
                     scurveChartHTML = `
                         <div class="section-title"><i class="fa-solid fa-chart-line"></i> กราฟความคืบหน้าโครงการสะสม (S-Curve Chart)</div>
-                        <div style="text-align: center; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 16px; margin-bottom: 24px; display: flex; justify-content: center; align-items: center;">
+                        <div style="text-align: center; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 6px; padding: 16px; margin-bottom: 24px;">
+                            <div style="display: flex; justify-content: center; align-items: center; gap: 24px; margin-bottom: 12px; font-size: 11px; color: #475569;">
+                                <span><span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #1d3557; margin-right: 4px;"></span>แผนงานสะสม (Plan %)</span>
+                                <span><span style="display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: #10b981; margin-right: 4px;"></span>งานจริงสะสม (Actual %)</span>
+                            </div>
+                            <div style="font-size: 32px; font-weight: 800; color: #10b981; margin-bottom: 12px;">${pdfActualPctText}</div>
                             <img src="${scurveChartImg}" style="max-width: 100%; max-height: 280px; object-fit: contain;">
                         </div>
                     `;
                 }
 
                 if (proj.scurveData && proj.scurveData.length > 0 && proj.scurveMonths) {
-                    const hideBudget = (appState.currentRole === "pe" || appState.currentRole === "customer" || appState.currentRole === "technician" || appState.currentRole === "tech");
+                    const hideBudget = true; // Force hide budget in S-Curve print table
                     const hideWeight = (appState.currentRole === "customer");
                     const hideActualCumRow = true;
                     const labelColspan = 2 + (hideBudget ? 0 : 1) + (hideWeight ? 0 : 1) + 1;
@@ -17346,7 +17456,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             <thead>
                                 <tr style="background: #e0e7ff; text-align: center;">
                                     <th rowspan="2" style="width: 50px;">Items</th>
-                                    <th rowspan="2">Description</th>
+                                    <th rowspan="2" style="width: 200px;">Description</th>
                                     ${hideBudget ? '' : '<th rowspan="2" style="width: 80px;">Budget</th>'}
                                     ${hideWeight ? '' : '<th rowspan="2" style="width: 60px;">%</th>'}
                                     <th rowspan="2" style="width: 60px;">% (รวม)</th>
@@ -17364,7 +17474,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                     ${hideBudget ? '' : `<td style="text-align: center;">${formatNumber(proj.scurveData.reduce((sum, item)=>sum+(item.isSubtask?0:item.budget||0),0))}</td>`}
                                     ${hideWeight ? '' : `<td style="text-align: center;">${totalWeight.toFixed(1)}%</td>`}
                                     <td></td>
-                                    ${new Array(proj.scurveMonths.length * 4).fill('<td style="border-left: 1px solid #cbd5e1;"></td>').map((td, i) => i%4===0 ? td : '<td></td>').join("")}
+                                    ${new Array(printNumCols).fill('<td style="border-left: 1px solid #cbd5e1;"></td>').map((td, i) => (printIsDaily || i%4===0) ? td : '<td></td>').join("")}
                                 </tr>
                                 `}
                                 <tr style="background: #fff; font-weight: bold; border-top: 1px solid #cbd5e1;">
@@ -17677,7 +17787,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <head>
                     <meta charset="UTF-8">
                     <title>Project Report - ${code}</title>
-                    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+                    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
                     <style>
                         @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
                         body {
