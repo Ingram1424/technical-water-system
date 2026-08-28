@@ -6466,13 +6466,11 @@ function populateSubnavHospitals() {
 
     const allHospitals = appState.hospitalsList || defaultHospitals;
 
-    // Filter to allowed hospitals if role is restricted or has explicit custom permissions configured
+    // For customer/pe/tech role: filter to allowed hospitals only
     let hospitals = allHospitals;
-    const cUserKey = appState.currentCustomerUser || "user1";
-    const perms = appState.userPermissions[cUserKey] || { hospitals: [], projects: [] };
-    const hasExplicitPerms = (perms.hospitals && perms.hospitals.length > 0) || (perms.projects && perms.projects.length > 0);
-
-    if (appState.currentRole === "customer" || appState.currentRole === "pe" || appState.currentRole === "technician" || appState.currentRole === "tech" || hasExplicitPerms) {
+    if (appState.currentRole === "customer" || appState.currentRole === "pe" || appState.currentRole === "technician" || appState.currentRole === "tech") {
+        const cUserKey = appState.currentCustomerUser || "user1";
+        const perms = appState.userPermissions[cUserKey] || { hospitals: [], projects: [] };
         let effectiveProjects;
         if (appState.allowedShareProjects && appState.allowedShareProjects.length > 0) {
             // Share guest mode: use allowed projects list directly
@@ -6488,7 +6486,7 @@ function populateSubnavHospitals() {
         allOpt.textContent = "ทั้งหมดทุกโรงพยาบาลที่ได้รับสิทธิ์";
         selector.appendChild(allOpt);
     } else {
-        // Add "All Hospitals" option for non-restricted roles
+        // Add "All Hospitals" option for non-customer roles
         const allOpt = document.createElement("option");
         allOpt.value = "all";
         allOpt.textContent = "ทั้งหมดทุกโรงพยาบาล";
@@ -6536,15 +6534,13 @@ function populateSubnavProjects(yearFilter) {
         return hospitalMatch && yearMatch && quotingMatch;
     });
 
-    // Further filter strictly by permissions if role is restricted or has explicit custom permissions configured
-    const cUserKey = appState.currentCustomerUser || "user1";
-    const perms = appState.userPermissions[cUserKey] || { hospitals: [], projects: [] };
-    const hasExplicitPerms = (perms.hospitals && perms.hospitals.length > 0) || (perms.projects && perms.projects.length > 0);
-
-    if (appState.currentRole === "customer" || appState.currentRole === "pe" || appState.currentRole === "technician" || appState.currentRole === "tech" || hasExplicitPerms) {
+    // For customer/pe/tech role: further filter strictly by permissions
+    if (appState.currentRole === "customer" || appState.currentRole === "pe" || appState.currentRole === "technician" || appState.currentRole === "tech") {
         if (appState.allowedShareProjects && appState.allowedShareProjects.length > 0) {
             projects = projects.filter(p => appState.allowedShareProjects.includes(p.code));
         } else {
+            const cUserKey = appState.currentCustomerUser || "user1";
+            const perms = appState.userPermissions[cUserKey] || { hospitals: [], projects: [] };
             projects = projects.filter(p => isProjectAllowedForCustomer(p, perms));
         }
     }
@@ -13116,16 +13112,14 @@ document.addEventListener("DOMContentLoaded", () => {
             return hospitalMatch && yearMatch && quotingMatch && statusMatch && searchMatch;
         });
 
-        // Filter strictly by permissions if role is restricted or has explicit custom permissions configured
-        const cUserKey = appState.currentCustomerUser || "user1";
-        const perms = appState.userPermissions[cUserKey] || { hospitals: [], projects: [] };
-        const hasExplicitPerms = (perms.hospitals && perms.hospitals.length > 0) || (perms.projects && perms.projects.length > 0);
-
-        if (appState.currentRole === "customer" || appState.currentRole === "pe" || appState.currentRole === "technician" || appState.currentRole === "tech" || hasExplicitPerms) {
+        // Customer / PE / Tech role permissions restriction
+        if (appState.currentRole === "customer" || appState.currentRole === "pe" || appState.currentRole === "technician" || appState.currentRole === "tech") {
             if (appState.allowedShareProjects && appState.allowedShareProjects.length > 0) {
                 // Share guest mode: filter by the explicit allowedShareProjects list
                 projects = projects.filter(p => appState.allowedShareProjects.includes(p.code));
             } else {
+                const cUserKey = appState.currentCustomerUser || "user1";
+                const perms = appState.userPermissions[cUserKey] || { hospitals: [], projects: [] };
                 projects = projects.filter(p => isProjectAllowedForCustomer(p, perms));
             }
         }
@@ -18547,7 +18541,7 @@ function applyLoginSuccess(username, role, userKey = null) {
 
     const user = window.getUserDetails(username);
     if (user) {
-        if ((role === "customer" || role === "pe" || role === "technician" || role === "tech") && user.userKey) {
+        if (user.userKey) {
             appState.currentCustomerUser = user.userKey;
             localStorage.setItem("technical_water_current_customer_user", user.userKey);
         }
