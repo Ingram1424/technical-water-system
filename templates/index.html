@@ -10669,7 +10669,7 @@ function renderSubnavCostTab(project) {
 }
 
 function renderSubnavDocumentsTab(project) {
-    const isRestrictedRole = (appState.currentRole === "customer" || appState.currentRole === "technician" || appState.currentRole === "tech");
+    const isRestrictedRole = (appState.currentRole === "customer" || appState.currentRole === "technician" || appState.currentRole === "tech" || appState.currentRole === "pe");
     
     // Toggle filter buttons visibility based on role
     const contractBtn = document.querySelector("#subtab-doc-tab-filters .doc-filter-btn[data-filter='Contract']");
@@ -13550,6 +13550,24 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("doc-name").value = "";
         const docFileEl = document.getElementById("doc-file");
         if (docFileEl) docFileEl.value = "";
+        
+        const docTypeSelect = document.getElementById("doc-type");
+        if (docTypeSelect) {
+            const isRestricted = (appState.currentRole === "customer" || appState.currentRole === "pe");
+            for (let opt of docTypeSelect.options) {
+                if (isRestricted && opt.value !== "BOQ" && opt.value !== "Drawings") {
+                    opt.style.display = "none";
+                } else {
+                    opt.style.display = "";
+                }
+            }
+            if (isRestricted) {
+                docTypeSelect.value = "BOQ";
+            } else {
+                docTypeSelect.value = "PO";
+            }
+        }
+        
         uploadModal.classList.add("active");
     };
     
