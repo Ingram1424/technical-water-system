@@ -3982,12 +3982,17 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                             </div>
 
                             <!-- Specific Project Subtabs (Expenses, PO) -->
-                            <div id="cost-details-section" class="cost-nav-tabs hide-customer" style="display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; flex-wrap: wrap;">
-                                <button class="cost-tab-btn active" data-cost-tab="all-costs" style="padding: 8px 18px; border: 1px solid var(--primary-blue); border-radius: var(--radius-sm); font-family: 'Prompt'; font-size: 12.5px; font-weight: 700; cursor: pointer; background: var(--primary-blue); color: #ffffff; display: flex; align-items: center; gap: 6px; transition: all 0.2s ease;">
-                                    <i class="fa-solid fa-receipt"></i> รายการค่าใช้จ่ายโครงการ
-                                </button>
-                                <button class="cost-tab-btn" data-cost-tab="po-outstanding" style="padding: 8px 18px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-family: 'Prompt'; font-size: 12.5px; font-weight: 600; cursor: pointer; background: #ffffff; color: var(--navy-dark); display: flex; align-items: center; gap: 6px; transition: all 0.2s ease;">
-                                    <i class="fa-solid fa-file-circle-exclamation" style="color: #e53e3e;"></i> ยอด PO ค้าง
+                            <div id="cost-details-section" class="cost-nav-tabs hide-customer" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; flex-wrap: wrap; width: 100%;">
+                                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                    <button class="cost-tab-btn active" data-cost-tab="all-costs" style="padding: 8px 18px; border: 1px solid var(--primary-blue); border-radius: var(--radius-sm); font-family: 'Prompt'; font-size: 12.5px; font-weight: 700; cursor: pointer; background: var(--primary-blue); color: #ffffff; display: flex; align-items: center; gap: 6px; transition: all 0.2s ease;">
+                                        <i class="fa-solid fa-receipt"></i> รายการค่าใช้จ่ายโครงการ
+                                    </button>
+                                    <button class="cost-tab-btn" data-cost-tab="po-outstanding" style="padding: 8px 18px; border: 1px solid var(--border-color); border-radius: var(--radius-sm); font-family: 'Prompt'; font-size: 12.5px; font-weight: 600; cursor: pointer; background: #ffffff; color: var(--navy-dark); display: flex; align-items: center; gap: 6px; transition: all 0.2s ease;">
+                                        <i class="fa-solid fa-file-circle-exclamation" style="color: #e53e3e;"></i> ยอด PO ค้าง
+                                    </button>
+                                </div>
+                                <button class="btn btn-sm btn-outline-blue" id="btn-print-cost-report" style="font-family: 'Prompt'; font-size: 12px; font-weight: 700; display: flex; align-items: center; gap: 6px; border-color: var(--primary-blue); color: var(--primary-blue); background: #ffffff; padding: 6px 12px; border-radius: var(--radius-sm); cursor: pointer; transition: all 0.15s;" onmouseover="this.style.background='#eff6ff'" onmouseout="this.style.background='#ffffff'">
+                                    <i class="fa-solid fa-print"></i> พิมพ์รายงาน PDF
                                 </button>
                             </div>
 
@@ -16363,6 +16368,287 @@ document.addEventListener("DOMContentLoaded", () => {
                 </body>
                 </html>
             `);
+            printWindow.document.close();
+        });
+    }
+
+    const btnPrintCostReport = document.getElementById("btn-print-cost-report");
+    if (btnPrintCostReport) {
+        btnPrintCostReport.addEventListener("click", function() {
+            const activeCode = appState.selectedCostProject;
+            if (!activeCode || activeCode === "all") {
+                return showToast("กรุณาเลือกโครงการเฉพาะก่อนพิมพ์รายงาน", "warning");
+            }
+            const proj = projectsData[activeCode];
+            if (!proj) return showToast("ไม่พบข้อมูลโครงการ", "warning");
+
+            let totalLabor = 0;
+            let totalMaterial = 0;
+            let totalOther = 0;
+            (proj.expenses || []).forEach(e => {
+                if (e.type === "ค่าแรง") totalLabor += e.amount;
+                else if (e.type === "ค่าวัสดุ") totalMaterial += e.amount;
+                else totalOther += e.amount;
+            });
+            const totalCost = totalLabor + totalMaterial + totalOther;
+            const netProfit = proj.value - totalCost;
+            const profitPercent = proj.value > 0 ? ((netProfit / proj.value) * 100).toFixed(2) : "0.00";
+
+            const printWindow = window.open("", "_blank");
+            if (!printWindow) return showToast("Pop-up blocker เปิดใช้งานอยู่ กรุณาอนุญาตให้เปิดหน้าต่างใหม่เพื่อพิมพ์ PDF", "warning");
+
+            // Format expenses list into rows
+            let expensesHtml = "";
+            if (!proj.expenses || proj.expenses.length === 0) {
+                expensesHtml = `<tr><td colspan="5" style="text-align: center; color: #64748b; padding: 12px;">ไม่มีรายการบันทึกค่าใช้จ่าย</td></tr>`;
+            } else {
+                proj.expenses.forEach((exp, idx) => {
+                    const parts = exp.date.split("-");
+                    const formattedDate = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : exp.date;
+                    expensesHtml += `
+                        <tr>
+                            <td style="text-align: center; border: 1px solid #cbd5e1; padding: 8px;">${idx + 1}</td>
+                            <td style="text-align: center; border: 1px solid #cbd5e1; padding: 8px;">${formattedDate}</td>
+                            <td style="text-align: left; border: 1px solid #cbd5e1; padding: 8px;">${exp.title || '-'}</td>
+                            <td style="text-align: center; border: 1px solid #cbd5e1; padding: 8px; font-weight: 600;">${exp.type}</td>
+                            <td style="text-align: right; border: 1px solid #cbd5e1; padding: 8px; font-weight: bold; color: #1e3a8a;">${formatNumber(exp.amount)} บาท</td>
+                        </tr>
+                    `;
+                });
+            }
+
+            printWindow.document.write(\`
+                <html>
+                <head>
+                    <title>Project Cost Report - \${proj.code}</title>
+                    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700&display=swap" rel="stylesheet">
+                    <style>
+                        body {
+                            font-family: 'Prompt', sans-serif;
+                            padding: 20px;
+                            color: #334155;
+                            background: #fff;
+                        }
+                        .company-header {
+                            display: flex;
+                            align-items: center;
+                            gap: 15px;
+                            border-bottom: 2px solid #1e3a8a;
+                            padding-bottom: 12px;
+                            margin-bottom: 15px;
+                        }
+                        .company-info {
+                            text-align: left;
+                        }
+                        .company-info h1 {
+                            font-size: 14px;
+                            color: #1e3a8a;
+                            margin: 0 0 4px 0;
+                            font-weight: 700;
+                        }
+                        .company-info p {
+                            font-size: 9px;
+                            color: #64748b;
+                            margin: 0;
+                        }
+                        .doc-meta {
+                            display: grid;
+                            grid-template-columns: 1fr 1fr;
+                            gap: 10px;
+                            font-size: 11px;
+                            margin-bottom: 15px;
+                            border: 1px solid #cbd5e1;
+                            padding: 10px;
+                            border-radius: 6px;
+                        }
+                        .doc-meta-item {
+                            display: flex;
+                            gap: 6px;
+                        }
+                        .doc-meta-label {
+                            font-weight: 600;
+                            color: #334155;
+                            min-width: 100px;
+                        }
+                        .report-title {
+                            font-size: 14px;
+                            font-weight: 700;
+                            text-align: center;
+                            margin-bottom: 15px;
+                            color: #1e3a8a;
+                            text-decoration: underline;
+                        }
+                        .section-title {
+                            font-size: 12px;
+                            font-weight: 700;
+                            color: #1e3a8a;
+                            margin-top: 15px;
+                            margin-bottom: 8px;
+                            border-left: 3px solid #1e3a8a;
+                            padding-left: 6px;
+                        }
+                        table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            font-size: 10.5px;
+                            margin-top: 5px;
+                            margin-bottom: 15px;
+                        }
+                        th, td {
+                            border: 1px solid #cbd5e1;
+                            padding: 6px 8px;
+                        }
+                        th {
+                            background: #f1f5f9;
+                            font-weight: bold;
+                            color: #334155;
+                        }
+                        .text-right {
+                            text-align: right;
+                        }
+                        .text-center {
+                            text-align: center;
+                        }
+                        .font-bold {
+                            font-weight: bold;
+                        }
+                        @media print {
+                            body {
+                                padding: 0 !important;
+                            }
+                            .no-print {
+                                display: none !important;
+                            }
+                            @page {
+                                size: A4;
+                                margin: 15mm;
+                            }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="no-print" style="margin-bottom: 15px; text-align: right;">
+                        <button onclick="window.print()" style="font-family: 'Prompt'; font-size: 12px; padding: 6px 14px; background: #1e3a8a; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                            <i class="fa-solid fa-print"></i> พิมพ์เอกสาร (Print)
+                        </button>
+                    </div>
+
+                    <div class="company-header">
+                        <div class="company-info">
+                            <h1>TECHNICAL WATER ENGINEERING & FACILITY</h1>
+                            <p>บริษัท เทคนิเคิล วอเตอร์ เอนจิเนียริ่ง แอนด์ แฟซิลิตี้ จำกัด | รายงานสรุปต้นทุนโครงการ</p>
+                        </div>
+                    </div>
+
+                    <div class="report-title">รายงานสรุปค่าใช้จ่ายและต้นทุนโครงการ</div>
+
+                    <div class="doc-meta">
+                        <div class="doc-meta-item">
+                            <span class="doc-meta-label">รหัสโครงการ:</span>
+                            <span class="doc-meta-val">\${proj.code}</span>
+                        </div>
+                        <div class="doc-meta-item">
+                            <span class="doc-meta-label">ปีโครงการ:</span>
+                            <span class="doc-meta-val">\${proj.year + 543} (ค.ศ. \${proj.year})</span>
+                        </div>
+                        <div class="doc-meta-item" style="grid-column: span 2;">
+                            <span class="doc-meta-label">ชื่อโครงการ:</span>
+                            <span class="doc-meta-val">\${proj.name}</span>
+                        </div>
+                        <div class="doc-meta-item" style="grid-column: span 2;">
+                            <span class="doc-meta-label">ชื่อลูกค้า/โรงพยาบาล:</span>
+                            <span class="doc-meta-val">\${proj.customer || '-'}</span>
+                        </div>
+                    </div>
+
+                    <div class="section-title">สรุปค่าใช้จ่ายและกำไรขาดทุนสะสม</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="text-align: left;">รายการวิเคราะห์การเงิน</th>
+                                <th style="text-align: right; width: 220px;">จำนวนเงิน (บาท)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>มูลค่าสัญญาโครงการ (Project Value)</td>
+                                <td class="text-right font-bold">\${formatNumber(proj.value)} บาท</td>
+                            </tr>
+                            <tr>
+                                <td>ต้นทุนสะสมรวมทั้งหมด (Total Cost)</td>
+                                <td class="text-right font-bold" style="color: #e53e3e;">\${formatNumber(totalCost)} บาท</td>
+                            </tr>
+                            <tr style="background: #f8fafc;">
+                                <td>กำไรขั้นต้นสะสม (Gross Profit)</td>
+                                <td class="text-right font-bold" style="color: #10b981;">\${formatNumber(netProfit)} บาท</td>
+                            </tr>
+                            <tr style="background: #f8fafc;">
+                                <td>อัตราส่วนต่างกำไรสะสม (% Profit)</td>
+                                <td class="text-right font-bold" style="color: #2563eb;">\${profitPercent}%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="section-title">โครงสร้างต้นทุนแยกตามประเภทการจ่าย</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="text-align: left;">ประเภทของต้นทุน</th>
+                                <th style="text-align: right; width: 180px;">จำนวนเงินที่เบิกจ่าย (บาท)</th>
+                                <th style="text-align: center; width: 120px;">สัดส่วนร้อยละ (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>ต้นทุนค่าแรงช่าง / วิศวกร (Labor Cost)</td>
+                                <td class="text-right">\${formatNumber(totalLabor)} บาท</td>
+                                <td class="text-center">\${totalCost > 0 ? ((totalLabor / totalCost) * 100).toFixed(2) : '0.00'}%</td>
+                            </tr>
+                            <tr>
+                                <td>ต้นทุนค่าอุปกรณ์ / วัสดุเครื่องมือ (Material Cost)</td>
+                                <td class="text-right">\${formatNumber(totalMaterial)} บาท</td>
+                                <td class="text-center">\${totalCost > 0 ? ((totalMaterial / totalCost) * 100).toFixed(2) : '0.00'}%</td>
+                            </tr>
+                            <tr>
+                                <td>ต้นทุนอื่นๆ / ค่าเดินทางและประสานงาน (Other Cost)</td>
+                                <td class="text-right">\${formatNumber(totalOther)} บาท</td>
+                                <td class="text-center">\${totalCost > 0 ? ((totalOther / totalCost) * 100).toFixed(2) : '0.00'}%</td>
+                            </tr>
+                            <tr style="background: #f1f5f9; font-weight: bold;">
+                                <td>รวมต้นทุนโครงการทั้งหมด</td>
+                                <td class="text-right" style="color: #e53e3e;">\${formatNumber(totalCost)} บาท</td>
+                                <td class="text-center">100.00%</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <div class="section-title">รายการบันทึกเบิกจ่ายต้นทุนสะสมละเอียด</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th style="text-align: center; width: 50px;">ลำดับ</th>
+                                <th style="text-align: center; width: 90px;">วันที่ทำรายการ</th>
+                                <th style="text-align: left;">รายการค่าใช้จ่าย</th>
+                                <th style="text-align: center; width: 90px;">ประเภท</th>
+                                <th style="text-align: right; width: 150px;">จำนวนเงิน</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            \${expensesHtml}
+                        </tbody>
+                    </table>
+
+                    <div style="margin-top: 40px; display: flex; justify-content: flex-end; page-break-inside: avoid;">
+                        <div style="width: 250px; font-size: 11px; line-height: 1.8; text-align: left; border: 1px solid #cbd5e1; padding: 12px; border-radius: 6px;">
+                            <div style="margin-bottom: 4px; text-align: center; font-weight: bold; color: #1e3a8a; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin-bottom: 8px;">ผู้จัดทำรายงาน</div>
+                            <div style="margin-bottom: 4px;">ลงชื่อ ..............................................................</div>
+                            <div style="margin-bottom: 8px; text-align: center;">( ผู้ตรวจสอบบัญชีโครงการ )</div>
+                            <div><strong>วันที่พิมพ์:</strong> \${new Date().toLocaleDateString('th-TH')}</div>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            \`);
             printWindow.document.close();
         });
     }
