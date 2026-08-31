@@ -8383,10 +8383,9 @@ function renderSubnavProjectWorkspace() {
     }
     
     if (isCustomer) {
-        // For customer, make all views active (except cost, and documents for technician)
-        const isTech = (appState.currentRole === "technician" || appState.currentRole === "tech");
+        // For customer/technician, make all views active (except cost)
         document.querySelectorAll(".subtab-panel").forEach(panel => {
-            if (panel.id !== "subtab-cost-tab-view" && (!isTech || panel.id !== "subtab-documents-tab-view")) {
+            if (panel.id !== "subtab-cost-tab-view") {
                 panel.classList.add("active");
                 panel.style.marginBottom = "24px";
             } else {
@@ -8400,9 +8399,7 @@ function renderSubnavProjectWorkspace() {
         renderSubnavActualProgress(project);
         renderSubnavDailyReports(project);
         renderSubnavPhotosFiles(project);
-        if (!isTech) {
-            renderSubnavDocumentsTab(project);
-        }
+        renderSubnavDocumentsTab(project);
     } else {
         // Restore standard tab behaviors
         document.querySelectorAll(".subtab-panel").forEach(panel => {
@@ -8412,15 +8409,7 @@ function renderSubnavProjectWorkspace() {
         // Load active subtab panel view
         let activeSubtab = appState.activeProjectTab || "general-info";
         
-        // Restrict documents-tab for technician / tech
-        const isRestrictedRole = (
-            appState.currentRole === "technician" ||
-            appState.currentRole === "tech"
-        );
-        if (isRestrictedRole && activeSubtab === "documents-tab") {
-            activeSubtab = "photos-files";
-            appState.activeProjectTab = "photos-files";
-        }
+
         
         // Update active class on tab buttons
         document.querySelectorAll(".subnav-tab-item").forEach(btn => {
