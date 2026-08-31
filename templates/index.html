@@ -4242,6 +4242,16 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                                 <span style="font-size: 11px; color: var(--text-muted);">กด "คัดลอก" เพื่อส่งให้ลูกค้า</span>
                             </div>
                         </div>
+                        <div style="padding: 10px 16px; border-bottom: 1px solid var(--border-color); background: #ffffff; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+                            <span style="font-size: 12px; font-weight: 700; color: var(--navy-dark); margin-right: 4px;">ตัวกรองสิทธิ์:</span>
+                            <button type="button" class="role-filter-btn" data-role-filter="all" onclick="window.setRoleTableFilter('all')" style="padding: 4px 12px; border-radius: 20px; font-size: 11.5px; font-family: 'Prompt'; font-weight: 700; cursor: pointer; border: 1px solid #475569; background: #475569; color: #ffffff; transition: all 0.2s;">ทั้งหมด</button>
+                            <button type="button" class="role-filter-btn" data-role-filter="customer" onclick="window.setRoleTableFilter('customer')" style="padding: 4px 12px; border-radius: 20px; font-size: 11.5px; font-family: 'Prompt'; font-weight: 600; cursor: pointer; border: 1px solid #cbd5e1; background: #ffffff; color: #475569; transition: all 0.2s;">Customer</button>
+                            <button type="button" class="role-filter-btn" data-role-filter="technician" onclick="window.setRoleTableFilter('technician')" style="padding: 4px 12px; border-radius: 20px; font-size: 11.5px; font-family: 'Prompt'; font-weight: 600; cursor: pointer; border: 1px solid #f5d0fe; background: #ffffff; color: #a21caf; transition: all 0.2s;">Tech</button>
+                            <button type="button" class="role-filter-btn" data-role-filter="admin" onclick="window.setRoleTableFilter('admin')" style="padding: 4px 12px; border-radius: 20px; font-size: 11.5px; font-family: 'Prompt'; font-weight: 600; cursor: pointer; border: 1px solid #fca5a5; background: #ffffff; color: #991b1b; transition: all 0.2s;">Admin</button>
+                            <button type="button" class="role-filter-btn" data-role-filter="pe" onclick="window.setRoleTableFilter('pe')" style="padding: 4px 12px; border-radius: 20px; font-size: 11.5px; font-family: 'Prompt'; font-weight: 600; cursor: pointer; border: 1px solid #fcd34d; background: #ffffff; color: #d97706; transition: all 0.2s;">PE</button>
+                            <button type="button" class="role-filter-btn" data-role-filter="accounting" onclick="window.setRoleTableFilter('accounting')" style="padding: 4px 12px; border-radius: 20px; font-size: 11.5px; font-family: 'Prompt'; font-weight: 600; cursor: pointer; border: 1px solid #7dd3fc; background: #ffffff; color: #0369a1; transition: all 0.2s;">AC (Accounting)</button>
+                            <button type="button" class="role-filter-btn" data-role-filter="pm" onclick="window.setRoleTableFilter('pm')" style="padding: 4px 12px; border-radius: 20px; font-size: 11.5px; font-family: 'Prompt'; font-weight: 600; cursor: pointer; border: 1px solid #86efac; background: #ffffff; color: #15803d; transition: all 0.2s;">PM</button>
+                        </div>
                         <div style="overflow-x: auto; overflow-y: auto; max-height: 450px; scrollbar-width: thin;">
                             <table class="transaction-table" id="customer-accounts-table" style="width: 100%; min-width: 750px;">
                                 <thead style="position: sticky; top: 0; z-index: 2; background: #f8fafc; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
@@ -7012,6 +7022,7 @@ const appState = {
     selectedDetailProject: "all",
     selectedCostProject: sessionStorage.getItem("technical_water_last_cost_project") || Object.keys(projectsData)[0] || "",
     selectedDocFilter: "all",
+    selectedRoleFilter: "all",
     activeProjectTab: "general-info",
     selectedGalleryFolder: null,
     selectedYearFilterA: "2025",
@@ -19404,6 +19415,19 @@ function renderPermissionsManagement() {
         const query = searchInput ? searchInput.value.trim().toLowerCase() : "";
 
         let accounts = Object.entries(appState.customerAccounts || {});
+        
+        // Filter by role first
+        const roleFilter = appState.selectedRoleFilter || "all";
+        if (roleFilter !== "all") {
+            accounts = accounts.filter(([key, acc]) => {
+                const r = acc.role || "customer";
+                if (roleFilter === "technician") {
+                    return r === "technician" || r === "tech";
+                }
+                return r === roleFilter;
+            });
+        }
+
         if (query) {
             accounts = accounts.filter(([key, acc]) => {
                 return (acc.name || "").toLowerCase().includes(query) || (acc.username || "").toLowerCase().includes(query);
@@ -19471,6 +19495,69 @@ function renderPermissionsManagement() {
             `;
             tbody.appendChild(tr);
         });
+    };
+
+    window.setRoleTableFilter = function(filterVal) {
+        appState.selectedRoleFilter = filterVal;
+        
+        // Update button styles
+        document.querySelectorAll(".role-filter-btn").forEach(btn => {
+            const btnRole = btn.getAttribute("data-role-filter");
+            if (btnRole === filterVal) {
+                btn.classList.add("active");
+                // Apply active theme colors
+                if (btnRole === "all" || btnRole === "customer") {
+                    btn.style.background = "#475569";
+                    btn.style.color = "#ffffff";
+                    btn.style.borderColor = "#475569";
+                } else if (btnRole === "technician") {
+                    btn.style.background = "#a21caf";
+                    btn.style.color = "#ffffff";
+                    btn.style.borderColor = "#a21caf";
+                } else if (btnRole === "admin") {
+                    btn.style.background = "#991b1b";
+                    btn.style.color = "#ffffff";
+                    btn.style.borderColor = "#991b1b";
+                } else if (btnRole === "pe") {
+                    btn.style.background = "#d97706";
+                    btn.style.color = "#ffffff";
+                    btn.style.borderColor = "#d97706";
+                } else if (btnRole === "accounting") {
+                    btn.style.background = "#0369a1";
+                    btn.style.color = "#ffffff";
+                    btn.style.borderColor = "#0369a1";
+                } else if (btnRole === "pm") {
+                    btn.style.background = "#15803d";
+                    btn.style.color = "#ffffff";
+                    btn.style.borderColor = "#15803d";
+                }
+            } else {
+                btn.classList.remove("active");
+                // Reset to inactive theme colors
+                btn.style.background = "#ffffff";
+                if (btnRole === "all" || btnRole === "customer") {
+                    btn.style.color = "#475569";
+                    btn.style.borderColor = "#cbd5e1";
+                } else if (btnRole === "technician") {
+                    btn.style.color = "#a21caf";
+                    btn.style.borderColor = "#f5d0fe";
+                } else if (btnRole === "admin") {
+                    btn.style.color = "#991b1b";
+                    btn.style.borderColor = "#fca5a5";
+                } else if (btnRole === "pe") {
+                    btn.style.color = "#d97706";
+                    btn.style.borderColor = "#fcd34d";
+                } else if (btnRole === "accounting") {
+                    btn.style.color = "#0369a1";
+                    btn.style.borderColor = "#7dd3fc";
+                } else if (btnRole === "pm") {
+                    btn.style.color = "#15803d";
+                    btn.style.borderColor = "#86efac";
+                }
+            }
+        });
+        
+        window.renderCustomerAccountsTable();
     };
 
     populatePermUserSelector();
