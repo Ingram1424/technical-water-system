@@ -2937,6 +2937,21 @@ select.form-control {
     gap: 20px;
 }
 
+.role-pe .cost-split-grid-subtab {
+    grid-template-columns: 1fr;
+}
+
+.dashboard-kpi-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1.3fr 1.5fr;
+    gap: 24px;
+    align-items: start;
+}
+
+.role-pe .dashboard-kpi-grid {
+    grid-template-columns: 1.2fr 1.3fr;
+}
+
 .doc-split-grid-subtab {
     display: grid;
     grid-template-columns: 300px 1fr;
@@ -3681,7 +3696,7 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                         </div>
                         <!-- Progress & Financial Card (Wide layout) -->
                         <div class="chart-container-card span-4" style="margin-top: 8px;">
-                            <div style="display: grid; grid-template-columns: 1.2fr 1.3fr 1.5fr; gap: 24px; align-items: start;">
+                            <div class="dashboard-kpi-grid">
                                 <!-- Left Column: Dropdowns -->
                                 <div style="display: flex; flex-direction: column; gap: 12px; padding-right: 20px; border-right: 1px solid var(--border-color);">
                                     <h4 class="chart-title" style="margin-bottom: 4px;">ตัวเลือกการกรองข้อมูล</h4>
@@ -3738,7 +3753,7 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                                 </div>
                                 
                                 <!-- Right Column: Financials -->
-                                <div>
+                                <div class="hide-pe">
                                     <h4 class="chart-title">สรุปค่าใช้จ่ายโครงการ</h4>
                                     <div class="financial-summary-widget hide-customer hide-technician hide-tech" style="margin-top: 8px;">
                                         <div class="fin-row">
@@ -4598,8 +4613,7 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                                 </div>
 
                                 <!-- Project charts -->
-                                <div class="project-charts-row">
-                                    <div class="chart-container-card hide-customer hide-technician hide-tech">
+                                    <div class="chart-container-card hide-customer hide-pe hide-technician hide-tech">
                                         <h4 class="chart-title">สรุปค่าใช้จ่ายโครงการ</h4>
                                         <div class="financial-summary-widget hide-customer hide-technician hide-tech">
                                             <div class="fin-row">
@@ -4969,7 +4983,7 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                         <div id="subtab-cost-tab-view" class="subtab-panel">
                             <!-- Left: Cost Summary Panel -->
                             <div class="cost-split-grid-subtab hide-customer">
-                                <div class="cost-summary-panel">
+                                <div class="cost-summary-panel hide-pe">
                                     <h4 class="panel-subtitle-thai">สรุปค่าใช้จ่ายของโครงการ</h4>
                                     <div class="cost-metric-card-group">
                                         <div class="cost-metric-row">
