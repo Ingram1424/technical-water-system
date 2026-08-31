@@ -16417,10 +16417,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
             }
 
-            printWindow.document.write(\`
+            printWindow.document.write(`
                 <html>
                 <head>
-                    <title>Project Cost Report - \${proj.code}</title>
+                    <title>Project Cost Report - ${proj.code}</title>
                     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700&display=swap" rel="stylesheet">
                     <style>
                         body {
@@ -16545,19 +16545,19 @@ document.addEventListener("DOMContentLoaded", () => {
                     <div class="doc-meta">
                         <div class="doc-meta-item">
                             <span class="doc-meta-label">รหัสโครงการ:</span>
-                            <span class="doc-meta-val">\${proj.code}</span>
+                            <span class="doc-meta-val">${proj.code}</span>
                         </div>
                         <div class="doc-meta-item">
                             <span class="doc-meta-label">ปีโครงการ:</span>
-                            <span class="doc-meta-val">\${proj.year + 543} (ค.ศ. \${proj.year})</span>
+                            <span class="doc-meta-val">${proj.year + 543} (ค.ศ. ${proj.year})</span>
                         </div>
                         <div class="doc-meta-item" style="grid-column: span 2;">
                             <span class="doc-meta-label">ชื่อโครงการ:</span>
-                            <span class="doc-meta-val">\${proj.name}</span>
+                            <span class="doc-meta-val">${proj.name}</span>
                         </div>
                         <div class="doc-meta-item" style="grid-column: span 2;">
                             <span class="doc-meta-label">ชื่อลูกค้า/โรงพยาบาล:</span>
-                            <span class="doc-meta-val">\${proj.customer || '-'}</span>
+                            <span class="doc-meta-val">${proj.customer || '-'}</span>
                         </div>
                     </div>
 
@@ -16572,19 +16572,19 @@ document.addEventListener("DOMContentLoaded", () => {
                         <tbody>
                             <tr>
                                 <td>มูลค่าสัญญาโครงการ (Project Value)</td>
-                                <td class="text-right font-bold">\${formatNumber(proj.value)} บาท</td>
+                                <td class="text-right font-bold">${formatNumber(proj.value)} บาท</td>
                             </tr>
                             <tr>
                                 <td>ต้นทุนสะสมรวมทั้งหมด (Total Cost)</td>
-                                <td class="text-right font-bold" style="color: #e53e3e;">\${formatNumber(totalCost)} บาท</td>
+                                <td class="text-right font-bold" style="color: #e53e3e;">${formatNumber(totalCost)} บาท</td>
                             </tr>
                             <tr style="background: #f8fafc;">
                                 <td>กำไรขั้นต้นสะสม (Gross Profit)</td>
-                                <td class="text-right font-bold" style="color: #10b981;">\${formatNumber(netProfit)} บาท</td>
+                                <td class="text-right font-bold" style="color: #10b981;">${formatNumber(netProfit)} บาท</td>
                             </tr>
                             <tr style="background: #f8fafc;">
                                 <td>อัตราส่วนต่างกำไรสะสม (% Profit)</td>
-                                <td class="text-right font-bold" style="color: #2563eb;">\${profitPercent}%</td>
+                                <td class="text-right font-bold" style="color: #2563eb;">${profitPercent}%</td>
                             </tr>
                         </tbody>
                     </table>
@@ -16601,22 +16601,22 @@ document.addEventListener("DOMContentLoaded", () => {
                         <tbody>
                             <tr>
                                 <td>ต้นทุนค่าแรงช่าง / วิศวกร (Labor Cost)</td>
-                                <td class="text-right">\${formatNumber(totalLabor)} บาท</td>
-                                <td class="text-center">\${totalCost > 0 ? ((totalLabor / totalCost) * 100).toFixed(2) : '0.00'}%</td>
+                                <td class="text-right">${formatNumber(totalLabor)} บาท</td>
+                                <td class="text-center">${totalCost > 0 ? ((totalLabor / totalCost) * 100).toFixed(2) : '0.00'}%</td>
                             </tr>
                             <tr>
                                 <td>ต้นทุนค่าอุปกรณ์ / วัสดุเครื่องมือ (Material Cost)</td>
-                                <td class="text-right">\${formatNumber(totalMaterial)} บาท</td>
-                                <td class="text-center">\${totalCost > 0 ? ((totalMaterial / totalCost) * 100).toFixed(2) : '0.00'}%</td>
+                                <td class="text-right">${formatNumber(totalMaterial)} บาท</td>
+                                <td class="text-center">${totalCost > 0 ? ((totalMaterial / totalCost) * 100).toFixed(2) : '0.00'}%</td>
                             </tr>
                             <tr>
                                 <td>ต้นทุนอื่นๆ / ค่าเดินทางและประสานงาน (Other Cost)</td>
-                                <td class="text-right">\${formatNumber(totalOther)} บาท</td>
-                                <td class="text-center">\${totalCost > 0 ? ((totalOther / totalCost) * 100).toFixed(2) : '0.00'}%</td>
+                                <td class="text-right">${formatNumber(totalOther)} บาท</td>
+                                <td class="text-center">${totalCost > 0 ? ((totalOther / totalCost) * 100).toFixed(2) : '0.00'}%</td>
                             </tr>
                             <tr style="background: #f1f5f9; font-weight: bold;">
                                 <td>รวมต้นทุนโครงการทั้งหมด</td>
-                                <td class="text-right" style="color: #e53e3e;">\${formatNumber(totalCost)} บาท</td>
+                                <td class="text-right" style="color: #e53e3e;">${formatNumber(totalCost)} บาท</td>
                                 <td class="text-center">100.00%</td>
                             </tr>
                         </tbody>
@@ -16634,7 +16634,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             </tr>
                         </thead>
                         <tbody>
-                            \${expensesHtml}
+                            ${expensesHtml}
                         </tbody>
                     </table>
 
@@ -16643,12 +16643,12 @@ document.addEventListener("DOMContentLoaded", () => {
                             <div style="margin-bottom: 4px; text-align: center; font-weight: bold; color: #1e3a8a; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin-bottom: 8px;">ผู้จัดทำรายงาน</div>
                             <div style="margin-bottom: 4px;">ลงชื่อ ..............................................................</div>
                             <div style="margin-bottom: 8px; text-align: center;">( ผู้ตรวจสอบบัญชีโครงการ )</div>
-                            <div><strong>วันที่พิมพ์:</strong> \${new Date().toLocaleDateString('th-TH')}</div>
+                            <div><strong>วันที่พิมพ์:</strong> ${new Date().toLocaleDateString('th-TH')}</div>
                         </div>
                     </div>
                 </body>
                 </html>
-            \`);
+            `);
             printWindow.document.close();
         });
     }
