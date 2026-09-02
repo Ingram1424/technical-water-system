@@ -52,6 +52,12 @@ async def quoting_page(request: Request):
 async def projects_page(request: Request):
     return render_template(request, "index.html")
 
-@app.get("/project/{subpage}", response_class=HTMLResponse)
-async def project_detail_page(request: Request, subpage: str, project: str = ""):
+# Healthcheck for Coolify / Docker Container monitoring
+@app.get("/health")
+async def health_check():
+    return {"status": "ok", "service": "technical-water-system"}
+
+# Catch-all route to serve monolithic SPA template for any direct URL navigation
+@app.get("/{full_path:path}", response_class=HTMLResponse)
+async def catch_all(request: Request, full_path: str):
     return render_template(request, "index.html")
