@@ -3471,6 +3471,11 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                     <button class="btn btn-sm btn-primary hide-customer hide-pe hide-technician" id="header-create-project-btn" style="font-size: 11.5px; padding: 6px 14px; height: auto; border-radius: var(--radius-sm); display: none; align-items: center; gap: 5px; white-space: nowrap;">
                         <i class="fa-solid fa-plus-circle"></i> สร้างโครงการใหม่
                     </button>
+                    <!-- Cloud Sync Button -->
+                    <button class="btn btn-sm btn-outline" id="btn-force-cloud-sync" title="ดึงข้อมูลล่าสุดจาก Supabase Cloud" style="font-size: 11.5px; padding: 6px 12px; height: auto; border-radius: var(--radius-sm); display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; color: var(--navy-dark); border-color: rgba(0,0,0,0.15); background: #ffffff;">
+                        <i class="fa-solid fa-arrows-rotate" id="header-sync-icon"></i>
+                        <span id="header-sync-text">ซิงค์ข้อมูล</span>
+                    </button>
                     <!-- Notification Button -->
                     <div class="notification-bell hide-customer" id="notification-btn">
                         <i class="fa-solid fa-bell"></i>
@@ -6028,11 +6033,16 @@ try {
     projectsData = defaultProjectsData;
 }
 
-// Background sync from Supabase
-async function loadFromSupabase() {
+// Background sync from Supabase (Authoritative Single Source of Truth)
+async function loadFromSupabase(isManualTrigger = false) {
     try {
+        if (isManualTrigger) {
+            updateCloudSyncStatus("syncing");
+            const btnSyncIcon = document.getElementById("header-sync-icon");
+            if (btnSyncIcon) btnSyncIcon.classList.add("fa-spin");
+        }
+
         // Ensure we have a Supabase auth session (anonymous sign-in if not logged in)
-        // This is needed because RLS policy requires an authenticated session to read
         try {
             const { data: sessionData } = await supabaseClient.auth.getSession();
             if (!sessionData || !sessionData.session) {
@@ -6058,67 +6068,27 @@ async function loadFromSupabase() {
             });
             removeBase64FromObject(remoteData);
             
-            // Safety Guard: Compare timestamps and content sizes to prevent overwriting newer local data
+            // Safety Preservation: Only preserve projects that are actively being edited locally offline (isSynced === false)
             if (typeof projectsData === "object" && projectsData !== null) {
-                const localProjectsToSync = [];
-                
                 Object.keys(projectsData).forEach(code => {
                     const localProj = projectsData[code];
-                    const remoteProj = remoteData[code];
-                    
-                    const dbRow = data.find(r => r.code === code);
-                    const remoteUpdatedAt = dbRow ? new Date(dbRow.updated_at).getTime() : 0;
-                    const localUpdatedAt = localProj && localProj.updatedAt ? new Date(localProj.updatedAt).getTime() : 0;
-                    
-                    if (localProj && remoteProj) {
-                        const localDocsLen = localProj.documents ? localProj.documents.length : 0;
-                        const remoteDocsLen = remoteProj.documents ? remoteProj.documents.length : 0;
-                        
-                        const localTasksLen = localProj.tasks ? localProj.tasks.length : 0;
-                        const remoteTasksLen = remoteProj.tasks ? remoteProj.tasks.length : 0;
-                        
-                        const localExpsLen = localProj.expenses ? localProj.expenses.length : 0;
-                        const remoteExpsLen = remoteProj.expenses ? remoteProj.expenses.length : 0;
-
-                        const localReportsLen = localProj.dailyReports ? localProj.dailyReports.length : 0;
-                        const remoteReportsLen = remoteProj.dailyReports ? remoteProj.dailyReports.length : 0;
-
-                        const localIsNewer = (localUpdatedAt > remoteUpdatedAt) || 
-                                             (localDocsLen > remoteDocsLen) ||
-                                             (localTasksLen > remoteTasksLen) ||
-                                             (localExpsLen > remoteExpsLen) ||
-                                             (localReportsLen > remoteReportsLen);
-                                             
-                        if (localIsNewer) {
-                            console.warn(`Local project ${code} has newer changes (Local: ${new Date(localUpdatedAt).toISOString()}, Remote: ${dbRow ? dbRow.updated_at : 'none'}). Preserving local version.`);
-                            remoteData[code] = localProj;
-                            localProjectsToSync.push(code);
-                        }
-                    } else if (localProj && !remoteProj) {
-                        if (localProj.isSynced) {
-                            console.warn(`Local project ${code} was deleted on remote. Removing locally.`);
-                            delete remoteData[code];
-                        } else {
-                            console.warn(`Local project ${code} is missing from remote. Preserving local.`);
-                            remoteData[code] = localProj;
-                            localProjectsToSync.push(code);
+                    if (localProj && localProj.isSynced === false) {
+                        // User has active offline edits on this specific project
+                        remoteData[code] = localProj;
+                        if (typeof queueSyncActiveProject === "function") {
+                            queueSyncActiveProject(code);
                         }
                     }
                 });
-                
-                if (localProjectsToSync.length > 0) {
-                    setTimeout(() => {
-                        localProjectsToSync.forEach(code => {
-                            if (typeof queueSyncActiveProject === "function") {
-                                queueSyncActiveProject(code);
-                            }
-                        });
-                    }, 1000);
-                }
             }
             
+            // Supabase is authoritative
             projectsData = remoteData;
-            localStorage.setItem("technical_water_projects_data_v2", JSON.stringify(projectsData));
+            try {
+                localStorage.setItem("technical_water_projects_data_v2", JSON.stringify(projectsData));
+            } catch (e) {
+                console.warn("LocalStorage quota exceeded:", e);
+            }
             
             // Re-populate dropdowns
             populateSubnavHospitals();
@@ -6136,32 +6106,16 @@ async function loadFromSupabase() {
             if (typeof applyNotifRoleFilter === "function") {
                 applyNotifRoleFilter(appState.currentRole);
             }
+            if (typeof renderCostManagement === "function" && appState.currentView === "cost") {
+                renderCostManagement();
+            }
             console.log("Loaded data from Supabase successfully!");
-
-            // One-off cleanup for PO 22026005032 media images
-            if (projectsData["PO 22026005032"] && projectsData["PO 22026005032"].media && projectsData["PO 22026005032"].media.length > 0) {
-                console.log("Cleaning up PO 22026005032 media...");
-                projectsData["PO 22026005032"].media = [];
-                localStorage.setItem("technical_water_projects_data_v2", JSON.stringify(projectsData));
-                syncProjectToSupabase("PO 22026005032");
-                supabaseClient.from('projects').delete().ilike('code', 'FILE:PO 22026005032:MEDIA:%')
-                    .then(({ error }) => {
-                        if (error) console.error("Error deleting remote files for PO 22026005032:", error);
-                        else console.log("Successfully deleted remote files for PO 22026005032");
-                    });
+            updateCloudSyncStatus("synced");
+            if (isManualTrigger) {
+                showToast("ซิงค์ข้อมูลสำเร็จ! ข้อมูลโครงการและบัญชีเป็นเวอร์ชันล่าสุดแล้ว", "success");
             }
         } else {
-            console.log("Supabase is empty. Resetting local cache to empty...");
-            projectsData = {};
-            localStorage.setItem("technical_water_projects_data_v2", JSON.stringify(projectsData));
-            
-            populateSubnavHospitals();
-            populateSubnavProjects("all");
-            populateCostHospitals();
-            populateCostProjects();
-            
-            renderOverallDashboard();
-            renderSubnavProjectWorkspace();
+            console.log("Supabase projects table is empty.");
         }
 
         // Sync signature roles and name history from Supabase
@@ -6228,8 +6182,14 @@ async function loadFromSupabase() {
         } catch (e) {}
     } catch (e) {
         console.error("Failed to load from Supabase:", e);
+        if (isManualTrigger) {
+            showToast("การซิงค์ข้อมูลล้มเหลว: " + (e.message || e), "error");
+        }
+        updateCloudSyncStatus("error");
     } finally {
         window.supabaseDataLoaded = true;
+        const btnSyncIcon = document.getElementById("header-sync-icon");
+        if (btnSyncIcon) btnSyncIcon.classList.remove("fa-spin");
     }
 }
 
@@ -6429,10 +6389,23 @@ function saveToLocalStorage() {
     syncActiveProject();
 }
 
-// Disabled Realtime updates to prevent sync race conditions during rapid editing
-
 // Load from Supabase on startup
 loadFromSupabase();
+
+// Auto-Sync in background every 30 seconds to keep all devices in sync
+setInterval(() => {
+    const isModalOpen = document.querySelector(".modal-overlay.active");
+    if (!isSyncing && syncQueue.length === 0 && !window.ganttIsDirty && !isModalOpen && !document.hidden) {
+        loadFromSupabase(false);
+    }
+}, 30000);
+
+// Auto-sync immediately when user switches back to this browser tab
+document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && !isSyncing && syncQueue.length === 0 && !window.ganttIsDirty) {
+        loadFromSupabase(false);
+    }
+});
 
 window.isProjectAllowedForCustomer = function(p, perms) {
     if (!p || !perms) return false;
@@ -21016,7 +20989,24 @@ function showDraftBadge(modalId) {
             sessionStorage.clear();
             window.location.href = "/login";
         }
+    // Manual force cloud sync button handlers
+    document.addEventListener("click", function(e) {
+        const forceSyncBtn = e.target.closest("#btn-force-cloud-sync");
+        const cloudBadge = e.target.closest("#cloud-sync-status");
+        if (forceSyncBtn || cloudBadge) {
+            e.preventDefault();
+            if (typeof loadFromSupabase === "function") {
+                showToast("กำลังดึงข้อมูลล่าสุดจาก Supabase Cloud...", "info");
+                loadFromSupabase(true);
+            }
+        }
     });
+
+    const cloudBadgeEl = document.getElementById("cloud-sync-status");
+    if (cloudBadgeEl) {
+        cloudBadgeEl.style.cursor = "pointer";
+        cloudBadgeEl.title = "คลิกเพื่อซิงค์ข้อมูลล่าสุดจาก Supabase Cloud";
+    }
 })();
 
 </script>
