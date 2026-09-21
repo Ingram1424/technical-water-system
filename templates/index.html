@@ -6392,20 +6392,14 @@ function saveToLocalStorage() {
 // Load from Supabase on startup
 loadFromSupabase();
 
-// Auto-Sync in background every 30 seconds to keep all devices in sync
+// Auto-Sync in background every 30 seconds to keep all devices in sync (only when idle)
 setInterval(() => {
     const isModalOpen = document.querySelector(".modal-overlay.active");
-    if (!isSyncing && syncQueue.length === 0 && !window.ganttIsDirty && !isModalOpen && !document.hidden) {
+    const isUserTyping = document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName);
+    if (!isSyncing && syncQueue.length === 0 && !window.ganttIsDirty && !isModalOpen && !isUserTyping && !document.hidden) {
         loadFromSupabase(false);
     }
 }, 30000);
-
-// Auto-sync immediately when user switches back to this browser tab
-document.addEventListener("visibilitychange", () => {
-    if (!document.hidden && !isSyncing && syncQueue.length === 0 && !window.ganttIsDirty) {
-        loadFromSupabase(false);
-    }
-});
 
 window.isProjectAllowedForCustomer = function(p, perms) {
     if (!p || !perms) return false;
@@ -20644,7 +20638,7 @@ const MODAL_FORM_MAP = [
     },
     {
         modalId: "daily-report-modal",
-        formId: "add-daily-report-form",
+        formId: "daily-report-form",
         draftKey: "draft_daily_report",
         fields: ["report-date", "report-desc"]
     },
@@ -20652,28 +20646,28 @@ const MODAL_FORM_MAP = [
         modalId: "expense-modal",
         formId: "add-expense-form",
         draftKey: "draft_expense",
-        fields: ["exp-date", "exp-type", "exp-title", "exp-amount"]
+        fields: ["exp-title", "exp-type", "exp-amount", "exp-date"]
     },
     {
         modalId: "create-project-modal",
         formId: "create-project-form",
         draftKey: "draft_create_project",
         fields: [
-            "new-project-code", "new-project-name", "new-project-customer",
-            "new-project-manager", "new-project-start", "new-project-end",
-            "new-project-value", "new-project-cost", "new-project-year",
-            "new-project-status", "new-project-desc"
+            "new-project-code", "new-project-year", "new-project-name", "new-project-hospital",
+            "new-project-manager", "new-project-value", "new-project-cost",
+            "new-quoting-site-visit-date", "new-quoting-comparison-1", "new-quoting-comparison-2",
+            "new-quoting-remarks", "create-proj-doc-type"
         ]
     },
     {
         modalId: "upload-modal",
-        formId: "add-doc-form",
+        formId: "upload-doc-form",
         draftKey: "draft_upload_doc",
         fields: ["doc-name", "doc-type", "doc-date"]
     },
     {
         modalId: "media-upload-modal",
-        formId: "add-media-form",
+        formId: "media-upload-form",
         draftKey: "draft_media",
         fields: ["media-title", "media-date"]
     }
