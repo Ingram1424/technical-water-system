@@ -8963,7 +8963,7 @@ function calculatePlanScurveFromGantt(proj) {
     // Map each scurveData item to corresponding task in Gantt by name
     proj.scurveData.forEach(item => {
         const task = proj.ganttData.tasks.find(t => 
-            t.rowType === 'task' && 
+            (t.rowType === 'task' || !t.rowType || (t.rowType !== 'phase' && t.rowType !== 'type' && t.rowType !== 'category')) && 
             t.name && item.name && 
             t.name.trim().toLowerCase() === item.name.trim().toLowerCase()
         );
@@ -9070,9 +9070,18 @@ function syncScurveTasksFromGantt(project) {
         return false;
     }
 
-    const validGanttTasks = project.ganttData.tasks.filter(t => t && t.name && t.name.trim());
+    // กรองดึงเฉพาะแถวงานย่อยที่ระบายสีได้ (ไม่ดึง Phase, ประเภทงาน, หรือหมวดงานที่เป็นหัวข้อ)
+    const validGanttTasks = project.ganttData.tasks.filter(t => 
+        t && 
+        t.name && 
+        t.name.trim() && 
+        t.rowType !== 'phase' && 
+        t.rowType !== 'type' && 
+        t.rowType !== 'category'
+    );
+
     if (validGanttTasks.length === 0) {
-        showToast("ไม่พบรายการงานที่มีชื่อใน Plan Work", "warning");
+        showToast("ไม่พบรายการงานย่อยที่ระบายสีได้ใน Plan Work", "warning");
         return false;
     }
 
@@ -9089,15 +9098,15 @@ function syncScurveTasksFromGantt(project) {
     });
 
     const newScurveData = [];
-    validGanttTasks.forEach(gt => {
+    validGanttTasks.forEach((gt, idx) => {
         const key = gt.name.trim().toLowerCase();
         const existing = existingMap.get(key);
-        const isSub = (gt.rowType === 'task' || !gt.rowType) ? !!gt.isSubtask : false;
-        const itemNum = gt.itemNum || '';
+        // ใน Actual Progress ให้ทุกงานย่อยที่ระบายสีได้สามารถกรอก Budget และคิดน้ำหนักได้
+        const itemNum = (idx + 1).toString();
 
         if (existing) {
-            existing.isSubtask = isSub;
-            if (!isSub && itemNum) existing.item = itemNum;
+            existing.isSubtask = false;
+            existing.item = itemNum;
             if (!existing.plan) existing.plan = new Array(numColumns).fill(0);
             if (!existing.actual) existing.actual = new Array(numColumns).fill(0);
             while (existing.plan.length < numColumns) existing.plan.push(0);
@@ -9105,8 +9114,8 @@ function syncScurveTasksFromGantt(project) {
             newScurveData.push(existing);
         } else {
             newScurveData.push({
-                isSubtask: isSub,
-                item: isSub ? '' : itemNum,
+                isSubtask: false,
+                item: itemNum,
                 name: gt.name.trim(),
                 budget: 0,
                 weight: 0,
@@ -9138,7 +9147,7 @@ function syncScurveTasksFromGantt(project) {
 
     saveToLocalStorage();
     renderSubnavActualProgress(project);
-    showToast(`ดึงรายการจาก Plan Work สำเร็จ (${newScurveData.length} รายการ)`, "success");
+    showToast(`ดึงรายการงานย่อยที่ระบายสีได้สำเร็จ (${newScurveData.length} รายการ)`, "success");
     return true;
 }
 
