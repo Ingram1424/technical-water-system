@@ -4889,7 +4889,10 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                                             </div>
                                         </div>
                                     </div>
-                                    <div style="display: flex; gap: 8px;">
+                                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                        <button class="btn btn-sm btn-outline hide-accounting hide-customer" id="btn-sync-from-gantt" style="font-size: 11px; padding: 6px 12px; height: auto; background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; font-weight: 600;" title="ดึงรายการหมวดงานและงานย่อยจาก Plan Work มาใส่ในตาราง S-Curve พร้อมคำนวณ % แผนงาน">
+                                            <i class="fa-solid fa-cloud-arrow-down"></i> ดึงรายการจาก Plan Work
+                                        </button>
                                         <button class="btn btn-sm btn-outline hide-accounting hide-customer" id="btn-add-scurve-month" style="font-size: 11px; padding: 6px 12px; height: auto;">
                                             <i class="fa-solid fa-calendar-plus"></i> เพิ่มเดือน
                                         </button>
@@ -9028,6 +9031,115 @@ function calculatePlanScurveFromGantt(proj) {
             }
         }
     });
+
+    // Automatically calculate and update cumulative plan progress (scurvePlanCum)
+    let totalBudget = 0;
+    proj.scurveData.forEach(item => {
+        if (!item.isSubtask) totalBudget += parseFloat(item.budget) || 0;
+    });
+    const mainCount = proj.scurveData.filter(i => !i.isSubtask).length;
+
+    let cumPlanSum = 0;
+    let hasAnyGanttPlan = false;
+    const computedPlanCum = new Array(numColumns).fill(0);
+
+    for (let w = 0; w < numColumns; w++) {
+        let colSum = 0;
+        let currentParentWeight = 0;
+        proj.scurveData.forEach(item => {
+            if (!item.isSubtask) {
+                currentParentWeight = totalBudget > 0 ? ((parseFloat(item.budget) || 0) / totalBudget * 100) : (mainCount > 0 ? (100 / mainCount) : 0);
+            }
+            const pVal = parseFloat(item.plan ? item.plan[w] : 0) || 0;
+            if (pVal > 0) hasAnyGanttPlan = true;
+            colSum += (currentParentWeight * pVal / 100);
+        });
+        cumPlanSum += colSum;
+        computedPlanCum[w] = parseFloat(Math.min(100, Math.round(cumPlanSum * 10) / 10).toFixed(1));
+    }
+
+    if (hasAnyGanttPlan) {
+        proj.scurvePlanCum = computedPlanCum;
+    }
+}
+
+function syncScurveTasksFromGantt(project) {
+    if (!project) return false;
+    if (!project.ganttData || !project.ganttData.tasks || project.ganttData.tasks.length === 0) {
+        showToast("โครงการนี้ยังไม่มีรายการงานใน Plan Work", "warning");
+        return false;
+    }
+
+    const validGanttTasks = project.ganttData.tasks.filter(t => t && t.name && t.name.trim());
+    if (validGanttTasks.length === 0) {
+        showToast("ไม่พบรายการงานที่มีชื่อใน Plan Work", "warning");
+        return false;
+    }
+
+    // Ensure months and timeframe mode match Gantt
+    syncScurveMonthsWithGantt(project);
+    const numColumns = window.getScurveColumnsCount(project);
+
+    // Map existing items to preserve budget & actual entries
+    const existingMap = new Map();
+    (project.scurveData || []).forEach(item => {
+        if (item && item.name) {
+            existingMap.set(item.name.trim().toLowerCase(), item);
+        }
+    });
+
+    const newScurveData = [];
+    validGanttTasks.forEach(gt => {
+        const key = gt.name.trim().toLowerCase();
+        const existing = existingMap.get(key);
+        const isSub = (gt.rowType === 'task' || !gt.rowType) ? !!gt.isSubtask : false;
+        const itemNum = gt.itemNum || '';
+
+        if (existing) {
+            existing.isSubtask = isSub;
+            if (!isSub && itemNum) existing.item = itemNum;
+            if (!existing.plan) existing.plan = new Array(numColumns).fill(0);
+            if (!existing.actual) existing.actual = new Array(numColumns).fill(0);
+            while (existing.plan.length < numColumns) existing.plan.push(0);
+            while (existing.actual.length < numColumns) existing.actual.push(0);
+            newScurveData.push(existing);
+        } else {
+            newScurveData.push({
+                isSubtask: isSub,
+                item: isSub ? '' : itemNum,
+                name: gt.name.trim(),
+                budget: 0,
+                weight: 0,
+                totalPercent: 0,
+                plan: new Array(numColumns).fill(0),
+                actual: new Array(numColumns).fill(0)
+            });
+        }
+    });
+
+    project.scurveData = newScurveData;
+
+    // Calculate budget weights
+    let totalBudget = 0;
+    project.scurveData.forEach(item => {
+        if (!item.isSubtask) totalBudget += parseFloat(item.budget) || 0;
+    });
+    const mainCount = project.scurveData.filter(i => !i.isSubtask).length;
+    project.scurveData.forEach(item => {
+        if (!item.isSubtask) {
+            item.weight = totalBudget > 0 ? (parseFloat(item.budget) || 0) / totalBudget * 100 : (mainCount > 0 ? 100 / mainCount : 0);
+        } else {
+            item.weight = 0;
+        }
+    });
+
+    // Calculate plan progress & cumulative plan curve from Gantt
+    calculatePlanScurveFromGantt(project);
+
+    saveToLocalStorage();
+    renderSubnavActualProgress(project);
+    showToast(`ดึงรายการจาก Plan Work สำเร็จ (${newScurveData.length} รายการ)`, "success");
+    return true;
 }
 
 
@@ -10081,7 +10193,13 @@ function renderSubnavActualProgress(project) {
     // Build Body
     body.innerHTML = "";
     if (project.scurveData.length === 0) {
-        body.innerHTML = `<tr><td colspan="${(hideBudget ? 5 : 6) + numColumns}" style="text-align: center; color: var(--text-muted); padding: 24px;">ยังไม่มีรายการงาน</td></tr>`;
+        body.innerHTML = `<tr><td colspan="${(hideBudget ? 5 : 6) + numColumns}" style="text-align: center; color: var(--text-muted); padding: 32px 16px;">
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                <i class="fa-solid fa-clipboard-list" style="font-size: 28px; color: #cbd5e1;"></i>
+                <span style="font-weight: 600; color: #64748b;">ยังไม่มีรายการงานในตาราง Actual Progress</span>
+                ${canEdit ? `<button type="button" class="btn btn-sm" onclick="document.getElementById('btn-sync-from-gantt').click()" style="background: #10b981; color: white; font-size: 12px; padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);"><i class="fa-solid fa-cloud-arrow-down"></i> คลิกเพื่อดึงรายการจาก Plan Work ทันที</button>` : ''}
+            </div>
+        </td></tr>`;
     } else {
         project.scurveData.forEach((item, idx) => {
             if (!item.plan) item.plan = new Array(numColumns).fill(0);
@@ -15244,6 +15362,17 @@ document.addEventListener("DOMContentLoaded", () => {
             if (code && code !== "all" && projectsData[code]) {
                 renderSubnavActualProgress(projectsData[code]);
             }
+        });
+    }
+
+    const btnSyncFromGantt = document.getElementById("btn-sync-from-gantt");
+    if (btnSyncFromGantt) {
+        btnSyncFromGantt.addEventListener("click", function() {
+            const code = appState.selectedDetailProject;
+            if (!code || code === "all") return showToast("กรุณาเลือกโครงการเฉพาะก่อน", "warning");
+            const proj = projectsData[code];
+            if (!proj) return showToast("ไม่พบข้อมูลโครงการ", "error");
+            syncScurveTasksFromGantt(proj);
         });
     }
 
