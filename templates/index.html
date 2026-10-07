@@ -4667,7 +4667,6 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                                         </div>
                                     </div>
                                 </div>
-                            </div>
 
                             <!-- Quoting Storage Container (Only for งานที่กำลังเสนอราคา) -->
                             <div id="quoting-project-info-container" style="display: none;">
@@ -8109,6 +8108,13 @@ function renderSubnavProjectWorkspace() {
         if (sidebarBackWrapper) sidebarBackWrapper.style.display = "none";
         mainNavItems.forEach(item => item.style.display = "");
         
+        // Ensure subtab panels inside workspace do not leak active state
+        document.querySelectorAll(".subtab-panel").forEach(p => {
+            if (p.id !== "subtab-general-info-view") {
+                p.classList.remove("active");
+            }
+        });
+        
         if (typeof window.renderProjectSelectionPortal === "function") {
             window.renderProjectSelectionPortal();
         }
@@ -8255,7 +8261,22 @@ function renderSubnavProjectWorkspace() {
         }
     }
     
-    if (!project) return;
+    if (!project) {
+        if (activeCode !== "all" && typeof projectsData === "object" && Object.keys(projectsData).length > 0) {
+            appState.selectedDetailProject = "all";
+            sessionStorage.setItem("technical_water_last_detail_project", "all");
+            if (portal) portal.style.display = "flex";
+            if (workspace) workspace.style.display = "none";
+            if (sidebarSubnav) sidebarSubnav.style.display = "none";
+            if (sidebarSelectorWrapper) sidebarSelectorWrapper.style.display = "none";
+            if (sidebarBackWrapper) sidebarBackWrapper.style.display = "none";
+            mainNavItems.forEach(item => item.style.display = "");
+            if (typeof window.renderProjectSelectionPortal === "function") {
+                window.renderProjectSelectionPortal();
+            }
+        }
+        return;
+    }
     
     // Update subnav header code display
     document.getElementById("subnav-proj-code").textContent = activeCode === "all" ? "ALL" : activeCode;
@@ -12683,7 +12704,19 @@ document.addEventListener("DOMContentLoaded", () => {
                 }
             }
             
-            // If clicking on the currently active tab (e.g. quoting-projects-list or projects-list), collapse and return to dashboard
+            if (viewName === "projects-list" || viewName === "quoting-projects-list") {
+                if (appState.selectedDetailProject !== "all") {
+                    appState.selectedDetailProject = "all";
+                    sessionStorage.setItem("technical_water_last_detail_project", "all");
+                    switchView(viewName);
+                    if (appState.currentView !== "projects-list" && appState.currentView !== "quoting-projects-list") {
+                        closeMobileSidebar();
+                    }
+                    return;
+                }
+            }
+
+            // If clicking on the currently active tab while already in portal view, collapse and return to dashboard
             if (appState.currentView === viewName && (viewName === "quoting-projects-list" || viewName === "projects-list")) {
                 switchView("dashboard");
             } else {
@@ -12719,6 +12752,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (card) {
             card.style.cursor = "pointer";
             card.addEventListener("click", () => {
+                appState.selectedDetailProject = "all";
+                sessionStorage.setItem("technical_water_last_detail_project", "all");
                 switchView("projects-list");
                 const portalStatusFilter = document.getElementById("portal-status-filter");
                 if (portalStatusFilter) {
@@ -12736,6 +12771,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (card) {
             card.style.cursor = "pointer";
             card.addEventListener("click", () => {
+                appState.selectedDetailProject = "all";
+                sessionStorage.setItem("technical_water_last_detail_project", "all");
                 switchView("projects-list");
                 const portalStatusFilter = document.getElementById("portal-status-filter");
                 if (portalStatusFilter) {
@@ -12753,6 +12790,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (card) {
             card.style.cursor = "pointer";
             card.addEventListener("click", () => {
+                appState.selectedDetailProject = "all";
+                sessionStorage.setItem("technical_water_last_detail_project", "all");
                 switchView("projects-list");
                 const portalStatusFilter = document.getElementById("portal-status-filter");
                 if (portalStatusFilter) {
@@ -12770,6 +12809,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (card) {
             card.style.cursor = "pointer";
             card.addEventListener("click", () => {
+                appState.selectedDetailProject = "all";
+                sessionStorage.setItem("technical_water_last_detail_project", "all");
                 switchView("projects-list");
                 const portalStatusFilter = document.getElementById("portal-status-filter");
                 if (portalStatusFilter) {
@@ -12787,6 +12828,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (card) {
             card.style.cursor = "pointer";
             card.addEventListener("click", () => {
+                appState.selectedDetailProject = "all";
+                sessionStorage.setItem("technical_water_last_detail_project", "all");
                 switchView("quoting-projects-list");
                 const portalStatusFilter = document.getElementById("portal-status-filter");
                 if (portalStatusFilter) {
@@ -13456,6 +13499,30 @@ document.addEventListener("DOMContentLoaded", () => {
         
         const projSelector = document.getElementById("subnav-project-selector");
         if (projSelector) projSelector.value = "all";
+
+        // Update URL to clean portal route
+        const targetUrl = appState.currentView === "quoting-projects-list" ? "/quoting" : "/projects";
+        if (window.location.pathname !== targetUrl || window.location.search) {
+            history.pushState(null, "", targetUrl);
+        }
+
+        // Force mutual exclusivity between portal and workspace
+        const portal = document.getElementById("project-selection-portal");
+        const workspace = document.getElementById("project-workspace-layout");
+        if (portal) portal.style.display = "flex";
+        if (workspace) workspace.style.display = "none";
+
+        // Deactivate subtab panels so none stay visible
+        document.querySelectorAll(".subtab-panel").forEach(p => {
+            if (p.id !== "subtab-general-info-view") {
+                p.classList.remove("active");
+            }
+        });
+
+        // Scroll back to top
+        window.scrollTo({ top: 0, behavior: "instant" });
+        const plv = document.getElementById("projects-list-view");
+        if (plv) plv.scrollTop = 0;
 
         renderSubnavProjectWorkspace();
     }
@@ -20985,10 +21052,14 @@ function showDraftBadge(modalId) {
                     switchView("dashboard");
                 }
             } else if (path === "/quoting") {
+                appState.selectedDetailProject = "all";
+                sessionStorage.setItem("technical_water_last_detail_project", "all");
                 if (typeof switchView === "function") {
                     switchView("quoting-projects-list");
                 }
             } else if (path === "/projects") {
+                appState.selectedDetailProject = "all";
+                sessionStorage.setItem("technical_water_last_detail_project", "all");
                 if (typeof switchView === "function") {
                     switchView("projects-list");
                 }
@@ -21039,10 +21110,9 @@ function showDraftBadge(modalId) {
         
         if (isRouting) return;
         
-        // Don't overwrite URL in guest share/public view mode — it would strip ?share= or ?project= params
-        // causing handleRouting to lose the share context and fall back to session login
+        // Don't overwrite URL in guest share mode
         if (appState.allowedShareProjects && appState.allowedShareProjects.length > 0) return;
-        if (window.location.search.includes("share=") || window.location.search.includes("project=")) return;
+        if (window.location.search.includes("share=")) return;
         
         const path = window.location.pathname;
         let targetPath = null;
@@ -21051,7 +21121,7 @@ function showDraftBadge(modalId) {
         else if (viewName === "quoting-projects-list") targetPath = "/quoting";
         else if (viewName === "projects-list" && appState.selectedDetailProject === "all") targetPath = "/projects";
         
-        if (targetPath && path !== targetPath) {
+        if (targetPath && (path !== targetPath || window.location.search)) {
             history.pushState(null, "", targetPath);
         }
     };
@@ -21064,9 +21134,9 @@ function showDraftBadge(modalId) {
         
         if (isRouting) return;
         
-        // Don't overwrite URL in guest share/public view mode
+        // Don't overwrite URL in guest share mode
         if (appState.allowedShareProjects && appState.allowedShareProjects.length > 0) return;
-        if (window.location.search.includes("share=") || window.location.search.includes("project=")) return;
+        if (window.location.search.includes("share=")) return;
         
         const activeCode = appState.selectedDetailProject;
         if (activeCode && activeCode !== "all") {
@@ -21084,6 +21154,11 @@ function showDraftBadge(modalId) {
             
             if (window.location.pathname !== targetPath || window.location.search !== targetSearch) {
                 history.pushState(null, "", targetPath + targetSearch);
+            }
+        } else if (activeCode === "all" && (appState.currentView === "projects-list" || appState.currentView === "quoting-projects-list")) {
+            const targetPath = appState.currentView === "quoting-projects-list" ? "/quoting" : "/projects";
+            if (window.location.pathname !== targetPath || window.location.search) {
+                history.pushState(null, "", targetPath);
             }
         }
     };
