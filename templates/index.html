@@ -8314,181 +8314,345 @@ function renderSubnavProjectWorkspace() {
             if (inlineStatusSelect) inlineStatusSelect.disabled = false;
             
             let currentStatus = project.status || "งานที่กำลังดำเนินการ";
-            if (currentStatus === "กำลังดำเนินการ" || currentStatus === "กำลังเสนอราคา") currentStatus = "งานที่กำลังดำเนินการ";
-            if (currentStatus === "เสร็จสิ้น" || currentStatus === "งานเสร็จแล้วรอส่งงาน") currentStatus = "งานเสร็จแล้วรอส่งงาน/อนุมัติ";
-            if (currentStatus === "รออนุมัติ" || currentStatus === "งานรออนุมัติ" || currentStatus === "งานที่กำลังเสนอราคา") currentStatus = "งานที่รอเสนอราคา";
-            
-            subnavStatusSelect.value = currentStatus;
-            if (inlineStatusSelect) inlineStatusSelect.value = currentStatus;
+            if (currentStatus === "กำลังดำเนินการ" || currentStatus === "กำลังเสนอราคา") currentStatus = "งานที่กำลัง�function calculatePlanScurveFromGantt(proj) {
+    if (!proj || !proj.ganttData || !proj.ganttData.tasks || !proj.ganttData.startDate || !proj.ganttData.endDate) return;
+    if (!proj.scurveData || proj.scurveData.length === 0) return;
+    if (!proj.scurveMonths || proj.scurveMonths.length === 0) return;
 
-            if (subnavStatusBadge) {
-                subnavStatusBadge.textContent = currentStatus;
-                if (currentStatus === "งานเสร็จแล้วรอส่งงาน/อนุมัติ") {
-                    subnavStatusBadge.style.background = "#e0f2fe";
-                    subnavStatusBadge.style.color = "#0369a1";
-                } else if (currentStatus === "งานที่รอเสนอราคา") {
-                    subnavStatusBadge.style.background = "#fef3c7";
-                    subnavStatusBadge.style.color = "#b45309";
-                } else {
-                    subnavStatusBadge.style.background = "#dcfce7";
-                    subnavStatusBadge.style.color = "#15803d";
-                }
-            }
+    const isDaily = window.isProjectDailyMode(proj);
+    const numColumns = window.getScurveColumnsCount(proj);
 
-            if (inlineStatusBadge) {
-                inlineStatusBadge.textContent = currentStatus;
-                if (currentStatus === "งานเสร็จแล้วรอส่งงาน/อนุมัติ") {
-                    inlineStatusBadge.style.background = "#e0f2fe";
-                    inlineStatusBadge.style.color = "#0369a1";
-                } else if (currentStatus === "งานที่รอเสนอราคา") {
-                    inlineStatusBadge.style.background = "#fef3c7";
-                    inlineStatusBadge.style.color = "#b45309";
-                } else {
-                    inlineStatusBadge.style.background = "#dcfce7";
-                    inlineStatusBadge.style.color = "#15803d";
-                }
-            }
-        }
+    // Calculate dates list from Gantt chart start/end dates
+    const [sy, sm, sd] = proj.ganttData.startDate.split('-').map(Number);
+    const [ey, em, ed] = proj.ganttData.endDate.split('-').map(Number);
+    const start = new Date(sy, sm - 1, sd);
+    const end = new Date(ey, em - 1, ed);
+
+    const dateList = [];
+    let current = new Date(start);
+    let safety = 0;
+    while (current <= end && safety < 1000) {
+        dateList.push(formatDateLocal(current));
+        current.setDate(current.getDate() + 1);
+        safety++;
     }
     
-    // Toggle visibility of add buttons if showing All Projects
-    const addBtns = [
-        document.getElementById("open-task-modal-btn"),
-        document.getElementById("subnav-open-daily-report-modal-btn"),
-        document.getElementById("open-plan-modal-btn"),
-        document.getElementById("open-plan-doc-modal-btn"),
-        document.getElementById("open-media-modal-btn"),
-        document.getElementById("open-doc-upload-btn"),
-        document.getElementById("open-edit-project-btn")
-    ];
-    addBtns.forEach(btn => {
-        if (btn) {
-            btn.style.display = activeCode === "all" ? "none" : "";
-        }
+    const totalDays = dateList.length;
+    if (totalDays === 0) return;
+
+    const interval = isDaily ? 1 : totalDays / numColumns;
+
+    // Reset plan array on all items
+    proj.scurveData.forEach(item => {
+        item.plan = new Array(numColumns).fill(0);
     });
-    
-    // Update labels and details for subtab 7: Documents tab left info panel
-    document.getElementById("subnav-doc-code").textContent = project.code;
-    document.getElementById("subnav-doc-name").textContent = project.name;
-    document.getElementById("subnav-doc-customer").textContent = project.customer;
-    document.getElementById("subnav-doc-pm").textContent = project.manager;
-    document.getElementById("subnav-doc-dates").textContent = `${project.start} - ${project.end}`;
-    document.getElementById("subnav-doc-value").textContent = `${formatNumber(project.value)} บาท`;
-    document.getElementById("subnav-doc-desc").textContent = project.description;
-    
-    const isCustomer = (appState.currentRole === "customer" || appState.currentRole === "technician" || appState.currentRole === "tech");
-    
-    // Toggle sidebar subnav tabs container visibility
-    const subnavTabsEl = document.querySelector(".subnav-tabs");
-    if (subnavTabsEl) {
-        subnavTabsEl.style.display = "";
-    }
-    
-    if (isCustomer) {
-        // For customer/technician, make all views active (except cost)
-        document.querySelectorAll(".subtab-panel").forEach(panel => {
-            if (panel.id !== "subtab-cost-tab-view") {
-                panel.classList.add("active");
-                panel.style.marginBottom = "24px";
+
+    // Check if main items have child subtasks in scurveData
+    const hasCategoryHeaders = proj.scurveData.some(i => !i.isSubtask && !i.isPhase);
+    const hasSubtasks = proj.scurveData.some(i => i.isSubtask && !i.isPhase);
+
+    if (hasCategoryHeaders && hasSubtasks) {
+        // Aggregate child tasks under each main item into the main item's plan curve
+        let currentMainItem = null;
+        let currentChildTasks = [];
+
+        const processGroup = (mainItem, childList) => {
+            if (!mainItem) return;
+            const dayHits = new Array(totalDays).fill(0);
+            let totalActiveHits = 0;
+
+            childList.forEach(child => {
+                const gTask = proj.ganttData.tasks.find(t => 
+                    t.name && child.name && t.name.trim().toLowerCase() === child.name.trim().toLowerCase()
+                );
+                if (gTask && gTask.cells) {
+                    dateList.forEach((dStr, dIdx) => {
+                        const val = gTask.cells[dStr];
+                        let noise = 0;
+                        if (val) {
+                            if (typeof val === 'object') noise = val.noise || 0;
+                            else noise = parseInt(val) || 0;
+                        }
+                        if (noise > 0) {
+                            dayHits[dIdx]++;
+                            totalActiveHits++;
+                        }
+                    });
+                }
+            });
+
+            // Also check if the main item itself has painted cells directly
+            const directGTask = proj.ganttData.tasks.find(t => 
+                t.name && mainItem.name && t.name.trim().toLowerCase() === mainItem.name.trim().toLowerCase()
+            );
+            if (directGTask && directGTask.cells) {
+                dateList.forEach((dStr, dIdx) => {
+                    const val = directGTask.cells[dStr];
+                    let noise = 0;
+                    if (val) {
+                        if (typeof val === 'object') noise = val.noise || 0;
+                        else noise = parseInt(val) || 0;
+                    }
+                    if (noise > 0) {
+                        dayHits[dIdx]++;
+                        totalActiveHits++;
+                    }
+                });
+            }
+
+            if (totalActiveHits > 0) {
+                mainItem.plan = new Array(numColumns).fill(0);
+                dateList.forEach((dStr, dIdx) => {
+                    const hits = dayHits[dIdx];
+                    if (hits > 0) {
+                        let wIdx = isDaily ? dIdx : Math.floor(dIdx / interval);
+                        if (wIdx >= numColumns) wIdx = numColumns - 1;
+                        mainItem.plan[wIdx] += (hits / totalActiveHits) * 100;
+                    }
+                });
+
+                let sum = 0;
+                for (let w = 0; w < numColumns; w++) {
+                    mainItem.plan[w] = Math.round(mainItem.plan[w] * 10) / 10;
+                    sum += mainItem.plan[w];
+                }
+                const diff = 100 - sum;
+                if (Math.abs(diff) > 0.01 && Math.abs(diff) < 5) {
+                    let lastActiveW = -1;
+                    for (let w = numColumns - 1; w >= 0; w--) {
+                        if (mainItem.plan[w] > 0) {
+                            lastActiveW = w;
+                            break;
+                        }
+                    }
+                    if (lastActiveW !== -1) {
+                        mainItem.plan[lastActiveW] = Math.round((mainItem.plan[lastActiveW] + diff) * 10) / 10;
+                    }
+                }
+            }
+        };
+
+        proj.scurveData.forEach(item => {
+            if (item.isPhase) return;
+            if (!item.isSubtask) {
+                if (currentMainItem) {
+                    processGroup(currentMainItem, currentChildTasks);
+                }
+                currentMainItem = item;
+                currentChildTasks = [];
             } else {
-                panel.classList.remove("active");
+                currentChildTasks.push(item);
             }
         });
-        
-        // Render all views sequentially
-        renderSubnavGeneralInfo(project);
-        renderSubnavPlanWork(project);
-        renderSubnavActualProgress(project);
-        renderSubnavDailyReports(project);
-        renderSubnavPhotosFiles(project);
-        renderSubnavDocumentsTab(project);
+        if (currentMainItem) {
+            processGroup(currentMainItem, currentChildTasks);
+        }
     } else {
-        // Restore standard tab behaviors
-        document.querySelectorAll(".subtab-panel").forEach(panel => {
-            panel.style.marginBottom = "";
-        });
-        
-        // Load active subtab panel view
-        let activeSubtab = appState.activeProjectTab || "general-info";
-        
+        // Direct 1-to-1 mapping for items
+        proj.scurveData.forEach(item => {
+            if (item.isPhase) return;
+            const task = proj.ganttData.tasks.find(t => 
+                t.name && item.name && 
+                t.name.trim().toLowerCase() === item.name.trim().toLowerCase()
+            );
 
-        
-        // Update active class on tab buttons
-        document.querySelectorAll(".subnav-tab-item").forEach(btn => {
-            if (btn.getAttribute("data-subtab") === activeSubtab) {
-                btn.classList.add("active");
-            } else {
-                btn.classList.remove("active");
+            if (task && task.cells) {
+                let activeDays = 0;
+                dateList.forEach(dStr => {
+                    const val = task.cells[dStr];
+                    let noise = 0;
+                    if (val) {
+                        if (typeof val === 'object') noise = val.noise || 0;
+                        else noise = parseInt(val) || 0;
+                    }
+                    if (noise > 0) activeDays++;
+                });
+
+                if (activeDays > 0) {
+                    dateList.forEach((dStr, dIdx) => {
+                        const val = task.cells[dStr];
+                        let noise = 0;
+                        if (val) {
+                            if (typeof val === 'object') noise = val.noise || 0;
+                            else noise = parseInt(val) || 0;
+                        }
+                        if (noise > 0) {
+                            let wIdx = isDaily ? dIdx : Math.floor(dIdx / interval);
+                            if (wIdx >= numColumns) wIdx = numColumns - 1;
+                            item.plan[wIdx] += (1 / activeDays) * 100;
+                        }
+                    });
+
+                    let sum = 0;
+                    for (let w = 0; w < numColumns; w++) {
+                        item.plan[w] = Math.round(item.plan[w] * 10) / 10;
+                        sum += item.plan[w];
+                    }
+                    const diff = 100 - sum;
+                    if (Math.abs(diff) > 0.01 && Math.abs(diff) < 5) {
+                        let lastActiveW = -1;
+                        for (let w = numColumns - 1; w >= 0; w--) {
+                            if (item.plan[w] > 0) {
+                                lastActiveW = w;
+                                break;
+                            }
+                        }
+                        if (lastActiveW !== -1) {
+                            item.plan[lastActiveW] = Math.round((item.plan[lastActiveW] + diff) * 10) / 10;
+                        }
+                    }
+                }
             }
         });
-        
-        // Update active class on panels
-        document.querySelectorAll(".subtab-panel").forEach(panel => {
-            panel.classList.remove("active");
-        });
-        
-        const activePanel = document.getElementById(`subtab-${activeSubtab}-view`);
-        if (activePanel) {
-            activePanel.classList.add("active");
-        }
-        
-        // Render view based on active tab
-        if (activeSubtab === "general-info") {
-            renderSubnavGeneralInfo(project);
-        } else if (activeSubtab === "cost-tab") {
-            renderSubnavCostTab(project);
-        } else if (activeSubtab === "documents-tab") {
-            renderSubnavDocumentsTab(project);
-        } else if (activeSubtab === "photos-files") {
-            renderSubnavPhotosFiles(project);
-        } else if (activeSubtab === "daily-report") {
-            renderSubnavDailyReports(project);
-        } else if (activeSubtab === "actual-progress") {
-            renderSubnavActualProgress(project);
-        } else if (activeSubtab === "plan-work") {
-            renderSubnavPlanWork(project);
-        }
     }
 
-    // Auto-scroll on initial load if specified by share link
-    if (window.shouldScrollToTab) {
-        const tabToScroll = window.shouldScrollToTab;
-        window.shouldScrollToTab = null; // Clear so it only triggers once
-        setTimeout(() => {
-            const targetPanel = document.getElementById(`subtab-${tabToScroll}-view`);
-            if (targetPanel && targetPanel.classList.contains("active")) {
-                targetPanel.scrollIntoView({ behavior: "smooth", block: "start" });
+    // Automatically calculate and update cumulative plan progress (scurvePlanCum)
+    let totalBudget = 0;
+    proj.scurveData.forEach(item => {
+        if (!item.isSubtask && !item.isPhase) totalBudget += parseFloat(item.budget) || 0;
+    });
+    const mainCount = proj.scurveData.filter(i => !i.isSubtask && !i.isPhase).length;
+
+    let cumPlanSum = 0;
+    let hasAnyGanttPlan = false;
+    const computedPlanCum = new Array(numColumns).fill(0);
+
+    for (let w = 0; w < numColumns; w++) {
+        let colSum = 0;
+        proj.scurveData.forEach(item => {
+            if (!item.isSubtask && !item.isPhase) {
+                const currentParentWeight = totalBudget > 0 ? ((parseFloat(item.budget) || 0) / totalBudget * 100) : (mainCount > 0 ? (100 / mainCount) : 0);
+                const pVal = parseFloat(item.plan ? item.plan[w] : 0) || 0;
+                if (pVal > 0) hasAnyGanttPlan = true;
+                colSum += (currentParentWeight * pVal / 100);
             }
-        }, 600); // 600ms to allow all rendering (Gantt, S-Curve, daily reports) to complete
+        });
+        cumPlanSum += colSum;
+        computedPlanCum[w] = parseFloat(Math.min(100, Math.round(cumPlanSum * 10) / 10).toFixed(1));
+    }
+
+    if (hasAnyGanttPlan) {
+        proj.scurvePlanCum = computedPlanCum;
     }
 }
 
-function renderQuotingStorageView(project) {
-    const isQuotingTab = (appState.currentView === "quoting-projects-list");
-    const stdContainer = document.getElementById("standard-project-info-container");
-    const quoteContainer = document.getElementById("quoting-project-info-container");
-    const subnavTabsEl = document.querySelector(".subnav-tabs");
-
-    if (subnavTabsEl) {
-        subnavTabsEl.style.display = isQuotingTab ? "none" : "";
+function syncScurveTasksFromGantt(project) {
+    if (!project) return false;
+    if (!project.ganttData || !project.ganttData.tasks || project.ganttData.tasks.length === 0) {
+        showToast("โครงการนี้ยังไม่มีรายการงานใน Plan Work", "warning");
+        return false;
     }
 
-    if (!isQuotingTab) {
-        if (stdContainer) stdContainer.style.display = "block";
-        if (quoteContainer) quoteContainer.style.display = "none";
-        return;
+    // ดึงรายการงานทั้งหมดจาก Plan Work
+    const allGanttTasks = project.ganttData.tasks.filter(t => t && t.name && t.name.trim());
+    if (allGanttTasks.length === 0) {
+        showToast("ไม่พบรายการงานใน Plan Work", "warning");
+        return false;
     }
 
-    if (stdContainer) stdContainer.style.display = "none";
-    if (quoteContainer) quoteContainer.style.display = "block";
+    // ตรวจสอบว่าใน Plan Work มีหัวข้อหมวดงาน (type หรือ category) หรือไม่
+    const hasCategoryHeaders = allGanttTasks.some(t => t.rowType === 'category' || t.rowType === 'type');
 
-    // Summary Card Details
-    const nameEl = document.getElementById("quoting-detail-name");
-    const hospBadge = document.getElementById("quoting-detail-hospital-badge");
-    const statusBadge = document.getElementById("quoting-detail-status-badge");
-    const sumName = document.getElementById("quoting-summary-name");
-    const sumHosp = document.getElementById("quoting-summary-hospital");
-    const sumProgText = document.getElementById("quoting-summary-progress-text");
+    // Ensure months and timeframe mode match Gantt
+    syncScurveMonthsWithGantt(project);
+    const numColumns = window.getScurveColumnsCount(project);
+
+    // Map existing items to preserve budget & actual entries
+    const existingMap = new Map();
+    (project.scurveData || []).forEach(item => {
+        if (item && item.name) {
+            existingMap.set(item.name.trim().toLowerCase(), item);
+        }
+    });
+
+    const newScurveData = [];
+    let mainCounter = 0;
+    let subCounter = 0;
+
+    allGanttTasks.forEach((gt, idx) => {
+        const key = gt.name.trim().toLowerCase();
+        const existing = existingMap.get(key);
+
+        let isPhase = false;
+        let isSubtask = false;
+        let itemNum = '';
+
+        if (gt.rowType === 'phase' || (!gt.rowType && !gt.itemNum && idx === 0)) {
+            // แถวชื่อระยะ/เฟส (Phase Header Banner)
+            isPhase = true;
+            isSubtask = true;
+            itemNum = '';
+        } else if (hasCategoryHeaders) {
+            // ถ้ามีหัวข้อหมวดงาน: ให้หัวข้อ (type/category) เป็นงานหลัก (isSubtask = false)
+            // ส่วนงานย่อยที่ระบายสีได้ (task) เป็นงานย่อย (isSubtask = true) แสดงไว้ดูงาน
+            if (gt.rowType === 'category' || gt.rowType === 'type') {
+                isPhase = false;
+                isSubtask = false;
+                mainCounter++;
+                subCounter = 0;
+                itemNum = gt.itemNum ? gt.itemNum.toString() : mainCounter.toString();
+            } else {
+                isPhase = false;
+                isSubtask = true;
+                subCounter++;
+                itemNum = gt.itemNum ? gt.itemNum.toString() : (mainCounter > 0 ? `${mainCounter}.${subCounter}` : `-`);
+            }
+        } else {
+            // กรณีไม่มีหัวข้อหมวดงาน: งานทั้งหมดถือเป็นงานหลัก
+            isPhase = false;
+            isSubtask = false;
+            mainCounter++;
+            itemNum = gt.itemNum ? gt.itemNum.toString() : mainCounter.toString();
+        }
+
+        if (existing) {
+            existing.isPhase = isPhase;
+            existing.isSubtask = isSubtask;
+            existing.item = itemNum;
+            if (!existing.plan) existing.plan = new Array(numColumns).fill(0);
+            if (!existing.actual) existing.actual = new Array(numColumns).fill(0);
+            while (existing.plan.length < numColumns) existing.plan.push(0);
+            while (existing.actual.length < numColumns) existing.actual.push(0);
+            newScurveData.push(existing);
+        } else {
+            newScurveData.push({
+                isPhase: isPhase,
+                isSubtask: isSubtask,
+                item: itemNum,
+                name: gt.name.trim(),
+                budget: 0,
+                weight: 0,
+                totalPercent: 0,
+                plan: new Array(numColumns).fill(0),
+                actual: new Array(numColumns).fill(0)
+            });
+        }
+    });
+
+    project.scurveData = newScurveData;
+
+    // Calculate budget weights for main items
+    let totalBudget = 0;
+    project.scurveData.forEach(item => {
+        if (!item.isSubtask && !item.isPhase) totalBudget += parseFloat(item.budget) || 0;
+    });
+    const mainCount = project.scurveData.filter(i => !i.isSubtask && !i.isPhase).length;
+    project.scurveData.forEach(item => {
+        if (!item.isSubtask && !item.isPhase) {
+            item.weight = totalBudget > 0 ? (parseFloat(item.budget) || 0) / totalBudget * 100 : (mainCount > 0 ? 100 / mainCount : 0);
+        } else {
+            item.weight = 0;
+        }
+    });
+
+    // Calculate plan progress & cumulative plan curve from Gantt
+    calculatePlanScurveFromGantt(project);
+
+    saveToLocalStorage();
+    renderSubnavActualProgress(project);
+    showToast(`ดึงรายการทั้งหมดจาก Plan Work สำเร็จ (${newScurveData.length} รายการ)`, "success");
+    return true;
+}");
     const sumProgBar = document.getElementById("quoting-summary-progress-bar");
 
     if (project && project.code !== "all") {
@@ -8981,84 +9145,176 @@ function calculatePlanScurveFromGantt(proj) {
 
     const interval = isDaily ? 1 : totalDays / numColumns;
 
-    // Map each scurveData item to corresponding task in Gantt by name
+    // Reset plan array on all items
     proj.scurveData.forEach(item => {
-        const task = proj.ganttData.tasks.find(t => 
-            (t.rowType === 'task' || !t.rowType || (t.rowType !== 'phase' && t.rowType !== 'type' && t.rowType !== 'category')) && 
-            t.name && item.name && 
-            t.name.trim().toLowerCase() === item.name.trim().toLowerCase()
-        );
-
-        // Reset plan array to match numColumns
         item.plan = new Array(numColumns).fill(0);
+    });
 
-        if (task && task.cells) {
-            // Count total active days
-            let activeDays = 0;
-            dateList.forEach(dStr => {
-                const val = task.cells[dStr];
-                let noise = 0;
-                if (val) {
-                    if (typeof val === 'object') {
-                        noise = val.noise || 0;
-                    } else {
-                        noise = parseInt(val) || 0;
-                    }
-                }
-                if (noise > 0) {
-                    activeDays++;
+    // Check if main items have child subtasks in scurveData
+    const hasCategoryHeaders = proj.scurveData.some(i => !i.isSubtask && !i.isPhase);
+    const hasSubtasks = proj.scurveData.some(i => i.isSubtask && !i.isPhase);
+
+    if (hasCategoryHeaders && hasSubtasks) {
+        // Aggregate child tasks under each main item into the main item's plan curve
+        let currentMainItem = null;
+        let currentChildTasks = [];
+
+        const processGroup = (mainItem, childList) => {
+            if (!mainItem) return;
+            const dayHits = new Array(totalDays).fill(0);
+            let totalActiveHits = 0;
+
+            childList.forEach(child => {
+                const gTask = proj.ganttData.tasks.find(t => 
+                    t.name && child.name && t.name.trim().toLowerCase() === child.name.trim().toLowerCase()
+                );
+                if (gTask && gTask.cells) {
+                    dateList.forEach((dStr, dIdx) => {
+                        const val = gTask.cells[dStr];
+                        let noise = 0;
+                        if (val) {
+                            if (typeof val === 'object') noise = val.noise || 0;
+                            else noise = parseInt(val) || 0;
+                        }
+                        if (noise > 0) {
+                            dayHits[dIdx]++;
+                            totalActiveHits++;
+                        }
+                    });
                 }
             });
 
-            if (activeDays > 0) {
-                // Distribute progress across columns
+            // Also check if the main item itself has painted cells directly
+            const directGTask = proj.ganttData.tasks.find(t => 
+                t.name && mainItem.name && t.name.trim().toLowerCase() === mainItem.name.trim().toLowerCase()
+            );
+            if (directGTask && directGTask.cells) {
                 dateList.forEach((dStr, dIdx) => {
-                    const val = task.cells[dStr];
+                    const val = directGTask.cells[dStr];
                     let noise = 0;
                     if (val) {
-                        if (typeof val === 'object') {
-                            noise = val.noise || 0;
-                        } else {
-                            noise = parseInt(val) || 0;
-                        }
+                        if (typeof val === 'object') noise = val.noise || 0;
+                        else noise = parseInt(val) || 0;
                     }
                     if (noise > 0) {
+                        dayHits[dIdx]++;
+                        totalActiveHits++;
+                    }
+                });
+            }
+
+            if (totalActiveHits > 0) {
+                mainItem.plan = new Array(numColumns).fill(0);
+                dateList.forEach((dStr, dIdx) => {
+                    const hits = dayHits[dIdx];
+                    if (hits > 0) {
                         let wIdx = isDaily ? dIdx : Math.floor(dIdx / interval);
                         if (wIdx >= numColumns) wIdx = numColumns - 1;
-                        item.plan[wIdx] += (1 / activeDays) * 100;
+                        mainItem.plan[wIdx] += (hits / totalActiveHits) * 100;
                     }
                 });
 
-                // Round and check sums
                 let sum = 0;
                 for (let w = 0; w < numColumns; w++) {
-                    item.plan[w] = Math.round(item.plan[w] * 10) / 10;
-                    sum += item.plan[w];
+                    mainItem.plan[w] = Math.round(mainItem.plan[w] * 10) / 10;
+                    sum += mainItem.plan[w];
                 }
                 const diff = 100 - sum;
                 if (Math.abs(diff) > 0.01 && Math.abs(diff) < 5) {
-                    // Adjust last active column
                     let lastActiveW = -1;
                     for (let w = numColumns - 1; w >= 0; w--) {
-                        if (item.plan[w] > 0) {
+                        if (mainItem.plan[w] > 0) {
                             lastActiveW = w;
                             break;
                         }
                     }
                     if (lastActiveW !== -1) {
-                        item.plan[lastActiveW] = Math.round((item.plan[lastActiveW] + diff) * 10) / 10;
+                        mainItem.plan[lastActiveW] = Math.round((mainItem.plan[lastActiveW] + diff) * 10) / 10;
                     }
                 }
             }
+        };
+
+        proj.scurveData.forEach(item => {
+            if (item.isPhase) return;
+            if (!item.isSubtask) {
+                if (currentMainItem) {
+                    processGroup(currentMainItem, currentChildTasks);
+                }
+                currentMainItem = item;
+                currentChildTasks = [];
+            } else {
+                currentChildTasks.push(item);
+            }
+        });
+        if (currentMainItem) {
+            processGroup(currentMainItem, currentChildTasks);
         }
-    });
+    } else {
+        // Direct 1-to-1 mapping for items
+        proj.scurveData.forEach(item => {
+            if (item.isPhase) return;
+            const task = proj.ganttData.tasks.find(t => 
+                t.name && item.name && 
+                t.name.trim().toLowerCase() === item.name.trim().toLowerCase()
+            );
+
+            if (task && task.cells) {
+                let activeDays = 0;
+                dateList.forEach(dStr => {
+                    const val = task.cells[dStr];
+                    let noise = 0;
+                    if (val) {
+                        if (typeof val === 'object') noise = val.noise || 0;
+                        else noise = parseInt(val) || 0;
+                    }
+                    if (noise > 0) activeDays++;
+                });
+
+                if (activeDays > 0) {
+                    dateList.forEach((dStr, dIdx) => {
+                        const val = task.cells[dStr];
+                        let noise = 0;
+                        if (val) {
+                            if (typeof val === 'object') noise = val.noise || 0;
+                            else noise = parseInt(val) || 0;
+                        }
+                        if (noise > 0) {
+                            let wIdx = isDaily ? dIdx : Math.floor(dIdx / interval);
+                            if (wIdx >= numColumns) wIdx = numColumns - 1;
+                            item.plan[wIdx] += (1 / activeDays) * 100;
+                        }
+                    });
+
+                    let sum = 0;
+                    for (let w = 0; w < numColumns; w++) {
+                        item.plan[w] = Math.round(item.plan[w] * 10) / 10;
+                        sum += item.plan[w];
+                    }
+                    const diff = 100 - sum;
+                    if (Math.abs(diff) > 0.01 && Math.abs(diff) < 5) {
+                        let lastActiveW = -1;
+                        for (let w = numColumns - 1; w >= 0; w--) {
+                            if (item.plan[w] > 0) {
+                                lastActiveW = w;
+                                break;
+                            }
+                        }
+                        if (lastActiveW !== -1) {
+                            item.plan[lastActiveW] = Math.round((item.plan[lastActiveW] + diff) * 10) / 10;
+                        }
+                    }
+                }
+            }
+        });
+    }
 
     // Automatically calculate and update cumulative plan progress (scurvePlanCum)
     let totalBudget = 0;
     proj.scurveData.forEach(item => {
-        if (!item.isSubtask) totalBudget += parseFloat(item.budget) || 0;
+        if (!item.isSubtask && !item.isPhase) totalBudget += parseFloat(item.budget) || 0;
     });
-    const mainCount = proj.scurveData.filter(i => !i.isSubtask).length;
+    const mainCount = proj.scurveData.filter(i => !i.isSubtask && !i.isPhase).length;
 
     let cumPlanSum = 0;
     let hasAnyGanttPlan = false;
@@ -9066,14 +9322,13 @@ function calculatePlanScurveFromGantt(proj) {
 
     for (let w = 0; w < numColumns; w++) {
         let colSum = 0;
-        let currentParentWeight = 0;
         proj.scurveData.forEach(item => {
-            if (!item.isSubtask) {
-                currentParentWeight = totalBudget > 0 ? ((parseFloat(item.budget) || 0) / totalBudget * 100) : (mainCount > 0 ? (100 / mainCount) : 0);
+            if (!item.isSubtask && !item.isPhase) {
+                const currentParentWeight = totalBudget > 0 ? ((parseFloat(item.budget) || 0) / totalBudget * 100) : (mainCount > 0 ? (100 / mainCount) : 0);
+                const pVal = parseFloat(item.plan ? item.plan[w] : 0) || 0;
+                if (pVal > 0) hasAnyGanttPlan = true;
+                colSum += (currentParentWeight * pVal / 100);
             }
-            const pVal = parseFloat(item.plan ? item.plan[w] : 0) || 0;
-            if (pVal > 0) hasAnyGanttPlan = true;
-            colSum += (currentParentWeight * pVal / 100);
         });
         cumPlanSum += colSum;
         computedPlanCum[w] = parseFloat(Math.min(100, Math.round(cumPlanSum * 10) / 10).toFixed(1));
@@ -9091,20 +9346,15 @@ function syncScurveTasksFromGantt(project) {
         return false;
     }
 
-    // กรองดึงเฉพาะแถวงานย่อยที่ระบายสีได้ (ไม่ดึง Phase, ประเภทงาน, หรือหมวดงานที่เป็นหัวข้อ)
-    const validGanttTasks = project.ganttData.tasks.filter(t => 
-        t && 
-        t.name && 
-        t.name.trim() && 
-        t.rowType !== 'phase' && 
-        t.rowType !== 'type' && 
-        t.rowType !== 'category'
-    );
-
-    if (validGanttTasks.length === 0) {
-        showToast("ไม่พบรายการงานย่อยที่ระบายสีได้ใน Plan Work", "warning");
+    // ดึงรายการงานทั้งหมดจาก Plan Work
+    const allGanttTasks = project.ganttData.tasks.filter(t => t && t.name && t.name.trim());
+    if (allGanttTasks.length === 0) {
+        showToast("ไม่พบรายการงานใน Plan Work", "warning");
         return false;
     }
+
+    // ตรวจสอบว่าใน Plan Work มีหัวข้อหมวดงาน (type หรือ category) หรือไม่
+    const hasCategoryHeaders = allGanttTasks.some(t => t.rowType === 'category' || t.rowType === 'type');
 
     // Ensure months and timeframe mode match Gantt
     syncScurveMonthsWithGantt(project);
@@ -9119,14 +9369,48 @@ function syncScurveTasksFromGantt(project) {
     });
 
     const newScurveData = [];
-    validGanttTasks.forEach((gt, idx) => {
+    let mainCounter = 0;
+    let subCounter = 0;
+
+    allGanttTasks.forEach((gt, idx) => {
         const key = gt.name.trim().toLowerCase();
         const existing = existingMap.get(key);
-        // ใน Actual Progress ให้ทุกงานย่อยที่ระบายสีได้สามารถกรอก Budget และคิดน้ำหนักได้
-        const itemNum = (idx + 1).toString();
+
+        let isPhase = false;
+        let isSubtask = false;
+        let itemNum = '';
+
+        if (gt.rowType === 'phase' || (!gt.rowType && !gt.itemNum && idx === 0)) {
+            // แถวชื่อระยะ/เฟส (Phase Header Banner)
+            isPhase = true;
+            isSubtask = true;
+            itemNum = '';
+        } else if (hasCategoryHeaders) {
+            // ถ้ามีหัวข้อหมวดงาน: ให้หัวข้อ (type/category) เป็นงานหลัก (isSubtask = false)
+            // ส่วนงานย่อยที่ระบายสีได้ (task) เป็นงานย่อย (isSubtask = true) แสดงไว้ดูงาน
+            if (gt.rowType === 'category' || gt.rowType === 'type') {
+                isPhase = false;
+                isSubtask = false;
+                mainCounter++;
+                subCounter = 0;
+                itemNum = gt.itemNum ? gt.itemNum.toString() : mainCounter.toString();
+            } else {
+                isPhase = false;
+                isSubtask = true;
+                subCounter++;
+                itemNum = gt.itemNum ? gt.itemNum.toString() : (mainCounter > 0 ? `${mainCounter}.${subCounter}` : `-`);
+            }
+        } else {
+            // กรณีไม่มีหัวข้อหมวดงาน: งานทั้งหมดถือเป็นงานหลัก
+            isPhase = false;
+            isSubtask = false;
+            mainCounter++;
+            itemNum = gt.itemNum ? gt.itemNum.toString() : mainCounter.toString();
+        }
 
         if (existing) {
-            existing.isSubtask = false;
+            existing.isPhase = isPhase;
+            existing.isSubtask = isSubtask;
             existing.item = itemNum;
             if (!existing.plan) existing.plan = new Array(numColumns).fill(0);
             if (!existing.actual) existing.actual = new Array(numColumns).fill(0);
@@ -9135,7 +9419,8 @@ function syncScurveTasksFromGantt(project) {
             newScurveData.push(existing);
         } else {
             newScurveData.push({
-                isSubtask: false,
+                isPhase: isPhase,
+                isSubtask: isSubtask,
                 item: itemNum,
                 name: gt.name.trim(),
                 budget: 0,
@@ -9149,14 +9434,14 @@ function syncScurveTasksFromGantt(project) {
 
     project.scurveData = newScurveData;
 
-    // Calculate budget weights
+    // Calculate budget weights for main items
     let totalBudget = 0;
     project.scurveData.forEach(item => {
-        if (!item.isSubtask) totalBudget += parseFloat(item.budget) || 0;
+        if (!item.isSubtask && !item.isPhase) totalBudget += parseFloat(item.budget) || 0;
     });
-    const mainCount = project.scurveData.filter(i => !i.isSubtask).length;
+    const mainCount = project.scurveData.filter(i => !i.isSubtask && !i.isPhase).length;
     project.scurveData.forEach(item => {
-        if (!item.isSubtask) {
+        if (!item.isSubtask && !item.isPhase) {
             item.weight = totalBudget > 0 ? (parseFloat(item.budget) || 0) / totalBudget * 100 : (mainCount > 0 ? 100 / mainCount : 0);
         } else {
             item.weight = 0;
@@ -9168,7 +9453,7 @@ function syncScurveTasksFromGantt(project) {
 
     saveToLocalStorage();
     renderSubnavActualProgress(project);
-    showToast(`ดึงรายการงานย่อยที่ระบายสีได้สำเร็จ (${newScurveData.length} รายการ)`, "success");
+    showToast(`ดึงรายการทั้งหมดจาก Plan Work สำเร็จ (${newScurveData.length} รายการ)`, "success");
     return true;
 }
 
@@ -9569,6 +9854,24 @@ function deleteScurveRow(idx) {
         saveToLocalStorage();
         renderSubnavActualProgress(project);
     }
+}
+
+function toggleScurveRowType(idx) {
+    const project = projectsData[appState.selectedDetailProject];
+    if (!project || !project.scurveData || !project.scurveData[idx]) return;
+    const item = project.scurveData[idx];
+    if (item.isPhase) return;
+    syncScurveDOMToObject(project);
+    item.isSubtask = !item.isSubtask;
+    if (item.isSubtask) {
+        item.budget = 0;
+        item.weight = 0;
+    }
+    updateScurveTotals(project);
+    calculatePlanScurveFromGantt(project);
+    saveToLocalStorage();
+    renderSubnavActualProgress(project);
+    showToast(`เปลี่ยนเป็น${item.isSubtask ? 'งานย่อย (ดูงาน)' : 'งานหลัก (กรอก Budget และ %)'}`, "info");
 }
 
 function deletePlanDoc(idx) {
@@ -10245,7 +10548,8 @@ function renderSubnavActualProgress(project) {
             vals.forEach(v => currentTotal += (parseFloat(v) || 0));
             item.totalPercent = parseFloat(currentTotal.toFixed(1));
  
-            const isSub = item.isSubtask;
+            const isPhase = !!item.isPhase;
+            const isSub = !!item.isSubtask;
             const row = document.createElement("tr");
             row.style = "border-bottom: 1px solid var(--border-color);";
             row.setAttribute("data-row-idx", idx);
@@ -10253,62 +10557,121 @@ function renderSubnavActualProgress(project) {
             const readonlyAttr = canEdit ? '' : 'readonly';
             const inputStyle = `style="width: 100%; font-size: 12.5px; text-align: center; padding: 5px 2px; border: 1px solid transparent; background: transparent; color: #334155;"`;
             const editInputStyle = `style="width: 100%; font-size: 12.5px; text-align: center; padding: 5px 2px; border: 1px solid var(--border-color); border-radius: 4px; background: #fff; color: #334155;"`;
- 
-            let rowHtml = `
-                <td style="padding: 6px; text-align: center;">
-                    ${isSub ? '' : `<input type="text" class="scurve-item-num" data-idx="${idx}" value="${item.item || ''}" ${readonlyAttr} ${canEdit?editInputStyle:inputStyle} style="font-weight: 600;">`}
-                </td>
-                <td style="padding: 6px 10px; min-width: 350px;">
-                    <div style="display: flex; gap: 4px; padding-left: ${isSub ? '16px' : '0'};">
-                        ${isSub ? '<span style="color:#64748b; font-weight: 600;">-</span>' : ''}
-                        <textarea class="scurve-item-name" data-idx="${idx}" placeholder="${isSub?'ชื่องานย่อย':'ชื่องานหลัก'}" ${readonlyAttr} style="width: 100%; font-size: 12.5px; padding: 5px 8px; border: 1px solid ${canEdit?'var(--border-color)':'transparent'}; border-radius: 4px; background: ${canEdit?'#fff':'transparent'}; font-weight: ${isSub?'normal':'700'}; color: #334155; resize: none; overflow: hidden; height: auto;" rows="1" oninput="this.style.height = 'auto'; this.style.height = this.scrollHeight + 'px';" onkeydown="if(event.key === 'Enter') { event.preventDefault(); this.blur(); }">${item.name || ''}</textarea>
-                    </div>
-                </td>
-                ${hideBudget ? '' : `
-                <td style="padding: 6px;">
-                    ${isSub ? '' : `<input type="text" class="scurve-budget" data-idx="${idx}" value="${formatNumber(item.budget || 0)}" ${readonlyAttr} ${canEdit?editInputStyle:inputStyle} oninput="formatBudgetInput(this)">`}
-                </td>
-                `}
-                ${hideWeight ? '' : `
-                <td style="padding: 6px;">
-                    ${isSub ? '' : `<input type="number" class="scurve-weight" data-idx="${idx}" value="${(item.weight || 0).toFixed(2)}" readonly style="width: 100%; font-size: 10.5px; text-align: center; padding: 3px 2px; border: 1px solid transparent; background: #f8fafc; font-weight: bold; color: var(--navy-dark);">`}
-                </td>
-                `}
-                <td style="padding: 6px;">
-                    ${isSub ? '' : `<input type="number" class="scurve-total-pct" data-idx="${idx}" value="${item.totalPercent}" readonly style="width: 100%; font-size: 12.5px; text-align: center; padding: 5px 2px; border: 1px solid transparent; background: #f8fafc; font-weight: bold; color: ${item.totalPercent === 100 ? '#10b981' : '#e63946'};">`}
-                </td>
-            `;
 
-            const isEditableCell = canEdit && !isPlanMode;
-            const cellReadonlyAttr = isEditableCell ? '' : 'readonly';
+            let rowHtml = "";
 
-            if (isDaily) {
-                for (let wIdx = 0; wIdx < numColumns; wIdx++) {
-                    let val = isPlanMode ? item.plan[wIdx] : item.actual[wIdx];
-                    let valStr = val === 0 ? '' : (isPlanMode ? val.toFixed(1) : val);
-                    rowHtml += `<td style="padding: 6px; border-left: 1px solid var(--border-color); min-width: 45px; width: 45px;">
-                        <input type="number" class="scurve-cell-val" data-idx="${idx}" data-widx="${wIdx}" value="${valStr}" min="0" max="100" step="0.1" ${cellReadonlyAttr} ${isEditableCell ? editInputStyle : inputStyle} placeholder="">
-                    </td>`;
-                }
+            if (isPhase) {
+                // แถวชื่อระยะ/เฟส (Phase Header Banner) - แสดงพาดเต็มความกว้าง
+                const totalColspan = (hideBudget ? 4 : 5) + numColumns;
+                rowHtml = `
+                    <td colspan="${totalColspan}" style="padding: 10px 14px; background: #e2e8f0; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #cbd5e1;">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span style="background: #3b82f6; color: #fff; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px;">PHASE</span>
+                                <input type="text" class="scurve-item-name" data-idx="${idx}" value="${item.name || ''}" ${readonlyAttr} style="font-size: 13.5px; font-weight: 700; color: #1e3a8a; background: transparent; border: 1px solid ${canEdit ? '#cbd5e1' : 'transparent'}; border-radius: 4px; padding: 3px 8px; width: 450px;">
+                            </div>
+                            <span style="font-size: 11px; color: #64748b; font-style: italic;">(หัวข้อระยะโครงการ - ไม่คิด Budget / %)</span>
+                        </div>
+                    </td>
+                    <td class="hide-accounting hide-customer" style="padding: 4px; text-align: center; background: #e2e8f0; border-top: 1px solid #cbd5e1; border-bottom: 2px solid #cbd5e1;">
+                        ${canEdit ? `<button type="button" onclick="deleteScurveRow(${idx})" title="ลบหัวข้อนี้" style="background:none; border:none; color:#e63946; cursor:pointer; font-size:13px;"><i class="fa-solid fa-trash-can"></i></button>` : ''}
+                    </td>
+                `;
             } else {
-                for (let m = 0; m < project.scurveMonths.length; m++) {
-                    for (let w = 0; w < 4; w++) {
-                        let wIdx = (m * 4) + w;
-                        let val = isPlanMode ? item.plan[wIdx] : item.actual[wIdx];
-                        let valStr = val === 0 ? '' : (isPlanMode ? val.toFixed(1) : val);
-                        rowHtml += `<td style="padding: 6px; border-left: ${w===0 ? '1px' : '0'} solid var(--border-color); border-right: ${w===3 ? '1px' : '0'} solid var(--border-color); min-width: 45px; width: 45px;">
-                            <input type="number" class="scurve-cell-val" data-idx="${idx}" data-widx="${wIdx}" value="${valStr}" min="0" max="100" step="0.1" ${cellReadonlyAttr} ${isEditableCell ? editInputStyle : inputStyle} placeholder="">
-                        </td>`;
+                // แถวงานปกติ (งานหลัก หรือ งานย่อยสำหรับดูงาน)
+                const typeBadge = canEdit ? `
+                    <button type="button" onclick="toggleScurveRowType(${idx})" title="คลิกเพื่อสลับระหว่างงานหลักและงานย่อย" style="margin-top: 2px; font-size: 9.5px; padding: 1px 4px; border-radius: 3px; border: none; cursor: pointer; background: ${isSub ? '#f1f5f9' : '#dbeafe'}; color: ${isSub ? '#64748b' : '#1e40af'}; font-weight: 700; display: inline-block;">
+                        ${isSub ? 'ย่อย' : 'หลัก'}
+                    </button>
+                ` : '';
+
+                rowHtml = `
+                    <td style="padding: 6px; text-align: center;">
+                        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;">
+                            ${isSub ? `
+                                <input type="text" class="scurve-item-num" data-idx="${idx}" value="${item.item || ''}" ${readonlyAttr} ${canEdit?editInputStyle:inputStyle} style="font-size: 11px; color: #64748b; width: 36px; padding: 2px;">
+                            ` : `
+                                <input type="text" class="scurve-item-num" data-idx="${idx}" value="${item.item || ''}" ${readonlyAttr} ${canEdit?editInputStyle:inputStyle} style="font-weight: 700; color: #1e293b; width: 36px; padding: 2px;">
+                            `}
+                            ${typeBadge}
+                        </div>
+                    </td>
+                    <td style="padding: 6px 10px; min-width: 350px;">
+                        <div style="display: flex; gap: 6px; align-items: flex-start; padding-left: ${isSub ? '20px' : '0'};">
+                            ${isSub ? '<span style="color:#94a3b8; font-weight: 600; margin-top: 4px;">↳</span>' : ''}
+                            <textarea class="scurve-item-name" data-idx="${idx}" placeholder="${isSub?'ชื่องานย่อย (ดูงาน)':'ชื่องานหลัก'}" ${readonlyAttr} style="width: 100%; font-size: 12.5px; padding: 5px 8px; border: 1px solid ${canEdit?'var(--border-color)':'transparent'}; border-radius: 4px; background: ${canEdit?'#fff':'transparent'}; font-weight: ${isSub?'normal':'700'}; color: ${isSub?'#475569':'#0f172a'}; resize: none; overflow: hidden; height: auto;" rows="1" oninput="this.style.height = 'auto'; this.style.height = this.scrollHeight + 'px';" onkeydown="if(event.key === 'Enter') { event.preventDefault(); this.blur(); }">${item.name || ''}</textarea>
+                        </div>
+                    </td>
+                    ${hideBudget ? '' : `
+                    <td style="padding: 6px; text-align: center;">
+                        ${isSub ? `
+                            <span style="color: #cbd5e1; font-weight: 600;">-</span>
+                        ` : `
+                            <input type="text" class="scurve-budget" data-idx="${idx}" value="${formatNumber(item.budget || 0)}" ${readonlyAttr} ${canEdit?editInputStyle:inputStyle} oninput="formatBudgetInput(this)">
+                        `}
+                    </td>
+                    `}
+                    ${hideWeight ? '' : `
+                    <td style="padding: 6px; text-align: center;">
+                        ${isSub ? `
+                            <span style="color: #cbd5e1; font-weight: 600;">-</span>
+                        ` : `
+                            <input type="number" class="scurve-weight" data-idx="${idx}" value="${(item.weight || 0).toFixed(2)}" readonly style="width: 100%; font-size: 10.5px; text-align: center; padding: 3px 2px; border: 1px solid transparent; background: #f8fafc; font-weight: bold; color: var(--navy-dark);">
+                        `}
+                    </td>
+                    `}
+                    <td style="padding: 6px; text-align: center;">
+                        ${isSub ? `
+                            <span style="color: #cbd5e1; font-weight: 600;">-</span>
+                        ` : `
+                            <input type="number" class="scurve-total-pct" data-idx="${idx}" value="${item.totalPercent}" readonly style="width: 100%; font-size: 12.5px; text-align: center; padding: 5px 2px; border: 1px solid transparent; background: #f8fafc; font-weight: bold; color: ${item.totalPercent === 100 ? '#10b981' : '#e63946'};">
+                        `}
+                    </td>
+                `;
+
+                const isEditableCell = canEdit && !isPlanMode && !isSub;
+                const cellReadonlyAttr = isEditableCell ? '' : 'readonly';
+
+                if (isDaily) {
+                    for (let wIdx = 0; wIdx < numColumns; wIdx++) {
+                        if (isSub) {
+                            rowHtml += `<td style="padding: 6px; border-left: 1px solid var(--border-color); min-width: 45px; width: 45px; text-align: center;">
+                                <span style="color: #e2e8f0; font-size: 11px;">-</span>
+                            </td>`;
+                        } else {
+                            let val = isPlanMode ? item.plan[wIdx] : item.actual[wIdx];
+                            let valStr = val === 0 ? '' : (isPlanMode ? val.toFixed(1) : val);
+                            rowHtml += `<td style="padding: 6px; border-left: 1px solid var(--border-color); min-width: 45px; width: 45px;">
+                                <input type="number" class="scurve-cell-val" data-idx="${idx}" data-widx="${wIdx}" value="${valStr}" min="0" max="100" step="0.1" ${cellReadonlyAttr} ${isEditableCell ? editInputStyle : inputStyle} placeholder="">
+                            </td>`;
+                        }
+                    }
+                } else {
+                    for (let m = 0; m < project.scurveMonths.length; m++) {
+                        for (let w = 0; w < 4; w++) {
+                            let wIdx = (m * 4) + w;
+                            if (isSub) {
+                                rowHtml += `<td style="padding: 6px; border-left: ${w===0 ? '1px' : '0'} solid var(--border-color); border-right: ${w===3 ? '1px' : '0'} solid var(--border-color); min-width: 45px; width: 45px; text-align: center;">
+                                    <span style="color: #e2e8f0; font-size: 11px;">-</span>
+                                </td>`;
+                            } else {
+                                let val = isPlanMode ? item.plan[wIdx] : item.actual[wIdx];
+                                let valStr = val === 0 ? '' : (isPlanMode ? val.toFixed(1) : val);
+                                rowHtml += `<td style="padding: 6px; border-left: ${w===0 ? '1px' : '0'} solid var(--border-color); border-right: ${w===3 ? '1px' : '0'} solid var(--border-color); min-width: 45px; width: 45px;">
+                                    <input type="number" class="scurve-cell-val" data-idx="${idx}" data-widx="${wIdx}" value="${valStr}" min="0" max="100" step="0.1" ${cellReadonlyAttr} ${isEditableCell ? editInputStyle : inputStyle} placeholder="">
+                                </td>`;
+                            }
+                        }
                     }
                 }
+
+                rowHtml += `
+                    <td class="hide-accounting hide-customer" style="padding: 4px; text-align: center;">
+                        ${canEdit ? `<button type="button" onclick="deleteScurveRow(${idx})" title="ลบรายการ" style="background:none; border:none; color:#e63946; cursor:pointer; font-size:13px;"><i class="fa-solid fa-trash-can"></i></button>` : ''}
+                    </td>
+                `;
             }
 
-            rowHtml += `
-                <td class="hide-accounting hide-customer" style="padding: 4px; text-align: center;">
-                    ${canEdit ? `<button type="button" onclick="deleteScurveRow(${idx})" title="ลบรายการ" style="background:none; border:none; color:#e63946; cursor:pointer; font-size:13px;"><i class="fa-solid fa-trash-can"></i></button>` : ''}
-                </td>
-            `;
-            
             row.innerHTML = rowHtml;
             body.appendChild(row);
         });
