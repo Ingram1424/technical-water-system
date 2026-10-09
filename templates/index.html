@@ -9448,20 +9448,20 @@ function updateScurveTotals(project) {
     });
     footerHtml += `<td class="hide-accounting hide-customer"></td></tr>`;
     
-    const hideActualCumRow = true;
-    if (!hideActualCumRow) {
-        footerHtml += `
-            <tr style="background: #f1f5f9; border-top: 1px solid var(--border-color); font-weight: 700;">
-                <td colspan="${labelColspan}" style="padding: 8px 10px; text-align: right;">สะสมปริมาณงาน (%)</td>
-        `;
-        let cumSum = 0;
-        displayWeeklySums.forEach((val, i) => {
-            cumSum += val;
-            const hasBorder = isDaily || (i % 4 === 0);
-            footerHtml += `<td style="padding: 8px 4px; text-align: center; font-size: 10px; border-left: ${hasBorder ? '1px' : '0'} solid var(--border-color); color: var(--primary-blue);">${cumSum === 0 ? '0.0%' : cumSum.toFixed(1)+'%'}</td>`;
-        });
-        footerHtml += `<td class="hide-accounting hide-customer"></td></tr>`;
-    }
+    // Restore cumulative actual progress row
+    const labelCum = isDaily ? "ปริมาณงานสะสม (%)" : "ปริมาณงานสะสม (%)";
+    footerHtml += `
+        <tr style="background: #f1f5f9; border-top: 1px solid var(--border-color); font-weight: 700;">
+            <td colspan="${labelColspan}" style="padding: 8px 10px; text-align: right;">${labelCum}</td>
+    `;
+    let cumSum = 0;
+    displayWeeklySums.forEach((val, i) => {
+        cumSum += val;
+        const hasBorder = isDaily || (i % 4 === 0);
+        const cumText = (i <= lastActualIndex) ? (cumSum === 0 ? '0.0%' : cumSum.toFixed(1)+'%') : '';
+        footerHtml += `<td style="padding: 8px 4px; text-align: center; font-size: 10px; border-left: ${hasBorder ? '1px' : '0'} solid var(--border-color); color: var(--primary-blue);">${cumText}</td>`;
+    });
+    footerHtml += `<td class="hide-accounting hide-customer"></td></tr>`;
 
     // Add manually editable cumulative plan progress row
     const canEditPlan = (appState.currentRole === "pm" || appState.currentRole === "admin" || appState.currentRole === "pe") && appState.selectedDetailProject !== "all";
@@ -15924,12 +15924,24 @@ document.addEventListener("DOMContentLoaded", () => {
                 baseLetterSpacing = -0.3;
             }
 
-            // Build rows
+            // Build rows & footer for print
             let rowsHtml = "";
             (proj.scurveData || []).forEach((item, idx) => {
+                if (item.isPhase) {
+                    const totalCols = (hideBudget ? 4 : 5) + printNumCols;
+                    rowsHtml += `
+                        <tr style="background: #e2e8f0; font-weight: bold;">
+                            <td colspan="${totalCols}" style="border: 1px solid #94a3b8; padding: 6px 10px; text-align: left; font-size: 9.5px; color: #1e3a8a;">
+                                [PHASE] ${item.name || ''}
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+
                 const isSub = item.isSubtask;
                 const indentStyle = isSub ? "padding-left: 15px;" : "";
-                const prefix = isSub ? "- " : "";
+                const prefix = isSub ? "↳ " : "";
                 const nameWeight = isSub ? "normal" : "bold";
                 const rowBg = isSub ? "" : "background: #f8fafc;";
 
@@ -15937,38 +15949,124 @@ document.addEventListener("DOMContentLoaded", () => {
                 let weeklyCellsHtml = "";
                 const vals = isPlanMode ? (item.plan || []) : (item.actual || []);
                 for (let i = 0; i < printNumCols; i++) {
-                    const val = vals[i] || 0;
-                    const valStr = val === 0 ? "" : (isPlanMode ? val.toFixed(1) : val.toString());
-                    
-                    let cellFontSize = baseFontSize;
-                    let cellLetterSpacing = baseLetterSpacing;
-                    
-                    // Specific scale down for longer character values in individual cells
-                    if (valStr.length >= 5) {
-                        cellFontSize = Math.min(cellFontSize, 6.8);
-                        cellLetterSpacing = -0.6;
-                    } else if (valStr.length === 4) {
-                        cellFontSize = Math.min(cellFontSize, 7.8);
-                        cellLetterSpacing = -0.4;
-                    } else if (valStr.length === 3) {
-                        cellFontSize = Math.min(cellFontSize, 8.5);
-                        cellLetterSpacing = -0.3;
-                    }
+                    if (isSub) {
+                        weeklyCellsHtml += `<td style="border: 1px solid #94a3b8; text-align: center; padding: 3px 0px; font-size: 8px; color: #cbd5e1;">-</td>`;
+                    } else {
+                        const val = vals[i] || 0;
+                        const valStr = val === 0 ? "" : (isPlanMode ? val.toFixed(1) : val.toString());
+                        
+                        let cellFontSize = baseFontSize;
+                        let cellLetterSpacing = baseLetterSpacing;
+                        
+                        if (valStr.length >= 5) {
+                            cellFontSize = Math.min(cellFontSize, 6.8);
+                            cellLetterSpacing = -0.6;
+                        } else if (valStr.length === 4) {
+                            cellFontSize = Math.min(cellFontSize, 7.8);
+                            cellLetterSpacing = -0.4;
+                        } else if (valStr.length === 3) {
+                            cellFontSize = Math.min(cellFontSize, 8.5);
+                            cellLetterSpacing = -0.3;
+                        }
 
-                    weeklyCellsHtml += `<td style="border: 1px solid #94a3b8; text-align: center; padding: 3px 0px; font-size: ${cellFontSize}px; letter-spacing: ${cellLetterSpacing}px; line-height: 1.1; overflow: hidden; white-space: nowrap;">${valStr}</td>`;
+                        weeklyCellsHtml += `<td style="border: 1px solid #94a3b8; text-align: center; padding: 3px 0px; font-size: ${cellFontSize}px; letter-spacing: ${cellLetterSpacing}px; line-height: 1.1; overflow: hidden; white-space: nowrap;">${valStr}</td>`;
+                    }
                 }
+
+                const totalPctDisplay = isSub ? '-' : `${item.totalPercent || 0}%`;
 
                 rowsHtml += `
                     <tr style="${rowBg}">
-                        <td style="text-align: center; border: 1px solid #94a3b8; font-size: 9px; padding: 4px 2px;">${isSub ? '' : (item.item || '')}</td>
+                        <td style="text-align: center; border: 1px solid #94a3b8; font-size: 9px; padding: 4px 2px;">${item.item || ''}</td>
                         <td style="border: 1px solid #94a3b8; padding: 4px 6px; text-align: left; font-size: 9px; font-weight: ${nameWeight}; ${indentStyle} white-space: normal; word-break: break-word;">${prefix}${item.name || ''}</td>
-                        ${hideBudget ? '' : `<td style="border: 1px solid #94a3b8; text-align: right; padding: 4px 6px; font-size: 9px;">${isSub ? '' : (item.budget ? formatNumber(item.budget) : '0')}</td>`}
-                        ${hideWeight ? '' : `<td style="border: 1px solid #94a3b8; text-align: center; padding: 4px 2px; font-size: 9px; font-weight: bold;">${isSub ? '' : (item.weight ? item.weight.toFixed(2) : '0.00')}</td>`}
-                        <td style="border: 1px solid #94a3b8; text-align: center; padding: 4px 2px; font-size: 9px; font-weight: bold;">${isSub ? '' : (item.totalPercent || 0)}%</td>
+                        ${hideBudget ? '' : `<td style="border: 1px solid #94a3b8; text-align: right; padding: 4px 6px; font-size: 9px;">${isSub ? '-' : (item.budget ? formatNumber(item.budget) : '0')}</td>`}
+                        ${hideWeight ? '' : `<td style="border: 1px solid #94a3b8; text-align: center; padding: 4px 2px; font-size: 9px; font-weight: bold;">${isSub ? '-' : (item.weight ? item.weight.toFixed(2) : '0.00')}</td>`}
+                        <td style="border: 1px solid #94a3b8; text-align: center; padding: 4px 2px; font-size: 9px; font-weight: ${isSub ? 'normal' : 'bold'}; color: ${isSub ? '#94a3b8' : '#1e293b'};">${totalPctDisplay}</td>
                         ${weeklyCellsHtml}
                     </tr>
                 `;
             });
+
+            // Build print table footer
+            let printTotalBudget = 0;
+            let printTotalWeight = 0;
+            proj.scurveData.forEach(item => {
+                if (!item.isSubtask && !item.isPhase) {
+                    printTotalBudget += parseFloat(item.budget) || 0;
+                    printTotalWeight += parseFloat(item.weight) || 0;
+                }
+            });
+
+            let printWeeklySums = new Array(printNumCols).fill(0);
+            let pParentW = 0;
+            let pLastActIdx = -1;
+            proj.scurveData.forEach(item => {
+                if (!item.isSubtask && !item.isPhase) pParentW = parseFloat(item.weight) || 0;
+                for (let i = 0; i < printNumCols; i++) {
+                    let hasAct = (item.actual && item.actual[i] !== undefined && item.actual[i] !== null && item.actual[i] !== '' && item.actual[i] !== '-' && !isNaN(parseFloat(item.actual[i])) && parseFloat(item.actual[i]) > 0);
+                    let aVal = hasAct ? parseFloat(item.actual[i]) : 0;
+                    printWeeklySums[i] += (pParentW * aVal / 100);
+                    if (hasAct && i > pLastActIdx) pLastActIdx = i;
+                }
+            });
+
+            const printLabelColspan = 2 + (hideBudget ? 0 : 1) + (hideWeight ? 0 : 1) + 1;
+            let printFooterHtml = "";
+
+            // Row 1: Total
+            if (!(hideBudget && hideWeight)) {
+                printFooterHtml += `
+                    <tr style="background: #f8fafc; font-weight: bold; border-top: 2px solid #94a3b8;">
+                        <td colspan="2" style="text-align: right; padding: 5px 8px; border: 1px solid #94a3b8; font-size: 9.5px;">รวม</td>
+                        ${hideBudget ? '' : `<td style="border: 1px solid #94a3b8; text-align: right; padding: 5px 6px; font-size: 9.5px;">${formatNumber(printTotalBudget)}</td>`}
+                        ${hideWeight ? '' : `<td style="border: 1px solid #94a3b8; text-align: center; padding: 5px 2px; font-size: 9.5px;">${printTotalWeight.toFixed(2)}%</td>`}
+                        <td style="border: 1px solid #94a3b8;"></td>
+                `;
+                for (let i = 0; i < printNumCols; i++) {
+                    printFooterHtml += `<td style="border: 1px solid #94a3b8;"></td>`;
+                }
+                printFooterHtml += `</tr>`;
+            }
+
+            // Row 2: Period actual %
+            const printPeriodLabel = printIsDaily ? "ปริมาณงานต่อวัน (%)" : "ปริมาณงานต่อสัปดาห์ (%)";
+            printFooterHtml += `
+                <tr style="background: #fff; font-weight: bold; border-top: 1px solid #94a3b8;">
+                    <td colspan="${printLabelColspan}" style="text-align: right; padding: 5px 8px; border: 1px solid #94a3b8; font-size: 9.5px;">${printPeriodLabel}</td>
+            `;
+            printWeeklySums.forEach((val, i) => {
+                const cellText = (i <= pLastActIdx) ? (val === 0 ? '0.00%' : val.toFixed(2)+'%') : '';
+                printFooterHtml += `<td style="border: 1px solid #94a3b8; text-align: center; font-size: 8px; padding: 3px 0px;">${cellText}</td>`;
+            });
+            printFooterHtml += `</tr>`;
+
+            // Row 3: Cumulative actual %
+            const printCumLabel = printIsDaily ? "ปริมาณงานสะสม (%)" : "ปริมาณงานสะสม (%)";
+            printFooterHtml += `
+                <tr style="background: #f1f5f9; font-weight: bold; border-top: 1px solid #94a3b8;">
+                    <td colspan="${printLabelColspan}" style="text-align: right; padding: 5px 8px; border: 1px solid #94a3b8; font-size: 9.5px;">${printCumLabel}</td>
+            `;
+            let printCumActual = 0;
+            printWeeklySums.forEach((val, i) => {
+                printCumActual += val;
+                const cellText = (i <= pLastActIdx) ? (printCumActual === 0 ? '0.0%' : printCumActual.toFixed(1)+'%') : '';
+                printFooterHtml += `<td style="border: 1px solid #94a3b8; text-align: center; font-size: 8px; padding: 3px 0px; color: #10b981;">${cellText}</td>`;
+            });
+            printFooterHtml += `</tr>`;
+
+            // Row 4: Plan target
+            if (proj.scurvePlanCum && proj.scurvePlanCum.length > 0) {
+                printFooterHtml += `
+                    <tr style="background: #eef2f6; font-weight: bold; border-top: 1px solid #94a3b8;">
+                        <td colspan="${printLabelColspan}" style="text-align: right; padding: 5px 8px; border: 1px solid #94a3b8; font-size: 9.5px; color: #1e40af;">เป้าหมายแผนงาน</td>
+                `;
+                for (let i = 0; i < printNumCols; i++) {
+                    const pVal = proj.scurvePlanCum[i] || 0;
+                    const cellText = pVal === 0 ? '' : pVal.toFixed(1)+'%';
+                    printFooterHtml += `<td style="border: 1px solid #94a3b8; text-align: center; font-size: 8px; padding: 3px 0px; color: #1e40af;">${cellText}</td>`;
+                }
+                printFooterHtml += `</tr>`;
+            }
 
             // Open print window
             const printWindow = window.open("", "_blank");
@@ -16139,6 +16237,9 @@ document.addEventListener("DOMContentLoaded", () => {
                         <tbody>
                             ${rowsHtml}
                         </tbody>
+                        <tfoot>
+                            ${printFooterHtml}
+                        </tfoot>
                     </table>
                 </body>
                 </html>
@@ -16742,6 +16843,9 @@ document.addEventListener("DOMContentLoaded", () => {
                         <tbody>
                             ${rowsHtml}
                         </tbody>
+                        <tfoot>
+                            ${printFooterHtml}
+                        </tfoot>
                     </table>
                     
                     <!-- Print Footer showing Person in charge at the bottom of the last page -->
@@ -18147,7 +18251,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (proj.scurveData && proj.scurveData.length > 0 && proj.scurveMonths) {
                     const hideBudget = true; // Force hide budget in S-Curve print table
                     const hideWeight = (appState.currentRole === "customer");
-                    const hideActualCumRow = true;
+                    const hideActualCumRow = false;
                     const labelColspan = 2 + (hideBudget ? 0 : 1) + (hideWeight ? 0 : 1) + 1;
                     let totalWeight = proj.scurveData.reduce((sum, item) => sum + (item.isSubtask ? 0 : parseFloat(item.weight) || 0), 0);
                     let headerCols = proj.scurveMonths.map(month => `
@@ -18171,7 +18275,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                 <td style="padding-left: ${isSub ? '20px' : '8px'}; font-weight: ${isSub ? 'normal' : '600'};">${isSub ? '- ' : ''}${item.name || ''}</td>
                                 ${hideBudget ? '' : `<td style="text-align: center;">${isSub ? '' : formatNumber(item.budget || 0)}</td>`}
                                 ${hideWeight ? '' : `<td style="text-align: center;">${isSub ? '' : (item.weight || 0) + '%'}</td>`}
-                                <td style="text-align: center; font-weight: bold;">${isSub ? '' : (item.actual && item.actual.length > 0 ? item.actual.reduce((sum, v) => sum + (parseFloat(v) || 0), 0) : 0).toFixed(1) + '%'}</td>
+                                <td style="text-align: center; font-weight: ${isSub ? 'normal' : 'bold'}; color: ${isSub ? '#94a3b8' : '#1e293b'};">${isSub ? '-' : (item.actual && item.actual.length > 0 ? item.actual.reduce((sum, v) => sum + (parseFloat(v) || 0), 0) : 0).toFixed(1) + '%'}</td>
                                 ${cells}
                             </tr>
                         `;
