@@ -9002,7 +9002,8 @@ function calculatePlanScurveFromGantt(proj) {
 
             childList.forEach(child => {
                 const gTask = proj.ganttData.tasks.find(t => 
-                    t.name && child.name && t.name.trim().toLowerCase() === child.name.trim().toLowerCase()
+                    (child.id && t.id === child.id) || 
+                    (t.name && child.name && t.name.trim().toLowerCase() === child.name.trim().toLowerCase() && (t.rowType === 'task' || !t.rowType))
                 );
                 if (gTask && gTask.cells) {
                     dateList.forEach((dStr, dIdx) => {
@@ -9022,7 +9023,8 @@ function calculatePlanScurveFromGantt(proj) {
 
             // Also check if the main item itself has painted cells directly
             const directGTask = proj.ganttData.tasks.find(t => 
-                t.name && mainItem.name && t.name.trim().toLowerCase() === mainItem.name.trim().toLowerCase()
+                (mainItem.id && t.id === mainItem.id) ||
+                (t.name && mainItem.name && t.name.trim().toLowerCase() === mainItem.name.trim().toLowerCase() && (t.rowType === 'category' || t.rowType === 'type'))
             );
             if (directGTask && directGTask.cells) {
                 dateList.forEach((dStr, dIdx) => {
@@ -9245,6 +9247,7 @@ function syncScurveTasksFromGantt(project) {
         }
 
         if (existing) {
+            existing.id = gt.id || existing.id;
             existing.isPhase = isPhase;
             existing.isSubtask = isSubtask;
             existing.item = itemNum;
@@ -9255,6 +9258,7 @@ function syncScurveTasksFromGantt(project) {
             newScurveData.push(existing);
         } else {
             newScurveData.push({
+                id: gt.id,
                 isPhase: isPhase,
                 isSubtask: isSubtask,
                 item: itemNum,
@@ -15905,7 +15909,8 @@ document.addEventListener("DOMContentLoaded", () => {
             // Build colgroup HTML
             let colGroupHtml = "";
             colGroupHtml += `<col style="width: 30px;">`; // Items
-            colGroupHtml += `<col style="width: 180px;">`; // Description
+            const descColWidth = (printIsDaily || printNumCols > 30) ? "140px" : "180px";
+            colGroupHtml += `<col style="width: ${descColWidth};">`; // Description
             if (!hideBudget) colGroupHtml += `<col style="width: 75px;">`; // Budget
             if (!hideWeight) colGroupHtml += `<col style="width: 35px;">`; // %
             colGroupHtml += `<col style="width: 40px;">`; // % (รวม)
@@ -16028,42 +16033,94 @@ document.addEventListener("DOMContentLoaded", () => {
                 printFooterHtml += `</tr>`;
             }
 
+            // Determine font size, letter spacing, and compact formatting for footer cells based on column count
+            let footerFontSize = 8.2;
+            let footerLetterSpacing = -0.1;
+            if (printNumCols > 65) {
+                footerFontSize = 5.8;
+                footerLetterSpacing = -0.5;
+            } else if (printNumCols > 50) {
+                footerFontSize = 6.2;
+                footerLetterSpacing = -0.4;
+            } else if (printNumCols > 35) {
+                footerFontSize = 6.8;
+                footerLetterSpacing = -0.3;
+            } else if (printNumCols > 20) {
+                footerFontSize = 7.4;
+                footerLetterSpacing = -0.2;
+            }
+
+            // In daily mode or many columns (>16), omit the '%' inside cells because row title already states (%)
+            const appendPct = (printNumCols <= 16 && !printIsDaily) ? '%' : '';
+            const baseFooterCellStyle = `border: 1px solid #94a3b8; text-align: center; padding: 2px 0px; font-size: ${footerFontSize}px; letter-spacing: ${footerLetterSpacing}px; line-height: 1.15; font-family: 'Prompt', -apple-system, sans-serif; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: clip; font-variant-numeric: tabular-nums; box-sizing: border-box;`;
+
             // Row 2: Period actual %
             const printPeriodLabel = printIsDaily ? "ปริมาณงานต่อวัน (%)" : "ปริมาณงานต่อสัปดาห์ (%)";
             printFooterHtml += `
-                <tr style="background: #fff; font-weight: bold; border-top: 1px solid #94a3b8;">
-                    <td colspan="${printLabelColspan}" style="text-align: right; padding: 5px 8px; border: 1px solid #94a3b8; font-size: 9.5px;">${printPeriodLabel}</td>
+                <tr style="background: #ffffff; border-top: 1px solid #94a3b8;">
+                    <td colspan="${printLabelColspan}" style="text-align: right; padding: 5px 8px; border: 1px solid #94a3b8; font-size: 9.5px; font-weight: 700; color: #1e293b;">${printPeriodLabel}</td>
             `;
             printWeeklySums.forEach((val, i) => {
-                const cellText = (i <= pLastActIdx) ? (val === 0 ? '0.00%' : val.toFixed(2)+'%') : '';
-                printFooterHtml += `<td style="border: 1px solid #94a3b8; text-align: center; font-size: 8px; padding: 3px 0px;">${cellText}</td>`;
+                let cellText = '';
+                if (i <= pLastActIdx) {
+                    if (val === 0) {
+                        cellText = printIsDaily ? '-' : (appendPct ? '0.00%' : '0');
+                    } else {
+                        let formatted;
+                        if (val >= 10 || printNumCols > 30) {
+                            formatted = (val % 1 === 0) ? val.toFixed(0) : val.toFixed(1);
+                        } else {
+                            formatted = val.toFixed(2);
+                        }
+                        cellText = formatted + appendPct;
+                    }
+                }
+                printFooterHtml += `<td style="${baseFooterCellStyle} color: #0f172a;">${cellText}</td>`;
             });
             printFooterHtml += `</tr>`;
 
             // Row 3: Cumulative actual %
-            const printCumLabel = printIsDaily ? "ปริมาณงานสะสม (%)" : "ปริมาณงานสะสม (%)";
+            const printCumLabel = "ปริมาณงานสะสม (%)";
             printFooterHtml += `
-                <tr style="background: #f1f5f9; font-weight: bold; border-top: 1px solid #94a3b8;">
-                    <td colspan="${printLabelColspan}" style="text-align: right; padding: 5px 8px; border: 1px solid #94a3b8; font-size: 9.5px;">${printCumLabel}</td>
+                <tr style="background: #f8fafc; border-top: 1px solid #94a3b8;">
+                    <td colspan="${printLabelColspan}" style="text-align: right; padding: 5px 8px; border: 1px solid #94a3b8; font-size: 9.5px; font-weight: 700; color: #15803d;">${printCumLabel}</td>
             `;
             let printCumActual = 0;
             printWeeklySums.forEach((val, i) => {
                 printCumActual += val;
-                const cellText = (i <= pLastActIdx) ? (printCumActual === 0 ? '0.0%' : printCumActual.toFixed(1)+'%') : '';
-                printFooterHtml += `<td style="border: 1px solid #94a3b8; text-align: center; font-size: 8px; padding: 3px 0px; color: #10b981;">${cellText}</td>`;
+                let cellText = '';
+                if (i <= pLastActIdx) {
+                    if (printCumActual === 0) {
+                        cellText = printIsDaily ? '0' : (appendPct ? '0.0%' : '0');
+                    } else if (printCumActual >= 100) {
+                        cellText = '100' + appendPct;
+                    } else {
+                        const formatted = (printCumActual % 1 === 0) ? printCumActual.toFixed(0) : printCumActual.toFixed(1);
+                        cellText = formatted + appendPct;
+                    }
+                }
+                printFooterHtml += `<td style="${baseFooterCellStyle} color: #15803d;">${cellText}</td>`;
             });
             printFooterHtml += `</tr>`;
 
             // Row 4: Plan target
             if (proj.scurvePlanCum && proj.scurvePlanCum.length > 0) {
                 printFooterHtml += `
-                    <tr style="background: #eef2f6; font-weight: bold; border-top: 1px solid #94a3b8;">
-                        <td colspan="${printLabelColspan}" style="text-align: right; padding: 5px 8px; border: 1px solid #94a3b8; font-size: 9.5px; color: #1e40af;">เป้าหมายแผนงาน</td>
+                    <tr style="background: #f1f5f9; border-top: 1px solid #94a3b8;">
+                        <td colspan="${printLabelColspan}" style="text-align: right; padding: 5px 8px; border: 1px solid #94a3b8; font-size: 9.5px; font-weight: 700; color: #1e40af;">เป้าหมายแผนงาน (%)</td>
                 `;
                 for (let i = 0; i < printNumCols; i++) {
                     const pVal = proj.scurvePlanCum[i] || 0;
-                    const cellText = pVal === 0 ? '' : pVal.toFixed(1)+'%';
-                    printFooterHtml += `<td style="border: 1px solid #94a3b8; text-align: center; font-size: 8px; padding: 3px 0px; color: #1e40af;">${cellText}</td>`;
+                    let cellText = '';
+                    if (pVal > 0) {
+                        if (pVal >= 100) {
+                            cellText = '100' + appendPct;
+                        } else {
+                            const formatted = (pVal % 1 === 0) ? pVal.toFixed(0) : pVal.toFixed(1);
+                            cellText = formatted + appendPct;
+                        }
+                    }
+                    printFooterHtml += `<td style="${baseFooterCellStyle} color: #1e40af;">${cellText}</td>`;
                 }
                 printFooterHtml += `</tr>`;
             }
@@ -18300,25 +18357,71 @@ document.addEventListener("DOMContentLoaded", () => {
                         }
                     });
                     
+                    const pdfNumCols = weeklyActualSums.length;
+                    const pdfAppendPct = (pdfNumCols <= 16 && !printIsDaily) ? '%' : '';
+                    let pdfFooterFontSize = 8.5;
+                    let pdfFooterLetterSpacing = -0.1;
+                    if (pdfNumCols > 65) {
+                        pdfFooterFontSize = 5.8;
+                        pdfFooterLetterSpacing = -0.5;
+                    } else if (pdfNumCols > 50) {
+                        pdfFooterFontSize = 6.2;
+                        pdfFooterLetterSpacing = -0.4;
+                    } else if (pdfNumCols > 35) {
+                        pdfFooterFontSize = 6.8;
+                        pdfFooterLetterSpacing = -0.3;
+                    } else if (pdfNumCols > 20) {
+                        pdfFooterFontSize = 7.4;
+                        pdfFooterLetterSpacing = -0.2;
+                    }
+                    const pdfFooterTdStyle = `text-align: center; font-size: ${pdfFooterFontSize}px; letter-spacing: ${pdfFooterLetterSpacing}px; line-height: 1.15; font-family: 'Prompt', -apple-system, sans-serif; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: clip; font-variant-numeric: tabular-nums; padding: 2px 0px; box-sizing: border-box;`;
+
                     let weeklySumsCells = weeklyActualSums.map((val, i) => {
-                        const cellText = (i <= lastActualIndexValAct) ? (val === 0 ? '0.0%' : val.toFixed(1) + '%') : '';
-                        return `<td style="border-left: ${i%4===0 ? '1px solid #cbd5e1' : 'none'}; text-align: center; font-size: 10px; font-weight: bold;">${cellText}</td>`;
+                        let cellText = '';
+                        if (i <= lastActualIndexValAct) {
+                            if (val === 0) cellText = printIsDaily ? '-' : (pdfAppendPct ? '0.0%' : '0');
+                            else {
+                                const formatted = (val % 1 === 0) ? val.toFixed(0) : val.toFixed(1);
+                                cellText = formatted + pdfAppendPct;
+                            }
+                        }
+                        return `<td style="border-left: ${i%4===0 ? '1px solid #cbd5e1' : 'none'}; ${pdfFooterTdStyle} color: #0f172a;">${cellText}</td>`;
                     }).join("");
                     
                     let actualCum = 0;
                     let weeklyCumCells = weeklyActualSums.map((val, i) => {
                         actualCum += val;
-                        return `<td style="border-left: ${i%4===0 ? '1px solid #cbd5e1' : 'none'}; text-align: center; font-size: 10px; font-weight: bold; color: #10b981;">${actualCum === 0 ? '0.0%' : actualCum.toFixed(1) + '%'}</td>`;
+                        let cellText = '';
+                        if (i <= lastActualIndexValAct) {
+                            if (actualCum === 0) cellText = printIsDaily ? '0' : (pdfAppendPct ? '0.0%' : '0');
+                            else if (actualCum >= 100) cellText = '100' + pdfAppendPct;
+                            else {
+                                const formatted = (actualCum % 1 === 0) ? actualCum.toFixed(0) : actualCum.toFixed(1);
+                                cellText = formatted + pdfAppendPct;
+                            }
+                        }
+                        return `<td style="border-left: ${i%4===0 ? '1px solid #cbd5e1' : 'none'}; ${pdfFooterTdStyle} color: #10b981;">${cellText}</td>`;
                     }).join("");
 
                     let planCumCells = "";
                     if (proj.scurvePlanCum) {
-                        planCumCells = proj.scurvePlanCum.map((val, i) => `
-                            <td style="border-left: ${i%4===0 ? '1px solid #cbd5e1' : 'none'}; text-align: center; font-size: 10px; font-weight: bold; color: #1e40af;">${val === 0 ? '0.0%' : val.toFixed(1) + '%'}</td>
-                        `).join("");
+                        planCumCells = proj.scurvePlanCum.map((val, i) => {
+                            let cellText = '';
+                            if (val > 0) {
+                                if (val >= 100) cellText = '100' + pdfAppendPct;
+                                else {
+                                    const formatted = (val % 1 === 0) ? val.toFixed(0) : val.toFixed(1);
+                                    cellText = formatted + pdfAppendPct;
+                                }
+                            }
+                            return `<td style="border-left: ${i%4===0 ? '1px solid #cbd5e1' : 'none'}; ${pdfFooterTdStyle} color: #1e40af;">${cellText}</td>`;
+                        }).join("");
                     } else {
-                        planCumCells = new Array(proj.scurveMonths.length * 4).fill('<td style="text-align: center; font-size: 10px; font-weight: bold; color: #1e40af;">0.0%</td>').map((td, i) => i%4===0 ? td.replace("td style=\"", "td style=\"border-left: 1px solid #cbd5e1; ") : td).join("");
+                        planCumCells = new Array(proj.scurveMonths.length * 4).fill('').map((_, i) => `<td style="border-left: ${i%4===0 ? '1px solid #cbd5e1' : 'none'}; ${pdfFooterTdStyle} color: #1e40af;"></td>`).join("");
                     }
+
+                    const pdfPeriodLabel = printIsDaily ? "ปริมาณงานต่อวัน (%)" : "ปริมาณงานต่อสัปดาห์ (%)";
+                    const pdfCumLabel = "ปริมาณงานสะสม (%)";
 
                     scurveActualHTML = `
                         <div class="section-title"><i class="fa-solid fa-bars-progress"></i> ผลงานการดำเนินงานจริง (Actual Progress Schedule)</div>
@@ -18347,18 +18450,18 @@ document.addEventListener("DOMContentLoaded", () => {
                                     ${new Array(printNumCols).fill('<td style="border-left: 1px solid #cbd5e1;"></td>').map((td, i) => (printIsDaily || i%4===0) ? td : '<td></td>').join("")}
                                 </tr>
                                 `}
-                                <tr style="background: #fff; font-weight: bold; border-top: 1px solid #cbd5e1;">
-                                    <td colspan="${labelColspan}" style="text-align: right; padding: 6px 10px; font-size: 11px;">ปริมาณงานต่อสัปดาห์ (%)</td>
+                                <tr style="background: #fff; border-top: 1px solid #cbd5e1;">
+                                    <td colspan="${labelColspan}" style="text-align: right; padding: 6px 10px; font-size: 11px; font-weight: bold; color: #1e293b;">${pdfPeriodLabel}</td>
                                     ${weeklySumsCells}
                                 </tr>
                                 ${hideActualCumRow ? '' : `
-                                <tr style="background: #f1f5f9; font-weight: bold; border-top: 1px solid #cbd5e1;">
-                                    <td colspan="${labelColspan}" style="text-align: right; padding: 6px 10px; font-size: 11px;">สะสมปริมาณงาน (%)</td>
+                                <tr style="background: #f8fafc; border-top: 1px solid #cbd5e1;">
+                                    <td colspan="${labelColspan}" style="text-align: right; padding: 6px 10px; font-size: 11px; font-weight: bold; color: #15803d;">${pdfCumLabel}</td>
                                     ${weeklyCumCells}
                                 </tr>
                                 `}
-                                <tr style="background: #eef2f6; font-weight: bold; border-top: 1px solid #cbd5e1;">
-                                    <td colspan="${labelColspan}" style="text-align: right; padding: 6px 10px; font-size: 11px; color: #1e40af;">เป้าหมายแผนงาน</td>
+                                <tr style="background: #f1f5f9; border-top: 1px solid #cbd5e1;">
+                                    <td colspan="${labelColspan}" style="text-align: right; padding: 6px 10px; font-size: 11px; font-weight: bold; color: #1e40af;">เป้าหมายแผนงาน (%)</td>
                                     ${planCumCells}
                                 </tr>
                             </tbody>
