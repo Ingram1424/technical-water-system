@@ -5236,7 +5236,7 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                         <label for="exp-title" class="form-label">รายการค่าใช้จ่าย <span class="required">*</span></label>
                         <input type="text" id="exp-title" class="form-control" placeholder="เช่น ซื้อวัสดุแผ่นยิปซั่มงวดแรก" required>
                     </div>
-                    <div class="form-row-3">
+                    <div class="form-row-2">
                         <div class="form-group">
                             <label for="exp-type" class="form-label">ประเภท <span class="required">*</span></label>
                             <select id="exp-type" class="form-control" required>
@@ -5245,6 +5245,17 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                                 <option value="ค่าใช้จ่ายอื่น">ค่าใช้จ่ายอื่น</option>
                             </select>
                         </div>
+                        <div class="form-group" id="exp-status-group">
+                            <label for="exp-status" class="form-label">สถานะ <span class="required">*</span></label>
+                            <select id="exp-status" class="form-control" required>
+                                <option value="จ่ายตรง">จ่ายตรง</option>
+                                <option value="อนุมัติแล้ว">อนุมัติแล้ว</option>
+                                <option value="รออนุมัติ">รออนุมัติ</option>
+                                <option value="ปฏิเสธ">ปฏิเสธ</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row-2">
                         <div class="form-group">
                             <label for="exp-amount" class="form-label">จำนวนเงิน (บาท) <span class="required">*</span></label>
                             <input type="number" id="exp-amount" class="form-control" min="1" step="any" placeholder="0.00" required>
@@ -5253,6 +5264,9 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                             <label for="exp-date" class="form-label">วันที่บันทึก <span class="required">*</span></label>
                             <input type="date" id="exp-date" class="form-control" required>
                         </div>
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: -6px; margin-bottom: 12px; display: flex; align-items: center; gap: 4px;">
+                        <i class="fa-solid fa-circle-info" style="color: var(--primary-blue);"></i> <span>สถานะ <strong>"จ่ายตรง"</strong> หรือ <strong>"อนุมัติแล้ว"</strong> จะถูกนำไปคำนวณเข้าสู่ต้นทุนรวมและกราฟโครงสร้างต้นทุน</span>
                     </div>
                     <div class="form-group mt-3">
                         <label for="exp-file" class="form-label">อัปโหลดเอกสารอ้างอิง (เช่น ใบเสนอราคา / ใบเสร็จ / บิลเงินสด)</label>
@@ -12519,6 +12533,7 @@ function renderCostManagement() {
         let totalMaterial = 0;
         let totalOther = 0;
         allExpenses.forEach(e => {
+            if (e.status === "รออนุมัติ" || e.status === "ปฏิเสธ") return;
             if (e.type === "ค่าแรง") totalLabor += e.amount;
             else if (e.type === "ค่าวัสดุ") totalMaterial += e.amount;
             else totalOther += e.amount;
@@ -14038,6 +14053,10 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("exp-title").value = "";
             document.getElementById("exp-amount").value = "";
             document.getElementById("exp-type").value = "ค่าแรง";
+            const statusSelect = document.getElementById("exp-status");
+            if (statusSelect) {
+                statusSelect.value = isDrawdownRequest ? "รออนุมัติ" : "จ่ายตรง";
+            }
             if (wrapper) wrapper.style.display = "none";
         } else {
             const exp = project.expenses[editIdx];
@@ -14057,6 +14076,10 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("exp-title").value = exp.title || "";
             document.getElementById("exp-amount").value = exp.amount || "";
             document.getElementById("exp-type").value = exp.type || "ค่าแรง";
+            const statusSelect = document.getElementById("exp-status");
+            if (statusSelect) {
+                statusSelect.value = exp.status || (isDrawdownRequest ? "รออนุมัติ" : "จ่ายตรง");
+            }
 
             if (exp.file && exp.fileUrl) {
                 window.editingExpenseCurrentFile = exp.file;
@@ -14163,6 +14186,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if (project) {
             if (!project.expenses) project.expenses = [];
             
+            const statusSelect = document.getElementById("exp-status");
+            const selectedStatus = statusSelect ? statusSelect.value : (isDrawdownRequest ? "รออนุมัติ" : "จ่ายตรง");
+
             if (editingExpenseIndex >= 0) {
                 // Edit existing expense
                 const oldExp = project.expenses[editingExpenseIndex];
@@ -14170,17 +14196,26 @@ document.addEventListener("DOMContentLoaded", () => {
                     file = window.editingExpenseCurrentFile || "";
                     fileUrl = window.editingExpenseCurrentFileUrl || "";
                 }
-                const status = oldExp.status || (isDrawdownRequest ? "รออนุมัติ" : "จ่ายตรง");
-                project.expenses[editingExpenseIndex] = { date, title, type, amount, file, fileUrl, status, rejectReason: oldExp.rejectReason || "" };
-                showToast(`แก้ไขรายการ: ${title} สำเร็จ!`, "success");
+                const status = selectedStatus;
+                project.expenses[editingExpenseIndex] = { 
+                    date, 
+                    title, 
+                    type, 
+                    amount, 
+                    file, 
+                    fileUrl, 
+                    status, 
+                    rejectReason: (status === "ปฏิเสธ" ? (oldExp.rejectReason || "") : "") 
+                };
+                showToast(`แก้ไขรายการ: ${title} (${status}) สำเร็จ!`, "success");
             } else {
                 // Add new expense
-                const status = isDrawdownRequest ? "รออนุมัติ" : "จ่ายตรง";
+                const status = selectedStatus;
                 project.expenses.unshift({ date, title, type, amount, file, fileUrl, status, rejectReason: "" });
-                if (isDrawdownRequest) {
+                if (status === "รออนุมัติ") {
                     showToast(`ส่งคำขอเบิกงบ: ${title} จำนวน ${formatNumber(amount)} บาท เรียบร้อยแล้ว!`, "success");
                 } else {
-                    showToast(`บันทึกรายการจ่าย: ${title} จำนวน ${formatNumber(amount)} บาท สำเร็จ!`, "success");
+                    showToast(`บันทึกรายการจ่าย: ${title} (${status}) จำนวน ${formatNumber(amount)} บาท สำเร็จ!`, "success");
                 }
             }
             
@@ -14193,6 +14228,9 @@ document.addEventListener("DOMContentLoaded", () => {
             renderOverallDashboard();
             if (typeof updateBellBadge === "function") {
                 updateBellBadge();
+            }
+            if (typeof window.renderDisbursementPendingTable === "function") {
+                window.renderDisbursementPendingTable();
             }
         }
     });
