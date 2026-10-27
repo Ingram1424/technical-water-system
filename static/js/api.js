@@ -1,3 +1,37 @@
+// Helper to format date strings to Thai Buddhist Era (พ.ศ.)
+window.formatDateToThaiBE = function(dateStr) {
+    if (!dateStr || dateStr === "-") return "-";
+    if (typeof dateStr !== "string") {
+        if (dateStr instanceof Date) {
+            return dateStr.toLocaleDateString("th-TH");
+        }
+        dateStr = String(dateStr);
+    }
+    dateStr = dateStr.trim();
+    // Case 1: YYYY-MM-DD or YYYY/MM/DD
+    if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(dateStr)) {
+        const parts = dateStr.split(/[-/]/);
+        let y = parseInt(parts[0], 10);
+        if (y < 2400) y += 543;
+        const m = parts[1].padStart(2, '0');
+        const d = parts[2].padStart(2, '0');
+        return `${d}/${m}/${y}`;
+    }
+    // Case 2: DD-MM-YYYY or DD/MM/YYYY
+    if (/^\d{1,2}[-/]\d{1,2}[-/]\d{4}$/.test(dateStr)) {
+        const parts = dateStr.split(/[-/]/);
+        const d = parts[0].padStart(2, '0');
+        const m = parts[1].padStart(2, '0');
+        let y = parseInt(parts[2], 10);
+        if (y < 2400) y += 543;
+        return `${d}/${m}/${y}`;
+    }
+    // Case 3: Any string containing 4-digit CE year like 2024, 2025, 2026, 2027, etc.
+    return dateStr.replace(/\b(20[2-9]\d)\b/g, (match) => {
+        return (parseInt(match, 10) + 543).toString();
+    });
+};
+
 // Project Management System - Application Logic & State
 
 // --- DATA STORE ---
@@ -2508,7 +2542,7 @@ function renderSubnavProjectWorkspace() {
         document.getElementById("subnav-doc-name").textContent = project.name;
         document.getElementById("subnav-doc-customer").textContent = project.customer;
         document.getElementById("subnav-doc-pm").textContent = project.manager;
-        document.getElementById("subnav-doc-dates").textContent = `${project.start} - ${project.end}`;
+        document.getElementById("subnav-doc-dates").textContent = `${window.formatDateToThaiBE(project.start)} - ${window.formatDateToThaiBE(project.end)}`;
         document.getElementById("subnav-doc-value").textContent = `${formatNumber(project.value)} บาท`;
         document.getElementById("subnav-doc-desc").textContent = project.description;
     }

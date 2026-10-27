@@ -6087,6 +6087,37 @@ function removeBase64FromObject(obj) {
     }
 }
 
+// Helper to format date strings to Thai Buddhist Era (พ.ศ.)
+window.formatDateToThaiBE = function(dateStr) {
+    if (!dateStr || dateStr === "-") return "-";
+    if (typeof dateStr !== "string") {
+        if (dateStr instanceof Date) {
+            return dateStr.toLocaleDateString("th-TH");
+        }
+        dateStr = String(dateStr);
+    }
+    dateStr = dateStr.trim();
+    if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(dateStr)) {
+        const parts = dateStr.split(/[-/]/);
+        let y = parseInt(parts[0], 10);
+        if (y < 2400) y += 543;
+        const m = parts[1].padStart(2, '0');
+        const d = parts[2].padStart(2, '0');
+        return `${d}/${m}/${y}`;
+    }
+    if (/^\d{1,2}[-/]\d{1,2}[-/]\d{4}$/.test(dateStr)) {
+        const parts = dateStr.split(/[-/]/);
+        const d = parts[0].padStart(2, '0');
+        const m = parts[1].padStart(2, '0');
+        let y = parseInt(parts[2], 10);
+        if (y < 2400) y += 543;
+        return `${d}/${m}/${y}`;
+    }
+    return dateStr.replace(/\b(20[2-9]\d)\b/g, (match) => {
+        return (parseInt(match, 10) + 543).toString();
+    });
+};
+
 let projectsData = {};
 try {
     const savedData = localStorage.getItem("technical_water_projects_data_v2");
@@ -8473,7 +8504,7 @@ function renderSubnavProjectWorkspace() {
     document.getElementById("subnav-doc-name").textContent = project.name;
     document.getElementById("subnav-doc-customer").textContent = project.customer;
     document.getElementById("subnav-doc-pm").textContent = project.manager;
-    document.getElementById("subnav-doc-dates").textContent = `${project.start} - ${project.end}`;
+    document.getElementById("subnav-doc-dates").textContent = `${window.formatDateToThaiBE(project.start)} - ${window.formatDateToThaiBE(project.end)}`;
     document.getElementById("subnav-doc-value").textContent = `${formatNumber(project.value)} บาท`;
     document.getElementById("subnav-doc-desc").textContent = project.description;
     
@@ -9699,7 +9730,7 @@ function renderSCurveChart(project) {
         } else {
             project.scurveMonths.forEach(m => {
                 for (let w = 1; w <= 4; w++) {
-                    labels.push(`${m} W${w}`);
+                    const mThai = m.replace(/\b(20[2-9]\d)\b/g, match => (parseInt(match, 10) + 543).toString()); labels.push(`${mThai} W${w}`);
                 }
             });
         }
@@ -11142,7 +11173,7 @@ function renderSubnavDocumentsTab(project) {
                 </div>
             </td>
             <td><span class="badge-status font-sm" style="font-size: 11px; padding: 2px 6px; background-color: #f1f5f9; color: #475569; border-radius: 4px; font-weight: 600;">${d.type}</span></td>
-            <td>${d.uploadedAt || d.date}</td>
+            <td>${window.formatDateToThaiBE(d.uploadedAt || d.date)}</td>
             <td class="text-right">
                 ${d.fileUrl ? `
                 <a href="${d.fileUrl}" download="${d.name}" class="btn btn-sm btn-outline" style="font-size: 10px; padding: 4px 8px; height: auto; display: inline-flex; align-items: center; gap: 4px; margin-right: 4px; background: rgba(16, 185, 129, 0.1); color: #10b981; border-color: rgba(16, 185, 129, 0.2); text-decoration: none;">
@@ -11901,7 +11932,7 @@ window.openDailyReportPreviewModal = async function(rep, project) {
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 14px;">
                         <div style="display: flex; gap: 8px; font-size: 12.5px;">
                             <span style="color: #475569; font-weight: 600; min-width: 60px;">วันที่:</span>
-                            <span style="color: #0f172a; font-weight: 500;">${rep.date}</span>
+                            <span style="color: #0f172a; font-weight: 500;">${window.formatDateToThaiBE(rep.date)}</span>
                         </div>
                         <div style="display: flex; gap: 8px; font-size: 12.5px;">
                             <span style="color: #475569; font-weight: 600; min-width: 60px;">สถานที่:</span>
@@ -12044,7 +12075,7 @@ function renderSubnavDailyReports(project) {
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
                 <div style="display: flex; align-items: center; gap: 8px; color: var(--navy-dark); font-weight: 600;">
                     <i class="fa-solid fa-clock text-blue"></i>
-                    <span>วันที่ ${rep.date}</span>
+                    <span>วันที่ ${window.formatDateToThaiBE(rep.date)}</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <span class="badge-status completed" style="background-color: #eff6ff; color: #1d4ed8; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600;">เสร็จสิ้นวันนี้</span>
@@ -12065,7 +12096,7 @@ function renderSubnavDailyReports(project) {
                         <button class="btn btn-xs btn-outline-blue daily-report-view-pdf" 
                             data-file="${rep.file}" 
                             data-url="${rep.fileUrl || ''}" 
-                            data-title="รายงานประจำวัน ${rep.date}"
+                            data-title="รายงานประจำวัน ${window.formatDateToThaiBE(rep.date)}"
                             style="font-size: 10.5px; padding: 3px 8px; display: flex; align-items: center; gap: 4px; background: none; border: 1px solid #1d4ed8; color: #1d4ed8; border-radius: 4px; cursor: pointer;">
                             <i class="fa-solid fa-eye"></i> ดู PDF แนบ
                         </button>
@@ -12693,7 +12724,7 @@ function renderCostManagement() {
             else if (exp.type === "ค่าวัสดุ") expClass = "material";
             
             const parts = exp.date.split("-");
-            const formattedDate = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : exp.date;
+            const formattedDate = window.formatDateToThaiBE(exp.date);
             
             const canDelete = (appState.currentRole === "pm" || appState.currentRole === "admin") && activeCode !== "all";
             const deleteButtonHTML = canDelete 
@@ -14759,9 +14790,20 @@ document.addEventListener("DOMContentLoaded", () => {
             
             // Format date back to yyyy-mm-dd
             if (rep.date) {
-                const parts = rep.date.split("/");
+                const parts = rep.date.split(/[-/]/);
                 if (parts.length === 3) {
-                    document.getElementById("report-date").value = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                    let y, m, d;
+                    if (parts[0].length === 4) {
+                        y = parseInt(parts[0], 10);
+                        m = parts[1];
+                        d = parts[2];
+                    } else {
+                        d = parts[0];
+                        m = parts[1];
+                        y = parseInt(parts[2], 10);
+                    }
+                    if (y > 2400) y -= 543;
+                    document.getElementById("report-date").value = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
                 } else {
                     document.getElementById("report-date").value = new Date().toISOString().substring(0, 10);
                 }
@@ -14908,7 +14950,9 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             
             const parts = dateVal.split("-");
-            const formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+            let yReport = parseInt(parts[0], 10);
+            if (yReport < 2400) yReport += 543;
+            const formattedDate = `${parts[2]}/${parts[1]}/${yReport}`;
             
             // Save attached PDF if selected
             let pdfName = "";
@@ -17017,10 +17061,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     </div>
                     
                     <div class="doc-meta">
-                        <div class="doc-meta-item"><span class="doc-meta-label">วันที่:</span> <span>${proj.ganttData.header.date || '-'}</span></div>
+                        <div class="doc-meta-item"><span class="doc-meta-label">วันที่:</span> <span>${window.formatDateToThaiBE(proj.ganttData.header.date)}</span></div>
                         <div class="doc-meta-item"><span class="doc-meta-label">เอกสารอ้างอิง:</span> <span>${proj.ganttData.header.refPo || '-'}</span></div>
                         <div class="doc-meta-item" style="grid-column: span 2;"><span class="doc-meta-label">เรื่อง:</span> <span>${proj.ganttData.header.subject || '-'}</span></div>
-                        <div class="doc-meta-item" style="grid-column: span 2;"><span class="doc-meta-label">ระยะเวลาแผนงาน:</span> <span>${formatYmdToTh(proj.ganttData.startDate)} ถึง ${formatYmdToTh(proj.ganttData.endDate)}</span></div>
+                        <div class="doc-meta-item" style="grid-column: span 2;"><span class="doc-meta-label">ระยะเวลาแผนงาน:</span> <span>${window.formatDateToThaiBE(proj.ganttData.startDate)} ถึง ${window.formatDateToThaiBE(proj.ganttData.endDate)}</span></div>
                     </div>
 
                     <div class="gantt-title">แผนงานปรับปรุงโครงการ: ${proj.name}</div>
@@ -17093,7 +17137,7 @@ document.addEventListener("DOMContentLoaded", () => {
             } else {
                 proj.expenses.forEach((exp, idx) => {
                     const parts = exp.date.split("-");
-                    const formattedDate = parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : exp.date;
+                    const formattedDate = window.formatDateToThaiBE(exp.date);
                     expensesHtml += `
                         <tr>
                             <td style="text-align: center; border: 1px solid #cbd5e1; padding: 8px;">${idx + 1}</td>
@@ -17238,7 +17282,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         </div>
                         <div class="doc-meta-item">
                             <span class="doc-meta-label">ปีโครงการ:</span>
-                            <span class="doc-meta-val">${proj.year + 543} (ค.ศ. ${proj.year})</span>
+                            <span class="doc-meta-val">${proj.year > 2500 ? proj.year : (parseInt(proj.year) + 543)} (พ.ศ.)</span>
                         </div>
                         <div class="doc-meta-item" style="grid-column: span 2;">
                             <span class="doc-meta-label">ชื่อโครงการ:</span>
@@ -18050,7 +18094,7 @@ document.addEventListener("DOMContentLoaded", () => {
             printWindow.document.write(`
                 <html>
                 <head>
-                    <title>Daily Report - ${dateStr}</title>
+                    <title>Daily Report - ${window.formatDateToThaiBE(dateStr)}</title>
                     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700&display=swap" rel="stylesheet">
                     <style>
                         body {
@@ -18137,7 +18181,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 14px;">
                             <div style="display: flex; gap: 8px; font-size: 12.5px;">
                                 <span style="color: #475569; font-weight: 600; min-width: 60px;">วันที่:</span>
-                                <span style="color: #0f172a; font-weight: 500;">${dateStr}</span>
+                                <span style="color: #0f172a; font-weight: 500;">${window.formatDateToThaiBE(dateStr)}</span>
                             </div>
                             <div style="display: flex; gap: 8px; font-size: 12.5px;">
                                 <span style="color: #475569; font-weight: 600; min-width: 60px;">สถานที่:</span>
@@ -18642,8 +18686,8 @@ document.addEventListener("DOMContentLoaded", () => {
                         <tr>
                             <td style="text-align: center;">${i + 1}</td>
                             <td><strong>${t.title}</strong></td>
-                            <td style="text-align: center;">${t.start || '-'}</td>
-                            <td style="text-align: center;">${t.end || '-'}</td>
+                            <td style="text-align: center;">${window.formatDateToThaiBE(t.start) || '-'}</td>
+                            <td style="text-align: center;">${window.formatDateToThaiBE(t.end) || '-'}</td>
                             <td style="text-align: center; font-weight: 700; color: #059669;">${t.progress || 0}%</td>
                             <td style="text-align: center;">${t.status || 'กำลังดำเนินการ'}</td>
                         </tr>
@@ -18673,7 +18717,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     let rows = proj.dailyReports.map((dr, i) => `
                         <tr>
                             <td style="text-align: center;">${i + 1}</td>
-                            <td style="text-align: center;">${dr.date || '-'}</td>
+                            <td style="text-align: center;">${window.formatDateToThaiBE(dr.date) || '-'}</td>
                             <td>${dr.desc || dr.description || dr.detail || '-'}</td>
                             <td style="text-align: center;">${dr.reporter || dr.author || 'ทีมวิศวกร'}</td>
                         </tr>
@@ -18701,7 +18745,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     let rows = proj.expenses.map((exp, i) => `
                         <tr>
                             <td style="text-align: center;">${i + 1}</td>
-                            <td style="text-align: center;">${exp.date || '-'}</td>
+                            <td style="text-align: center;">${window.formatDateToThaiBE(exp.date) || '-'}</td>
                             <td><strong>${exp.title}</strong></td>
                             <td style="text-align: center;">${exp.type || 'ค่าใช้จ่ายทั่วไป'}</td>
                             <td style="text-align: right; font-weight: 700; color: #0f172a;">${formatNumber(exp.amount || 0)} บาท</td>
@@ -18825,7 +18869,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             </div>
                             <div class="info-cell">
                                 <span class="info-lbl">ปีงบประมาณ:</span>
-                                <strong class="info-val">ปี ${proj.year}</strong>
+                                <strong class="info-val">ปี ${proj.year > 2500 ? proj.year : (parseInt(proj.year) + 543)}</strong>
                             </div>
                             <div class="info-cell span-2">
                                 <span class="info-lbl">ชื่อโครงการ:</span>
@@ -18841,7 +18885,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             </div>
                             <div class="info-cell">
                                 <span class="info-lbl">ระยะเวลาสัญญา:</span>
-                                <strong class="info-val">${proj.start || '-'} ถึง ${proj.end || '-'}</strong>
+                                <strong class="info-val">${window.formatDateToThaiBE(proj.start)} ถึง ${window.formatDateToThaiBE(proj.end)}</strong>
                             </div>
                             <div class="info-cell span-2">
                                 <span class="info-lbl">สถานะโครงการ:</span>
@@ -19282,7 +19326,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const toISO = (str) => {
             if (!str) return "";
             const parts = str.split("/");
-            if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
+            if (parts.length === 3) {
+                let y = parseInt(parts[2], 10);
+                if (y > 2400) y -= 543;
+                return `${y}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+            }
             return "";
         };
         document.getElementById("edit-project-start").value = toISO(proj.start);
@@ -19330,11 +19378,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const isQuoting = (appState.currentView === "quoting-projects-list") || (proj.status === "งานที่กำลังเสนอราคา" || proj.status === "งานที่รอเสนอราคา");
 
-            // Convert YYYY-MM-DD → DD/MM/YYYY
+            // Convert YYYY-MM-DD → DD/MM/YYYY (พ.ศ.)
             const toThai = (str) => {
                 if (!str) return "";
                 const parts = str.split("-");
-                if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`;
+                if (parts.length === 3) {
+                    let y = parseInt(parts[0], 10);
+                    if (y < 2400) y += 543;
+                    return `${parts[2]}/${parts[1]}/${y}`;
+                }
                 return "";
             };
 

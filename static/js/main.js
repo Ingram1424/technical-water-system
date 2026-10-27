@@ -1,3 +1,34 @@
+// Helper to format date strings to Thai Buddhist Era (พ.ศ.)
+window.formatDateToThaiBE = function(dateStr) {
+    if (!dateStr || dateStr === "-") return "-";
+    if (typeof dateStr !== "string") {
+        if (dateStr instanceof Date) {
+            return dateStr.toLocaleDateString("th-TH");
+        }
+        dateStr = String(dateStr);
+    }
+    dateStr = dateStr.trim();
+    if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(dateStr)) {
+        const parts = dateStr.split(/[-/]/);
+        let y = parseInt(parts[0], 10);
+        if (y < 2400) y += 543;
+        const m = parts[1].padStart(2, '0');
+        const d = parts[2].padStart(2, '0');
+        return `${d}/${m}/${y}`;
+    }
+    if (/^\d{1,2}[-/]\d{1,2}[-/]\d{4}$/.test(dateStr)) {
+        const parts = dateStr.split(/[-/]/);
+        const d = parts[0].padStart(2, '0');
+        const m = parts[1].padStart(2, '0');
+        let y = parseInt(parts[2], 10);
+        if (y < 2400) y += 543;
+        return `${d}/${m}/${y}`;
+    }
+    return dateStr.replace(/\b(20[2-9]\d)\b/g, (match) => {
+        return (parseInt(match, 10) + 543).toString();
+    });
+};
+
 document.addEventListener("DOMContentLoaded", () => {
     
     // Global File Download Click Interceptor for File Reference System
@@ -1709,9 +1740,20 @@ document.addEventListener("DOMContentLoaded", () => {
             
             // Format date back to yyyy-mm-dd
             if (rep.date) {
-                const parts = rep.date.split("/");
+                const parts = rep.date.split(/[-/]/);
                 if (parts.length === 3) {
-                    document.getElementById("report-date").value = `${parts[2]}-${parts[1]}-${parts[0]}`;
+                    let y, m, d;
+                    if (parts[0].length === 4) {
+                        y = parseInt(parts[0], 10);
+                        m = parts[1];
+                        d = parts[2];
+                    } else {
+                        d = parts[0];
+                        m = parts[1];
+                        y = parseInt(parts[2], 10);
+                    }
+                    if (y > 2400) y -= 543;
+                    document.getElementById("report-date").value = `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
                 } else {
                     document.getElementById("report-date").value = new Date().toISOString().substring(0, 10);
                 }
@@ -1858,7 +1900,9 @@ document.addEventListener("DOMContentLoaded", () => {
             }
             
             const parts = dateVal.split("-");
-            const formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+            let yReport = parseInt(parts[0], 10);
+            if (yReport < 2400) yReport += 543;
+            const formattedDate = `${parts[2]}/${parts[1]}/${yReport}`;
             
             // Save attached PDF if selected
             let pdfName = "";
@@ -3638,10 +3682,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     </div>
                     
                     <div class="doc-meta">
-                        <div class="doc-meta-item"><span class="doc-meta-label">วันที่:</span> <span>${proj.ganttData.header.date || '-'}</span></div>
+                        <div class="doc-meta-item"><span class="doc-meta-label">วันที่:</span> <span>${window.formatDateToThaiBE(proj.ganttData.header.date)}</span></div>
                         <div class="doc-meta-item"><span class="doc-meta-label">เอกสารอ้างอิง:</span> <span>${proj.ganttData.header.refPo || '-'}</span></div>
                         <div class="doc-meta-item" style="grid-column: span 2;"><span class="doc-meta-label">เรื่อง:</span> <span>${proj.ganttData.header.subject || '-'}</span></div>
-                        <div class="doc-meta-item" style="grid-column: span 2;"><span class="doc-meta-label">ระยะเวลาแผนงาน:</span> <span>${formatYmdToTh(proj.ganttData.startDate)} ถึง ${formatYmdToTh(proj.ganttData.endDate)}</span></div>
+                        <div class="doc-meta-item" style="grid-column: span 2;"><span class="doc-meta-label">ระยะเวลาแผนงาน:</span> <span>${window.formatDateToThaiBE(proj.ganttData.startDate)} ถึง ${window.formatDateToThaiBE(proj.ganttData.endDate)}</span></div>
                     </div>
 
                     <div class="gantt-title">แผนงานปรับปรุงโครงการ: ${proj.name}</div>
@@ -4420,7 +4464,7 @@ document.addEventListener("DOMContentLoaded", () => {
             printWindow.document.write(`
                 <html>
                 <head>
-                    <title>Daily Report - ${dateStr}</title>
+                    <title>Daily Report - ${window.formatDateToThaiBE(dateStr)}</title>
                     <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;600;700&display=swap" rel="stylesheet">
                     <style>
                         body {
@@ -4507,7 +4551,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 14px;">
                             <div style="display: flex; gap: 8px; font-size: 12.5px;">
                                 <span style="color: #475569; font-weight: 600; min-width: 60px;">วันที่:</span>
-                                <span style="color: #0f172a; font-weight: 500;">${dateStr}</span>
+                                <span style="color: #0f172a; font-weight: 500;">${window.formatDateToThaiBE(dateStr)}</span>
                             </div>
                             <div style="display: flex; gap: 8px; font-size: 12.5px;">
                                 <span style="color: #475569; font-weight: 600; min-width: 60px;">สถานที่:</span>
@@ -4929,8 +4973,8 @@ document.addEventListener("DOMContentLoaded", () => {
                         <tr>
                             <td style="text-align: center;">${i + 1}</td>
                             <td><strong>${t.title}</strong></td>
-                            <td style="text-align: center;">${t.start || '-'}</td>
-                            <td style="text-align: center;">${t.end || '-'}</td>
+                            <td style="text-align: center;">${window.formatDateToThaiBE(t.start) || '-'}</td>
+                            <td style="text-align: center;">${window.formatDateToThaiBE(t.end) || '-'}</td>
                             <td style="text-align: center; font-weight: 700; color: #059669;">${t.progress || 0}%</td>
                             <td style="text-align: center;">${t.status || 'กำลังดำเนินการ'}</td>
                         </tr>
@@ -4960,7 +5004,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     let rows = proj.dailyReports.map((dr, i) => `
                         <tr>
                             <td style="text-align: center;">${i + 1}</td>
-                            <td style="text-align: center;">${dr.date || '-'}</td>
+                            <td style="text-align: center;">${window.formatDateToThaiBE(dr.date) || '-'}</td>
                             <td>${dr.desc || dr.description || dr.detail || '-'}</td>
                             <td style="text-align: center;">${dr.reporter || dr.author || 'ทีมวิศวกร'}</td>
                         </tr>
@@ -4988,7 +5032,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     let rows = proj.expenses.map((exp, i) => `
                         <tr>
                             <td style="text-align: center;">${i + 1}</td>
-                            <td style="text-align: center;">${exp.date || '-'}</td>
+                            <td style="text-align: center;">${window.formatDateToThaiBE(exp.date) || '-'}</td>
                             <td><strong>${exp.title}</strong></td>
                             <td style="text-align: center;">${exp.type || 'ค่าใช้จ่ายทั่วไป'}</td>
                             <td style="text-align: right; font-weight: 700; color: #0f172a;">${formatNumber(exp.amount || 0)} บาท</td>
@@ -5112,7 +5156,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             </div>
                             <div class="info-cell">
                                 <span class="info-lbl">ปีงบประมาณ:</span>
-                                <strong class="info-val">ปี ${proj.year}</strong>
+                                <strong class="info-val">ปี ${proj.year > 2500 ? proj.year : (parseInt(proj.year) + 543)}</strong>
                             </div>
                             <div class="info-cell span-2">
                                 <span class="info-lbl">ชื่อโครงการ:</span>
@@ -5128,7 +5172,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             </div>
                             <div class="info-cell">
                                 <span class="info-lbl">ระยะเวลาสัญญา:</span>
-                                <strong class="info-val">${proj.start || '-'} ถึง ${proj.end || '-'}</strong>
+                                <strong class="info-val">${window.formatDateToThaiBE(proj.start)} ถึง ${window.formatDateToThaiBE(proj.end)}</strong>
                             </div>
                             <div class="info-cell span-2">
                                 <span class="info-lbl">สถานะโครงการ:</span>

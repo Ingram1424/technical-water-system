@@ -1,3 +1,36 @@
+// Helper to format date strings to Thai Buddhist Era (พ.ศ.)
+if (!window.formatDateToThaiBE) {
+    window.formatDateToThaiBE = function(dateStr) {
+        if (!dateStr || dateStr === "-") return "-";
+        if (typeof dateStr !== "string") {
+            if (dateStr instanceof Date) {
+                return dateStr.toLocaleDateString("th-TH");
+            }
+            dateStr = String(dateStr);
+        }
+        dateStr = dateStr.trim();
+        if (/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(dateStr)) {
+            const parts = dateStr.split(/[-/]/);
+            let y = parseInt(parts[0], 10);
+            if (y < 2400) y += 543;
+            const m = parts[1].padStart(2, '0');
+            const d = parts[2].padStart(2, '0');
+            return `${d}/${m}/${y}`;
+        }
+        if (/^\d{1,2}[-/]\d{1,2}[-/]\d{4}$/.test(dateStr)) {
+            const parts = dateStr.split(/[-/]/);
+            const d = parts[0].padStart(2, '0');
+            const m = parts[1].padStart(2, '0');
+            let y = parseInt(parts[2], 10);
+            if (y < 2400) y += 543;
+            return `${d}/${m}/${y}`;
+        }
+        return dateStr.replace(/\b(20[2-9]\d)\b/g, (match) => {
+            return (parseInt(match, 10) + 543).toString();
+        });
+    };
+}
+
 
 
 function renderQuotingStorageView(project) {
@@ -932,7 +965,7 @@ function renderSCurveChart(project) {
         } else {
             project.scurveMonths.forEach(m => {
                 for (let w = 1; w <= 4; w++) {
-                    labels.push(`${m} W${w}`);
+                    const mThai = m.replace(/\b(20[2-9]\d)\b/g, match => (parseInt(match, 10) + 543).toString()); labels.push(`${mThai} W${w}`);
                 }
             });
         }
@@ -2213,7 +2246,7 @@ function renderSubnavDocumentsTab(project) {
                 </div>
             </td>
             <td><span class="badge-status font-sm" style="font-size: 11px; padding: 2px 6px; background-color: #f1f5f9; color: #475569; border-radius: 4px; font-weight: 600;">${d.type}</span></td>
-            <td>${d.uploadedAt || d.date}</td>
+            <td>${window.formatDateToThaiBE(d.uploadedAt || d.date)}</td>
             <td class="text-right">
                 ${d.fileUrl ? `
                 <button class="btn btn-sm btn-outline btn-download-file" data-url="${d.fileUrl}" data-file="${d.name}" style="font-size: 10px; padding: 4px 8px; height: auto; display: inline-flex; align-items: center; gap: 4px; margin-right: 4px; background: rgba(16, 185, 129, 0.1); color: #10b981; border-color: rgba(16, 185, 129, 0.2); cursor: pointer;">
@@ -2967,7 +3000,7 @@ window.openDailyReportPreviewModal = async function(rep, project) {
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 14px;">
                         <div style="display: flex; gap: 8px; font-size: 12.5px;">
                             <span style="color: #475569; font-weight: 600; min-width: 60px;">วันที่:</span>
-                            <span style="color: #0f172a; font-weight: 500;">${rep.date}</span>
+                            <span style="color: #0f172a; font-weight: 500;">${window.formatDateToThaiBE(rep.date)}</span>
                         </div>
                         <div style="display: flex; gap: 8px; font-size: 12.5px;">
                             <span style="color: #475569; font-weight: 600; min-width: 60px;">สถานที่:</span>
@@ -3110,7 +3143,7 @@ function renderSubnavDailyReports(project) {
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">
                 <div style="display: flex; align-items: center; gap: 8px; color: var(--navy-dark); font-weight: 600;">
                     <i class="fa-solid fa-clock text-blue"></i>
-                    <span>วันที่ ${rep.date}</span>
+                    <span>วันที่ ${window.formatDateToThaiBE(rep.date)}</span>
                 </div>
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <span class="badge-status completed" style="background-color: #eff6ff; color: #1d4ed8; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600;">เสร็จสิ้นวันนี้</span>
@@ -3131,7 +3164,7 @@ function renderSubnavDailyReports(project) {
                         <button class="btn btn-xs btn-outline-blue daily-report-view-pdf" 
                             data-file="${rep.file}" 
                             data-url="${rep.fileUrl || ''}" 
-                            data-title="รายงานประจำวัน ${rep.date}"
+                            data-title="รายงานประจำวัน ${window.formatDateToThaiBE(rep.date)}"
                             style="font-size: 10.5px; padding: 3px 8px; display: flex; align-items: center; gap: 4px; background: none; border: 1px solid #1d4ed8; color: #1d4ed8; border-radius: 4px; cursor: pointer;">
                             <i class="fa-solid fa-eye"></i> ดู PDF แนบ
                         </button>
