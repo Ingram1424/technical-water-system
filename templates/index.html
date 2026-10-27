@@ -3340,7 +3340,12 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                     
                     <div class="sidebar-project-selector-wrapper" id="sidebar-project-selector-wrapper">
                         <!-- Year selector for the project page -->
-                        <label for="subnav-year-filter" class="selector-label" style="margin-top: 8px;">ปีโครงการ :</label>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px; margin-bottom: 2px;">
+                            <label for="subnav-year-filter" class="selector-label" style="margin-top: 0; margin-bottom: 0;">ปีโครงการ :</label>
+                            <button type="button" onclick="window.openQuickAddYearModal()" class="btn btn-xs hide-customer hide-accounting" style="font-size: 10px; padding: 1px 6px; border-radius: 4px; background: rgba(37,99,235,0.1); color: #1d4ed8; border: 1px solid rgba(37,99,235,0.25); cursor: pointer; display: inline-flex; align-items: center; gap: 3px;" title="เพิ่มปีโครงการในอนาคต">
+                                <i class="fa-solid fa-plus"></i> เพิ่มปี
+                            </button>
+                        </div>
                         <select id="subnav-year-filter" class="form-control" style="margin-bottom: 12px; font-size: 11px; padding: 4px 6px; height: auto; background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.15); color: #1e293b;">
                             <option value="all" selected>ทั้งหมดทุกปี</option>
                             <option value="2024">ปี 2024</option>
@@ -4391,7 +4396,11 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                             </h2>
                             <p style="font-size: 13px; color: var(--text-muted); margin: 4px 0 0 0;">กรุณาเลือกปีโครงการ โรงพยาบาล หรือพิมพ์ค้นหาโครงการด้านล่าง เพื่อเข้าหน้าทำงานและระบายสีแผนงาน</p>
                         </div>
-                        <div style="display: flex; gap: 8px; align-items: center;">
+                        <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                            <button class="btn btn-sm btn-outline hide-customer hide-accounting" id="btn-portal-add-year" onclick="window.openQuickAddYearModal()" style="font-size: 12px; font-weight: 600; padding: 8px 16px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; background: #ffffff; border: 1px solid var(--border-color); color: #1e3a8a;" title="เพิ่มปีโครงการใหม่ในอนาคต">
+                                <i class="fa-solid fa-calendar-plus" style="color: var(--primary-blue);"></i>
+                                <span>เพิ่มปีโครงการ</span>
+                            </button>
                             <button class="btn btn-sm btn-outline hide-customer" id="btn-portal-share-projects" style="font-size: 12px; font-weight: 600; padding: 8px 16px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 6px; background: #ffffff; border: 1px solid var(--border-color); color: #1e3a8a;">
                                 <i class="fa-solid fa-share-nodes"></i>
                                 <span>สร้างลิงก์แชร์โครงการ</span>
@@ -4408,7 +4417,12 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; width: 100%;">
                             <!-- Year Selector -->
                             <div>
-                                <label style="font-size: 13px; font-weight: 700; color: var(--navy-dark); display: block; margin-bottom: 8px;">ปีโครงการ :</label>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                    <label style="font-size: 13px; font-weight: 700; color: var(--navy-dark); margin-bottom: 0;">ปีโครงการ :</label>
+                                    <button type="button" onclick="window.openQuickAddYearModal()" class="btn btn-xs hide-customer hide-accounting" style="font-size: 11px; padding: 2px 8px; border-radius: 4px; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; font-weight: 600;" title="เพิ่มปีโครงการในอนาคต">
+                                        <i class="fa-solid fa-plus"></i> เพิ่มปี
+                                    </button>
+                                </div>
                                 <select id="portal-year-filter" class="form-control" style="font-size: 13px; padding: 10px; height: 42px; border-radius: var(--radius-md); border: 1px solid var(--border-color); width: 100%;">
                                     <option value="all" selected>ทั้งหมดทุกปี</option>
                                     <option value="2024">ปี 2024 (พ.ศ. 2567)</option>
@@ -5356,11 +5370,16 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                             <input type="text" id="new-project-code" class="form-control" placeholder="เช่น PRJ-2613" required>
                         </div>
                         <div class="form-group">
-                            <label class="form-label" for="new-project-year">ปีโครงการ <span class="required">*</span></label>
-                            <select id="new-project-year" class="form-control" required>
-                                <option value="2024">ปี 2024</option>
-                                <option value="2025">ปี 2025</option>
-                                <option value="2026" selected>ปี 2026</option>
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <label class="form-label" for="new-project-year" style="margin-bottom: 0;">ปีโครงการ <span class="required">*</span></label>
+                                <button type="button" onclick="window.openQuickAddYearModal()" class="btn btn-xs" style="font-size: 11px; padding: 2px 8px; border-radius: 4px; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; cursor: pointer; display: inline-flex; align-items: center; gap: 3px; font-weight: 600;" title="เพิ่มปีโครงการใหม่">
+                                    <i class="fa-solid fa-plus"></i> เพิ่มปี
+                                </button>
+                            </div>
+                            <select id="new-project-year" class="form-control" required style="margin-top: 6px;">
+                                <option value="2024">ปี 2024 (พ.ศ. 2567)</option>
+                                <option value="2025">ปี 2025 (พ.ศ. 2568)</option>
+                                <option value="2026" selected>ปี 2026 (พ.ศ. 2569)</option>
                             </select>
                         </div>
                     </div>
@@ -5641,9 +5660,21 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
             <form id="edit-project-form">
                 <input type="hidden" id="edit-project-code">
                 <div class="modal-body">
-                    <div class="form-group">
-                        <label class="form-label">รหัสโครงการ</label>
-                        <input type="text" id="edit-project-code-display" class="form-control" disabled style="background: var(--bg-light); color: var(--text-muted);">
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label class="form-label">รหัสโครงการ</label>
+                            <input type="text" id="edit-project-code-display" class="form-control" disabled style="background: var(--bg-light); color: var(--text-muted);">
+                        </div>
+                        <div class="form-group">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <label class="form-label" for="edit-project-year" style="margin-bottom: 0;">ปีโครงการ <span class="required">*</span></label>
+                                <button type="button" class="btn btn-xs" onclick="window.openQuickAddYearModal()" title="เพิ่มปีโครงการใหม่" style="padding: 2px 8px; font-size: 11px; display: inline-flex; align-items: center; gap: 3px; border: 1px solid #bfdbfe; color: #1d4ed8; background: #eff6ff; border-radius: 4px; cursor: pointer; font-weight: 600;">
+                                    <i class="fa-solid fa-plus"></i> เพิ่มปี
+                                </button>
+                            </div>
+                            <select id="edit-project-year" class="form-control" required style="margin-top: 6px;">
+                            </select>
+                        </div>
                     </div>
                     <div class="form-group mt-3">
                         <label class="form-label" for="edit-project-name">ชื่องาน <span class="required">*</span></label>
@@ -5797,6 +5828,42 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                     <button type="button" class="btn btn-outline" onclick="window.closeQuickAddHospitalModal()" style="font-family: 'Prompt'; font-size: 12.5px;">ยกเลิก</button>
                     <button type="button" class="btn btn-primary" onclick="window.submitQuickAddHospital()" style="font-family: 'Prompt'; font-size: 12.5px; background: linear-gradient(135deg, #10b981, #059669); border: none;">
                         <i class="fa-solid fa-plus"></i> เพิ่มโรงพยาบาล
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Add Year Modal -->
+    <div class="modal-overlay" id="quick-add-year-modal" style="z-index: 1400; display: none;">
+        <div class="modal-card" style="max-width: 440px;">
+            <div class="modal-header">
+                <h3 class="modal-title"><i class="fa-solid fa-calendar-plus text-blue"></i> เพิ่มปีโครงการในอนาคต</h3>
+                <button class="modal-close-btn" onclick="window.closeQuickAddYearModal()">&times;</button>
+            </div>
+            <div style="padding: 20px;">
+                <p style="font-size: 12.5px; color: var(--text-muted); margin: 0 0 14px 0;">
+                    ระบุปี ค.ศ. (เช่น 2027) หรือ พ.ศ. (เช่น 2570) เพื่อเพิ่มเป็นตัวเลือกปีโครงการในระบบ
+                </p>
+                <div class="form-group">
+                    <label class="form-label">ปีโครงการ (ค.ศ. หรือ พ.ศ.) <span class="required">*</span></label>
+                    <input type="number" id="quick-add-year-input" class="form-control" placeholder="เช่น 2027 หรือ 2570" min="2000" max="2600" style="font-family: 'Prompt'; font-size: 13.5px;" autocomplete="off">
+                </div>
+                
+                <div style="margin-top: 14px;">
+                    <span style="font-size: 11px; color: var(--text-muted); font-weight: 600;">คลิกเพิ่มด่วนปีถัดไป:</span>
+                    <div id="quick-year-suggestions" style="display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap;"></div>
+                </div>
+
+                <div style="margin-top: 16px; border-top: 1px dashed var(--border-color); padding-top: 12px;">
+                    <span style="font-size: 11px; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: 6px;">รายการปีทั้งหมดในระบบ:</span>
+                    <div id="quick-add-years-list" style="display: flex; flex-direction: column; gap: 6px; max-height: 150px; overflow-y: auto;"></div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 18px; justify-content: flex-end;">
+                    <button type="button" class="btn btn-outline" onclick="window.closeQuickAddYearModal()" style="font-family: 'Prompt'; font-size: 12.5px;">ปิด</button>
+                    <button type="button" class="btn btn-primary" onclick="window.submitQuickAddYear()" style="font-family: 'Prompt'; font-size: 12.5px; background: linear-gradient(135deg, var(--primary-blue), var(--primary-blue-light)); border: none;">
+                        <i class="fa-solid fa-plus"></i> เพิ่มปีโครงการ
                     </button>
                 </div>
             </div>
@@ -6160,6 +6227,18 @@ async function loadFromSupabase(isManualTrigger = false) {
                 localStorage.setItem("technical_water_hospitals_list", JSON.stringify(appState.hospitalsList));
                 if (typeof window.refreshHospitalsDependencies === "function") {
                     window.refreshHospitalsDependencies();
+                }
+            }
+        } catch (e) {}
+
+        // Sync custom years list from Supabase
+        try {
+            const { data: yearsRes } = await supabaseClient.from('projects').select('data').eq('code', 'FILE:CUSTOM_YEARS_LIST').single();
+            if (yearsRes && yearsRes.data && yearsRes.data.years) {
+                appState.yearsList = yearsRes.data.years;
+                localStorage.setItem("technical_water_years_list", JSON.stringify(appState.yearsList));
+                if (typeof window.refreshYearsDependencies === "function") {
+                    window.refreshYearsDependencies();
                 }
             }
         } catch (e) {}
@@ -7023,7 +7102,8 @@ const appState = {
         "โรงพยาบาลพญาไท บ่อวิน", "โรงพยาบาลพญาไท พหลโยธิน", "โรงพยาบาลพญาไท ศรีราชา", "โรงพยาบาลเปาโล พระประแดง",
         "โรงพยาบาลเปาโล รังสิต", "โรงพยาบาลเปาโล สมุทรปราการ", "โรงพยาบาลเปาโล เกษตร", "โรงพยาบาลเปาโล โชคชัย 4",
         "โรงพยาบาลเพชรเวช"
-    ]
+    ],
+    yearsList: [2024, 2025, 2026]
 };
 
 const defaultHospitals = [
@@ -7038,6 +7118,13 @@ try {
     if (rawHospitals) {
         // Migrate: strip legacy "อื่นๆ" entry if present
         appState.hospitalsList = JSON.parse(rawHospitals).filter(h => h !== "อื่นๆ");
+    }
+} catch (e) {}
+
+try {
+    const rawYears = localStorage.getItem("technical_water_years_list");
+    if (rawYears) {
+        appState.yearsList = JSON.parse(rawYears);
     }
 } catch (e) {}
 
@@ -12845,6 +12932,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (typeof window.refreshHospitalsDependencies === "function") {
         window.refreshHospitalsDependencies();
     }
+    if (typeof window.refreshYearsDependencies === "function") {
+        window.refreshYearsDependencies();
+    }
 
     // Toggle "อื่นๆ" input fields for Create/Edit project hospital dropdowns
     const newHospSelect = document.getElementById("new-project-hospital");
@@ -13270,6 +13360,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const subnavYearFilter = document.getElementById("subnav-year-filter");
     if (subnavYearFilter) {
         subnavYearFilter.addEventListener("change", function() {
+            if (this.value === "__add_new_year__") {
+                this.value = "all";
+                window.openQuickAddYearModal();
+                return;
+            }
             populateSubnavProjects(this.value);
             updateSelectedDetailProject();
             renderSubnavProjectWorkspace();
@@ -13621,6 +13716,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const portalYearFilter = document.getElementById("portal-year-filter");
     if (portalYearFilter) {
         portalYearFilter.addEventListener("change", function() {
+            if (this.value === "__add_new_year__") {
+                const subnavYear = document.getElementById("subnav-year-filter");
+                this.value = (subnavYear && subnavYear.value !== "__add_new_year__") ? subnavYear.value : "all";
+                window.openQuickAddYearModal();
+                return;
+            }
             const subnavYear = document.getElementById("subnav-year-filter");
             if (subnavYear) {
                 subnavYear.value = this.value;
@@ -19147,6 +19248,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
         document.getElementById("edit-project-code").value = code;
         document.getElementById("edit-project-code-display").value = code;
+        if (document.getElementById("edit-project-year")) {
+            document.getElementById("edit-project-year").value = proj.year ? proj.year.toString() : "2026";
+        }
         document.getElementById("edit-project-name").value = proj.name || "";
         
         const standardHospitals = (appState.hospitalsList || []).filter(h => h !== "อื่นๆ");
@@ -19234,6 +19338,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 return "";
             };
 
+            if (document.getElementById("edit-project-year")) {
+                proj.year = parseInt(document.getElementById("edit-project-year").value) || proj.year || 2026;
+            }
             proj.name = document.getElementById("edit-project-name").value.trim();
             const customerEl = document.getElementById("edit-project-customer");
             if (customerEl) {
@@ -20530,6 +20637,241 @@ window.saveHospitalsListToSupabase = async function() {
         console.error("Failed to save hospitals list:", e);
         showToast("❌ บันทึกรายชื่อโรงพยาบาลไปยังระบบไม่สำเร็จ", "error");
     }
+};
+
+// ============================================================
+// PROJECT YEARS MANAGEMENT
+// ============================================================
+
+window.getAllProjectYears = function() {
+    const set = new Set([2024, 2025, 2026, ...(appState.yearsList || [])]);
+    Object.values(projectsData || {}).forEach(p => {
+        if (p && p.year && !isNaN(p.year)) {
+            set.add(parseInt(p.year));
+        }
+    });
+    return Array.from(set).map(y => parseInt(y)).filter(y => !isNaN(y) && y >= 2000 && y <= 2100).sort((a, b) => a - b);
+};
+
+window.refreshYearsDependencies = function() {
+    const years = window.getAllProjectYears();
+
+    const updateSelect = (selectId, hasAll, formatFn, includeAdd = false) => {
+        const el = document.getElementById(selectId);
+        if (!el) return;
+        const prevVal = el.value;
+        el.innerHTML = "";
+        if (hasAll) {
+            const optAll = document.createElement("option");
+            optAll.value = "all";
+            optAll.textContent = "ทั้งหมดทุกปี";
+            el.appendChild(optAll);
+        }
+        years.forEach(y => {
+            const opt = document.createElement("option");
+            opt.value = y.toString();
+            opt.textContent = formatFn(y);
+            el.appendChild(opt);
+        });
+        if (includeAdd) {
+            const optAdd = document.createElement("option");
+            optAdd.value = "__add_new_year__";
+            optAdd.textContent = "➕ เพิ่มปีในอนาคต...";
+            optAdd.style.fontWeight = "bold";
+            optAdd.style.color = "#2563eb";
+            el.appendChild(optAdd);
+        }
+        if (prevVal && [...el.options].some(o => o.value === prevVal)) {
+            el.value = prevVal;
+        } else if (hasAll) {
+            el.value = "all";
+        } else if (years.length > 0) {
+            el.value = years[years.length - 1].toString();
+        }
+    };
+
+    updateSelect("portal-year-filter", true, y => `ปี ${y} (พ.ศ. ${y + 543})`, true);
+    updateSelect("subnav-year-filter", true, y => `ปี ${y}`, true);
+    updateSelect("new-project-year", false, y => `ปี ${y} (พ.ศ. ${y + 543})`, false);
+    updateSelect("edit-project-year", false, y => `ปี ${y} (พ.ศ. ${y + 543})`, false);
+    updateSelect("cost-year-filter", true, y => `ปี ${y}`, false);
+    updateSelect("cost-detail-year-filter", true, y => `ปี ${y}`, false);
+    updateSelect("year-filter-a", true, y => `ปี ${y}`, false);
+    updateSelect("year-filter-b", true, y => `ปี ${y}`, false);
+};
+
+window.addNewYear = async function(yearInput) {
+    let year = parseInt(yearInput);
+    if (isNaN(year)) {
+        showToast("⚠️ กรุณาระบุปีเป็นตัวเลข", "warning");
+        return false;
+    }
+    if (year >= 2400) {
+        year = year - 543;
+    }
+    if (year < 2000 || year > 2100) {
+        showToast("⚠️ กรุณาระบุปี ค.ศ. ระหว่าง 2000 - 2100 (หรือ พ.ศ. 2543 - 2643)", "warning");
+        return false;
+    }
+    const currentYears = window.getAllProjectYears();
+    if (currentYears.includes(year)) {
+        showToast(`⚠️ ปี ${year} (พ.ศ. ${year + 543}) มีอยู่ในระบบแล้ว`, "warning");
+        return false;
+    }
+    if (!appState.yearsList) appState.yearsList = [2024, 2025, 2026];
+    if (!appState.yearsList.includes(year)) {
+        appState.yearsList.push(year);
+        appState.yearsList.sort((a, b) => a - b);
+    }
+    localStorage.setItem("technical_water_years_list", JSON.stringify(appState.yearsList));
+    window.saveYearsListToSupabase();
+    window.refreshYearsDependencies();
+
+    const portalFilter = document.getElementById("portal-year-filter");
+    if (portalFilter) {
+        portalFilter.value = year.toString();
+        const subnavYear = document.getElementById("subnav-year-filter");
+        if (subnavYear) subnavYear.value = year.toString();
+        if (typeof window.renderProjectSelectionPortal === "function") {
+            window.renderProjectSelectionPortal();
+        }
+    }
+    const newProjYear = document.getElementById("new-project-year");
+    if (newProjYear) newProjYear.value = year.toString();
+    const editProjYear = document.getElementById("edit-project-year");
+    if (editProjYear) editProjYear.value = year.toString();
+
+    showToast(`✅ เพิ่มปีโครงการ ${year} (พ.ศ. ${year + 543}) เรียบร้อยแล้ว`, "success");
+    return true;
+};
+
+window.deleteYear = async function(year) {
+    const yr = parseInt(year);
+    const usedProjects = Object.values(projectsData || {}).filter(p => p.year === yr);
+    if (usedProjects.length > 0) {
+        showToast(`❌ ไม่สามารถลบได้ — ปี ${yr} มี ${usedProjects.length} โครงการอยู่ในระบบ`, "error");
+        return false;
+    }
+    if ([2024, 2025, 2026].includes(yr)) {
+        showToast(`⚠️ ปี ${yr} เป็นปีเริ่มต้นมาตรฐานของระบบ ไม่สามารถลบได้`, "warning");
+        return false;
+    }
+    if (!confirm(`ยืนยันการลบปี ${yr} (พ.ศ. ${yr + 543}) ออกจากระบบ?`)) return false;
+
+    appState.yearsList = (appState.yearsList || []).filter(y => y !== yr);
+    localStorage.setItem("technical_water_years_list", JSON.stringify(appState.yearsList));
+    window.saveYearsListToSupabase();
+    window.refreshYearsDependencies();
+
+    if (typeof window.renderYearsManagementList === "function") {
+        window.renderYearsManagementList();
+    }
+    if (typeof window.renderProjectSelectionPortal === "function") {
+        window.renderProjectSelectionPortal();
+    }
+    showToast(`🗑️ ลบปี ${yr} เรียบร้อยแล้ว`, "success");
+    return true;
+};
+
+window.saveYearsListToSupabase = async function() {
+    try {
+        const { error } = await supabaseClient.from("projects").upsert({
+            code: "FILE:CUSTOM_YEARS_LIST",
+            data: { years: appState.yearsList },
+            updated_at: new Date().toISOString()
+        });
+        if (error) throw error;
+        console.log("Saved years list to Supabase.");
+    } catch (e) {
+        console.error("Failed to save years list:", e);
+    }
+};
+
+window.openQuickAddYearModal = function() {
+    const modal = document.getElementById("quick-add-year-modal");
+    if (!modal) return;
+    modal.style.display = "flex";
+
+    const allYears = window.getAllProjectYears();
+    const maxYear = allYears.length > 0 ? Math.max(...allYears) : 2026;
+    const nextYear = maxYear + 1;
+
+    const inp = document.getElementById("quick-add-year-input");
+    if (inp) {
+        inp.value = nextYear;
+        inp.focus();
+        inp.select();
+    }
+
+    const sugContainer = document.getElementById("quick-year-suggestions");
+    if (sugContainer) {
+        sugContainer.innerHTML = "";
+        [nextYear, nextYear + 1, nextYear + 2].forEach(y => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className = "btn btn-xs";
+            btn.style.cssText = "background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 20px; padding: 4px 12px; font-weight: 600; cursor: pointer; font-size: 11px; display: inline-flex; align-items: center; gap: 4px;";
+            btn.innerHTML = `<i class="fa-solid fa-plus" style="font-size: 9px;"></i> ปี ${y} (พ.ศ. ${y + 543})`;
+            btn.onclick = () => {
+                if (inp) inp.value = y;
+                window.submitQuickAddYear();
+            };
+            sugContainer.appendChild(btn);
+        });
+    }
+
+    if (typeof window.renderYearsManagementList === "function") {
+        window.renderYearsManagementList();
+    }
+
+    if (inp && !inp._qayListener) {
+        inp._qayListener = true;
+        inp.addEventListener("keydown", function(e) {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                window.submitQuickAddYear();
+            }
+        });
+    }
+};
+
+window.closeQuickAddYearModal = function() {
+    const modal = document.getElementById("quick-add-year-modal");
+    if (modal) modal.style.display = "none";
+};
+
+window.submitQuickAddYear = async function() {
+    const inp = document.getElementById("quick-add-year-input");
+    const val = inp ? inp.value.trim() : "";
+    if (await window.addNewYear(val)) {
+        window.closeQuickAddYearModal();
+    }
+};
+
+window.renderYearsManagementList = function() {
+    const listEl = document.getElementById("quick-add-years-list");
+    if (!listEl) return;
+    listEl.innerHTML = "";
+    const allYears = window.getAllProjectYears();
+    allYears.forEach(y => {
+        const count = Object.values(projectsData || {}).filter(p => p.year === y).length;
+        const isDefault = [2024, 2025, 2026].includes(y);
+        const item = document.createElement("div");
+        item.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: #f8fafc; border: 1px solid var(--border-color); border-radius: 6px; font-size: 12px;";
+        item.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="font-weight: 700; color: var(--navy-dark);"><i class="fa-solid fa-calendar text-blue" style="font-size: 11px;"></i> ปี ${y} (พ.ศ. ${y + 543})</span>
+                <span style="font-size: 10.5px; color: var(--text-muted); background: #ffffff; padding: 1px 6px; border-radius: 10px; border: 1px solid var(--border-color);">${count} โครงการ</span>
+            </div>
+            <div>
+                ${(isDefault || count > 0) 
+                    ? `<span style="font-size: 10px; color: var(--text-muted); font-style: italic;">${isDefault ? 'มาตรฐาน' : 'ใช้งานอยู่'}</span>`
+                    : `<button type="button" class="btn btn-xs" onclick="window.deleteYear(${y})" title="ลบปีนี้" style="padding: 2px 6px; background: #fee2e2; color: #ef4444; border: 1px solid #fca5a5; border-radius: 4px; cursor: pointer; font-size: 10px;"><i class="fa-solid fa-trash-can"></i> ลบ</button>`
+                }
+            </div>
+        `;
+        listEl.appendChild(item);
+    });
 };
 
 // ============================================================
