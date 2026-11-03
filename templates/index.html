@@ -6556,22 +6556,6 @@ try {
     }
 } catch (e) {}
 
-window.populateKpiHospitalsDropdown = function() {
-    const selector = document.getElementById("kpi-filter-hospital");
-    if (!selector) return;
-    const currentVal = selector.value || "all";
-    selector.innerHTML = '<option value="all">ทั้งหมดทุกโรงพยาบาล</option>';
-    
-    (appState.hospitalsList || []).forEach(hosp => {
-        const opt = document.createElement("option");
-        opt.value = hosp;
-        opt.textContent = hosp;
-        selector.appendChild(opt);
-    });
-    
-    selector.value = currentVal;
-};
-
 function populateSubnavHospitals() {
     const selector = document.getElementById("subnav-hospital-selector");
     if (!selector) return;
@@ -6935,8 +6919,10 @@ function renderOverallBarChart(labels, inprogress, finished, completed, pendingA
         console.warn("Chart.js is not loaded.");
         return;
     }
+    const canvas = document.getElementById('overallBarChart');
+    if (!canvas) return;
     try {
-        const ctx = document.getElementById('overallBarChart').getContext('2d');
+        const ctx = canvas.getContext('2d');
         
         if (overallBarChart) {
             overallBarChart.destroy();
@@ -7908,8 +7894,10 @@ function renderOverallDonutChart(inprogress, finished, completed, pendingApprova
         console.warn("Chart.js is not loaded.");
         return;
     }
+    const canvas = document.getElementById('overallDonutChart');
+    if (!canvas) return;
     try {
-        const ctx = document.getElementById('overallDonutChart').getContext('2d');
+        const ctx = canvas.getContext('2d');
         
         if (overallDonutChart) {
             overallDonutChart.destroy();
@@ -10938,8 +10926,10 @@ function renderSubnavCostTab(project) {
         console.warn("Chart.js is not loaded.");
         return;
     }
+    const canvas = document.getElementById('subtabCostStructureDonut');
+    if (!canvas) return;
     try {
-        const ctx = document.getElementById('subtabCostStructureDonut').getContext('2d');
+        const ctx = canvas.getContext('2d');
         if (subtabCostStructureDonut) {
             subtabCostStructureDonut.destroy();
         }
@@ -12782,8 +12772,10 @@ function renderCostStructureDonutChart(structure) {
         console.warn("Chart.js is not loaded.");
         return;
     }
+    const canvas = document.getElementById('costStructureDonut');
+    if (!canvas) return;
     try {
-        const ctx = document.getElementById('costStructureDonut').getContext('2d');
+        const ctx = canvas.getContext('2d');
         
         if (costStructureDonut) {
             costStructureDonut.destroy();
@@ -13293,36 +13285,40 @@ document.addEventListener("DOMContentLoaded", () => {
     const profileBtn = document.getElementById("profile-trigger-btn");
     const profileDropdown = document.getElementById("profile-dropdown");
     
-    profileBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        profileDropdown.classList.toggle("active");
-        document.getElementById("notification-dropdown").classList.remove("active");
-    });
+    if (profileBtn && profileDropdown) {
+        profileBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            profileDropdown.classList.toggle("active");
+            const notifDd = document.getElementById("notification-dropdown");
+            if (notifDd) notifDd.classList.remove("active");
+        });
+    }
 
     // 3. Notification Dropdown Toggle
     const notifBtn = document.getElementById("notification-btn");
     const notifDropdown = document.getElementById("notification-dropdown");
     
-
-    notifBtn.addEventListener("click", (e) => {
-        if (e.target.closest("#notification-dropdown")) {
-            // Clicks inside the dropdown should not toggle the dropdown itself
-            return;
-        }
-        e.stopPropagation();
-        notifDropdown.classList.toggle("active");
-        profileDropdown.classList.remove("active");
-    });
+    if (notifBtn && notifDropdown) {
+        notifBtn.addEventListener("click", (e) => {
+            if (e.target.closest("#notification-dropdown")) {
+                // Clicks inside the dropdown should not toggle the dropdown itself
+                return;
+            }
+            e.stopPropagation();
+            notifDropdown.classList.toggle("active");
+            if (profileDropdown) profileDropdown.classList.remove("active");
+        });
+    }
 
     // Close dropdowns on outside click
     document.addEventListener("click", (e) => {
         const isProfileClick = e.target.closest("#profile-trigger-btn") || e.target.closest("#profile-dropdown");
-        if (!isProfileClick) {
+        if (!isProfileClick && profileDropdown) {
             profileDropdown.classList.remove("active");
         }
         
         const isNotifClick = e.target.closest("#notification-btn") || e.target.closest("#notification-dropdown");
-        if (!isNotifClick) {
+        if (!isNotifClick && notifDropdown) {
             notifDropdown.classList.remove("active");
         }
     });
@@ -20930,9 +20926,23 @@ window.renderYearsManagementList = function() {
 (function initCostSubTables() {
 
     // ── localStorage helpers ──────────────────────────────────
-    function loadPOData()       { return JSON.parse(localStorage.getItem("tw_po_outstanding") || "[]"); }
+    function loadPOData() {
+        try {
+            return JSON.parse(localStorage.getItem("tw_po_outstanding") || "[]");
+        } catch (e) {
+            console.warn("Failed to parse tw_po_outstanding:", e);
+            return [];
+        }
+    }
     function savePOData(d)      { localStorage.setItem("tw_po_outstanding", JSON.stringify(d)); }
-    function loadApprovalData() { return JSON.parse(localStorage.getItem("tw_approval_pending") || "[]"); }
+    function loadApprovalData() {
+        try {
+            return JSON.parse(localStorage.getItem("tw_approval_pending") || "[]");
+        } catch (e) {
+            console.warn("Failed to parse tw_approval_pending:", e);
+            return [];
+        }
+    }
     function saveApprovalData(d){ localStorage.setItem("tw_approval_pending", JSON.stringify(d)); }
 
     // ── Render PO table ───────────────────────────────────────
@@ -21440,7 +21450,14 @@ window.renderYearsManagementList = function() {
 
     // ── Acknowledge notification buttons ──────────────────────
     const acknowledgedKey = "tw_acknowledged_notifs";
-    function getAcknowledged() { return JSON.parse(localStorage.getItem(acknowledgedKey) || "[]"); }
+    function getAcknowledged() {
+        try {
+            return JSON.parse(localStorage.getItem(acknowledgedKey) || "[]");
+        } catch (e) {
+            console.warn("Failed to parse tw_acknowledged_notifs:", e);
+            return [];
+        }
+    }
     function markAcknowledged(id) {
         const ack = getAcknowledged(); if (!ack.includes(id)) ack.push(id);
         localStorage.setItem(acknowledgedKey, JSON.stringify(ack));
