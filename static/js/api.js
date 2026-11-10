@@ -1144,7 +1144,7 @@ const appState = {
     currentCustomerUser: localStorage.getItem("technical_water_current_customer_user") || "user1",
     userPermissions: null, // Loaded below
     customerAccounts: null, // Loaded below
-    signerRolesHistory: ["Chief Engineer", "Supervisor", "Admin"],
+    signerRolesHistory: ["ผู้ส่ง", "ผู้ส่ง (ช่างเทคนิค)", "Chief Engineer", "Supervisor", "Admin", "ตัวแทนลูกค้า (Customer)"],
     signerNamesHistory: []
 };
 
@@ -1189,7 +1189,12 @@ window.initSignerRoleDropdown = function(selectEl, selectedValue) {
         placeholderOpt.selected = !val;
         selectEl.appendChild(placeholderOpt);
 
-        const roles = appState.signerRolesHistory || ["Chief Engineer", "Supervisor", "Admin"];
+        if (!appState.signerRolesHistory || !Array.isArray(appState.signerRolesHistory)) {
+            appState.signerRolesHistory = ["ผู้ส่ง", "ผู้ส่ง (ช่างเทคนิค)", "Chief Engineer", "Supervisor", "Admin", "ตัวแทนลูกค้า (Customer)"];
+        } else if (!appState.signerRolesHistory.includes("ผู้ส่ง")) {
+            appState.signerRolesHistory.unshift("ผู้ส่ง");
+        }
+        const roles = appState.signerRolesHistory;
         roles.forEach(role => {
             const opt = document.createElement("option");
             opt.value = role;
@@ -1839,7 +1844,7 @@ function switchRole(roleName) {
             if (dropdownUserDisplayname) dropdownUserDisplayname.textContent = dispName;
             if (dropdownUserRoleDisplay) dropdownUserRoleDisplay.textContent = "Technician";
 
-            showToast(`สลับบทบาทเป็น: Tech: ${dispName} — ดูอย่างเดียวเฉพาะโครงการที่ได้รับสิทธิ์`, "info");
+            showToast(`สลับบทบาทเป็น: Tech: ${dispName} — เขียน/แก้ไขรายงานรายวัน และเซ็นผู้ส่งได้`, "info");
         }
         if (usernameDisplay) usernameDisplay.textContent = dispName;
         

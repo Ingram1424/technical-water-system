@@ -4979,7 +4979,7 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                                 <div class="section-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
                                     <h2 class="section-title"><i class="fa-solid fa-calendar-day text-blue mr-1"></i> รายงานการปฏิบัติงานรายวัน (Daily Site Report)</h2>
                                     <button class="btn btn-sm btn-outline hide-accounting hide-customer" id="subnav-open-daily-report-modal-btn">
-                                        <i class="fa-solid fa-file-signature"></i> อัปโหลดรายงานรายวัน
+                                        <i class="fa-solid fa-file-signature"></i> เขียน / เพิ่มรายงานรายวัน
                                     </button>
                                 </div>
                                 <!-- Filter Sub-tabs for Daily Report -->
@@ -7112,7 +7112,7 @@ const appState = {
     currentCustomerUser: localStorage.getItem("technical_water_current_customer_user") || "user1",
     userPermissions: null, // Loaded below
     customerAccounts: null, // Loaded below
-    signerRolesHistory: ["Chief Engineer", "Supervisor", "Admin"],
+    signerRolesHistory: ["ผู้ส่ง", "ผู้ส่ง (ช่างเทคนิค)", "Chief Engineer", "Supervisor", "Admin", "ตัวแทนลูกค้า (Customer)"],
     signerNamesHistory: [],
     hospitalsList: [
         "โรงพยาบาลพญาไท 1", "โรงพยาบาลพญาไท 2", "โรงพยาบาลพญาไท 3", "โรงพยาบาลพญาไท นวมินทร์",
@@ -7261,7 +7261,12 @@ window.initSignerRoleDropdown = function(selectEl, selectedValue) {
         placeholderOpt.selected = !val;
         selectEl.appendChild(placeholderOpt);
 
-        const roles = appState.signerRolesHistory || ["Chief Engineer", "Supervisor", "Admin"];
+        if (!appState.signerRolesHistory || !Array.isArray(appState.signerRolesHistory)) {
+            appState.signerRolesHistory = ["ผู้ส่ง", "ผู้ส่ง (ช่างเทคนิค)", "Chief Engineer", "Supervisor", "Admin", "ตัวแทนลูกค้า (Customer)"];
+        } else if (!appState.signerRolesHistory.includes("ผู้ส่ง")) {
+            appState.signerRolesHistory.unshift("ผู้ส่ง");
+        }
+        const roles = appState.signerRolesHistory;
         roles.forEach(role => {
             const opt = document.createElement("option");
             opt.value = role;
@@ -7807,7 +7812,7 @@ function switchRole(roleName) {
         } else {
             roleBadge.innerHTML = `<i class="fa-solid fa-screwdriver-wrench"></i> Tech (${dispName})`;
             roleDisplay.textContent = "Technician View";
-            showToast(`สลับบทบาทเป็น: Tech: ${dispName} — ดูอย่างเดียวเฉพาะโครงการที่ได้รับสิทธิ์`, "info");
+            showToast(`สลับบทบาทเป็น: Tech: ${dispName} — เขียน/แก้ไขรายงานรายวัน และเซ็นผู้ส่งได้`, "info");
         }
         usernameDisplay.textContent = dispName;
 
@@ -12037,14 +12042,16 @@ function renderSubnavDailyReports(project) {
     }
     
     const isPM = (appState.currentRole === "pm" || appState.currentRole === "admin" || appState.currentRole === "pe");
-    const isCustomer = (appState.currentRole === "customer" || appState.currentRole === "technician" || appState.currentRole === "tech");
+    const isTech = (appState.currentRole === "technician" || appState.currentRole === "tech");
+    const canManageDailyReport = isPM || isTech;
+    const isCustomer = (appState.currentRole === "customer");
     
     filteredReports.forEach((rep) => {
         const idx = reports.indexOf(rep);
         const card = document.createElement("div");
         card.className = "feed-item";
         
-        const actionsHTML = isPM 
+        const actionsHTML = canManageDailyReport 
             ? `
                <button class="btn btn-xs btn-outline-blue btn-edit-daily-report" 
                    data-idx="${idx}"
@@ -12073,7 +12080,7 @@ function renderSubnavDailyReports(project) {
                     <button class="btn btn-xs btn-outline-blue btn-customer-sign-report" 
                         data-idx="${idx}"
                         style="font-size: 10.5px; padding: 3px 8px; display: flex; align-items: center; gap: 4px; background: none; border: 1px solid #1d4ed8; color: #1d4ed8; border-radius: 4px; cursor: pointer;">
-                        <i class="fa-solid fa-signature"></i> ลูกค้าเซ็นรับรอง
+                        <i class="fa-solid fa-signature"></i> ${isTech ? 'ช่างเซ็นผู้ส่ง' : 'ลูกค้าเซ็นรับรอง'}
                     </button>
                     
                     <button class="btn btn-xs btn-outline-green daily-report-export-pdf" 
@@ -14833,7 +14840,21 @@ document.addEventListener("DOMContentLoaded", () => {
                     rep.signatures.forEach(sig => {
                         addSignerRow(sig);
                     });
+                } else {
+                    const isTech = (appState.currentRole === "technician" || appState.currentRole === "tech");
+                    const defaultName = (appState.currentRole === "admin") ? "ผู้ดูแลระบบ" : (document.getElementById("username-display")?.textContent?.trim() || "");
+                    addSignerRow({
+                        name: (isTech || appState.currentRole === "pm") ? defaultName : "",
+                        role: "ผู้ส่ง"
+                    });
                 }
+            } else {
+                const isTech = (appState.currentRole === "technician" || appState.currentRole === "tech");
+                const defaultName = (appState.currentRole === "admin") ? "ผู้ดูแลระบบ" : (document.getElementById("username-display")?.textContent?.trim() || "");
+                addSignerRow({
+                    name: (isTech || appState.currentRole === "pm") ? defaultName : "",
+                    role: "ผู้ส่ง"
+                });
             }
         }
         
@@ -15190,10 +15211,18 @@ document.addEventListener("DOMContentLoaded", () => {
         if (customerSignForm) customerSignForm.reset();
         document.getElementById("customer-sign-report-idx").value = reportIdx;
         
+        const isTech = (appState.currentRole === "technician" || appState.currentRole === "tech");
+        const defaultName = (appState.currentRole === "admin") ? "ผู้ดูแลระบบ" : (document.getElementById("username-display")?.textContent?.trim() || "");
+        
+        if (isTech && defaultName) {
+            const nameInput = document.getElementById("customer-sign-name");
+            if (nameInput) nameInput.value = defaultName;
+        }
+
         // Populate signature role dropdown
         const roleSelect = document.getElementById("customer-sign-role");
         if (roleSelect) {
-            window.initSignerRoleDropdown(roleSelect, "");
+            window.initSignerRoleDropdown(roleSelect, isTech ? "ผู้ส่ง" : "");
         }
         
         // Clear signature canvas
@@ -15636,7 +15665,9 @@ document.addEventListener("DOMContentLoaded", () => {
             const sigDataUrl = customerSigCanvas.toDataURL("image/png");
             
             // Generate Supabase storage key
-            const sigKey = `FILE:${projectCode}:DAILY_SIG:${dateVal}:${Date.now()}:customer:${name}`;
+            const isSenderRole = (role === "ผู้ส่ง" || role.includes("ผู้ส่ง") || appState.currentRole === "technician" || appState.currentRole === "tech");
+            const sigKeyType = isSenderRole ? "sender" : "customer";
+            const sigKey = `FILE:${projectCode}:DAILY_SIG:${dateVal}:${Date.now()}:${sigKeyType}:${name}`;
             
             showToast("กำลังส่งลายเซ็นรับรองขึ้นระบบคลาวด์...", "info");
             

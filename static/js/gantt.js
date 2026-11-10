@@ -3115,14 +3115,16 @@ function renderSubnavDailyReports(project) {
     }
     
     const isPM = (appState.currentRole === "pm" || appState.currentRole === "admin" || appState.currentRole === "pe");
-    const isCustomer = (appState.currentRole === "customer" || appState.currentRole === "technician" || appState.currentRole === "tech");
+    const isTech = (appState.currentRole === "technician" || appState.currentRole === "tech");
+    const canManageDailyReport = isPM || isTech;
+    const isCustomer = (appState.currentRole === "customer");
     
     filteredReports.forEach((rep) => {
         const idx = reports.indexOf(rep);
         const card = document.createElement("div");
         card.className = "feed-item";
         
-        const actionsHTML = isPM 
+        const actionsHTML = canManageDailyReport 
             ? `
                <button class="btn btn-xs btn-outline-blue btn-edit-daily-report" 
                    data-idx="${idx}"
@@ -3151,7 +3153,7 @@ function renderSubnavDailyReports(project) {
                     <button class="btn btn-xs btn-outline-blue btn-customer-sign-report" 
                         data-idx="${idx}"
                         style="font-size: 10.5px; padding: 3px 8px; display: flex; align-items: center; gap: 4px; background: none; border: 1px solid #1d4ed8; color: #1d4ed8; border-radius: 4px; cursor: pointer;">
-                        <i class="fa-solid fa-signature"></i> ลูกค้าเซ็นรับรอง
+                        <i class="fa-solid fa-signature"></i> ${isTech ? 'ช่างเซ็นผู้ส่ง' : 'ลูกค้าเซ็นรับรอง'}
                     </button>
                     
                     <button class="btn btn-xs btn-outline-green daily-report-export-pdf" 

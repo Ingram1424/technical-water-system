@@ -1787,7 +1787,21 @@ document.addEventListener("DOMContentLoaded", () => {
                     rep.signatures.forEach(sig => {
                         addSignerRow(sig);
                     });
+                } else {
+                    const isTech = (appState.currentRole === "technician" || appState.currentRole === "tech");
+                    const defaultName = (appState.currentRole === "admin") ? "ผู้ดูแลระบบ" : (document.getElementById("username-display")?.textContent?.trim() || "");
+                    addSignerRow({
+                        name: (isTech || appState.currentRole === "pm") ? defaultName : "",
+                        role: "ผู้ส่ง"
+                    });
                 }
+            } else {
+                const isTech = (appState.currentRole === "technician" || appState.currentRole === "tech");
+                const defaultName = (appState.currentRole === "admin") ? "ผู้ดูแลระบบ" : (document.getElementById("username-display")?.textContent?.trim() || "");
+                addSignerRow({
+                    name: (isTech || appState.currentRole === "pm") ? defaultName : "",
+                    role: "ผู้ส่ง"
+                });
             }
         }
         
@@ -2144,10 +2158,18 @@ document.addEventListener("DOMContentLoaded", () => {
         if (customerSignForm) customerSignForm.reset();
         document.getElementById("customer-sign-report-idx").value = reportIdx;
         
+        const isTech = (appState.currentRole === "technician" || appState.currentRole === "tech");
+        const defaultName = (appState.currentRole === "admin") ? "ผู้ดูแลระบบ" : (document.getElementById("username-display")?.textContent?.trim() || "");
+        
+        if (isTech && defaultName) {
+            const nameInput = document.getElementById("customer-sign-name");
+            if (nameInput) nameInput.value = defaultName;
+        }
+
         // Populate signature role dropdown
         const roleSelect = document.getElementById("customer-sign-role");
         if (roleSelect) {
-            window.initSignerRoleDropdown(roleSelect, "");
+            window.initSignerRoleDropdown(roleSelect, isTech ? "ผู้ส่ง" : "");
         }
         
         // Clear signature canvas
@@ -2589,7 +2611,9 @@ document.addEventListener("DOMContentLoaded", () => {
             const sigDataUrl = customerSigCanvas.toDataURL("image/png");
             
             // Generate Supabase storage key
-            const sigKey = `FILE:${projectCode}:DAILY_SIG:${dateVal}:${Date.now()}:customer:${name}`;
+            const isSenderRole = (role === "ผู้ส่ง" || role.includes("ผู้ส่ง") || appState.currentRole === "technician" || appState.currentRole === "tech");
+            const sigKeyType = isSenderRole ? "sender" : "customer";
+            const sigKey = `FILE:${projectCode}:DAILY_SIG:${dateVal}:${Date.now()}:${sigKeyType}:${name}`;
             
             showToast("กำลังส่งลายเซ็นรับรองขึ้นระบบคลาวด์...", "info");
             
