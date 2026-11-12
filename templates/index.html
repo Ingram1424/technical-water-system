@@ -6051,10 +6051,120 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
 // Load data from localStorage or fallback to default template project
 const defaultProjectsData = {};
 
-// --- SUPABASE CONFIG ---
-const supabaseUrl = 'https://txglgkovojxvazbqxaac.supabase.co';
-const supabaseKey = 'sb_publishable_XYSvmVEwASmhS9RpJMuz9Q_EbCZ8JJe';
-const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+// --- RAILWAY POSTGRESQL CLOUD CLIENT ADAPTER ---
+// Transparent drop-in replacement for Supabase client, routed through FastAPI Railway backend
+function createRailwayClient() {
+    return {
+        auth: {
+            getSession: async () => ({ data: { session: { user: { id: "railway-user" } } } }),
+            signInAnonymously: async () => ({ data: { session: { user: { id: "railway-user" } } }, error: null })
+        },
+        from: (table) => {
+            return {
+                select: (columns = "*") => {
+                    let _code = null;
+                    let _isSingle = false;
+                    
+                    const queryObj = {
+                        eq: (col, val) => {
+                            if (col === "code") _code = val;
+                            return queryObj;
+                        },
+                        not: (col, op, val) => {
+                            return queryObj;
+                        },
+                        single: async () => {
+                            _isSingle = true;
+                            if (_code) {
+                                try {
+                                    const res = await fetch(`/api/db/record/${encodeURIComponent(_code)}`);
+                                    const json = await res.json();
+                                    return { data: json.data, error: json.error ? new Error(json.error) : null };
+                                } catch (e) {
+                                    return { data: null, error: e };
+                                }
+                            }
+                            return { data: null, error: new Error("No code specified") };
+                        },
+                        then: (resolve, reject) => {
+                            const execute = async () => {
+                                try {
+                                    if (_code) {
+                                        const res = await fetch(`/api/db/record/${encodeURIComponent(_code)}`);
+                                        const json = await res.json();
+                                        return { data: json.data ? [json.data] : [], error: json.error ? new Error(json.error) : null };
+                                    } else {
+                                        const res = await fetch('/api/db/projects');
+                                        const json = await res.json();
+                                        return { data: json.data || [], error: json.error ? new Error(json.error) : null };
+                                    }
+                                } catch (e) {
+                                    return { data: null, error: e };
+                                }
+                            };
+                            return execute().then(resolve, reject);
+                        }
+                    };
+                    return queryObj;
+                },
+                upsert: async (payload) => {
+                    try {
+                        const items = Array.isArray(payload) ? payload : [payload];
+                        if (items.length === 1) {
+                            const item = items[0];
+                            const res = await fetch('/api/db/upsert', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ code: item.code, data: item.data })
+                            });
+                            const json = await res.json();
+                            return { data: json, error: json.success ? null : new Error(json.error) };
+                        } else {
+                            const res = await fetch('/api/db/batch_sync', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ items: items.map(it => ({ code: it.code, data: it.data })) })
+                            });
+                            const json = await res.json();
+                            return { data: json, error: json.success ? null : new Error(json.error) };
+                        }
+                    } catch (e) {
+                        return { data: null, error: e };
+                    }
+                },
+                delete: () => {
+                    return {
+                        eq: async (col, val) => {
+                            if (col === "code") {
+                                try {
+                                    const res = await fetch(`/api/db/record/${encodeURIComponent(val)}`, { method: 'DELETE' });
+                                    const json = await res.json();
+                                    return { data: json, error: json.success ? null : new Error(json.error) };
+                                } catch (e) {
+                                    return { data: null, error: e };
+                                }
+                            }
+                            return { data: null, error: null };
+                        },
+                        neq: async () => ({ data: null, error: null }),
+                        in: async (col, vals) => {
+                            if (col === "code" && Array.isArray(vals)) {
+                                for (const v of vals) {
+                                    await fetch(`/api/db/record/${encodeURIComponent(v)}`, { method: 'DELETE' });
+                                }
+                            }
+                            return { data: null, error: null };
+                        },
+                        ilike: async () => ({ data: null, error: null })
+                    };
+                }
+            };
+        }
+    };
+}
+
+// Connect to Railway Database via FastAPI Adapter
+const supabaseClient = createRailwayClient();
 
 // Clean up large cached files in localStorage on startup to free up quota
 try {
@@ -6229,7 +6339,39 @@ async function loadFromSupabase(isManualTrigger = false) {
                 showToast("ซิงค์ข้อมูลสำเร็จ! ข้อมูลโครงการและบัญชีเป็นเวอร์ชันล่าสุดแล้ว", "success");
             }
         } else {
-            console.log("Supabase projects table is empty.");
+            console.log("Railway database is empty. Auto-migrating projects and metadata from localStorage...");
+            try {
+                const migrationItems = [];
+                if (projectsData && typeof projectsData === "object") {
+                    Object.keys(projectsData).forEach(code => {
+                        if (projectsData[code] && !code.startsWith("FILE:") && !code.startsWith("SHARE:")) {
+                            migrationItems.push({ code: code, data: projectsData[code] });
+                        }
+                    });
+                }
+                if (appState.customerAccounts) {
+                    migrationItems.push({ code: "FILE:CUSTOMER_ACCOUNTS_DATA", data: { accounts: appState.customerAccounts, staticUserOverrides: appState.staticUserOverrides || {} } });
+                }
+                if (appState.userPermissions) {
+                    migrationItems.push({ code: "FILE:USER_PERMISSIONS_DATA", data: { permissions: appState.userPermissions } });
+                }
+                if (appState.signerRolesHistory) {
+                    migrationItems.push({ code: "FILE:SIGNER_ROLES_HISTORY", data: { roles: appState.signerRolesHistory } });
+                }
+                if (appState.hospitalsList) {
+                    migrationItems.push({ code: "FILE:CUSTOM_HOSPITALS_LIST", data: { hospitals: appState.hospitalsList } });
+                }
+                if (appState.yearsList) {
+                    migrationItems.push({ code: "FILE:CUSTOM_YEARS_LIST", data: { years: appState.yearsList } });
+                }
+                if (migrationItems.length > 0) {
+                    await supabaseClient.from('projects').upsert(migrationItems);
+                    showToast(`🚀 โอนย้ายข้อมูล ${migrationItems.length} รายการขึ้น Railway PostgreSQL สำเร็จแล้ว!`, "success");
+                    updateCloudSyncStatus("synced");
+                }
+            } catch (migErr) {
+                console.warn("Auto-migration notice:", migErr);
+            }
         }
 
         // Sync signature roles and name history from Supabase
@@ -22088,7 +22230,7 @@ function showDraftBadge(modalId) {
         if (forceSyncBtn || cloudBadge) {
             e.preventDefault();
             if (typeof loadFromSupabase === "function") {
-                showToast("กำลังดึงข้อมูลล่าสุดจาก Supabase Cloud...", "info");
+                showToast("กำลังดึงข้อมูลล่าสุดจาก Railway Cloud...", "info");
                 loadFromSupabase(true);
             }
         }
@@ -22097,7 +22239,7 @@ function showDraftBadge(modalId) {
     const cloudBadgeEl = document.getElementById("cloud-sync-status");
     if (cloudBadgeEl) {
         cloudBadgeEl.style.cursor = "pointer";
-        cloudBadgeEl.title = "คลิกเพื่อซิงค์ข้อมูลล่าสุดจาก Supabase Cloud";
+        cloudBadgeEl.title = "คลิกเพื่อซิงค์ข้อมูลล่าสุดจาก Railway Cloud";
     }
 })();
 

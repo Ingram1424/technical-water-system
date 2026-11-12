@@ -38,10 +38,112 @@ window.formatDateToThaiBE = function(dateStr) {
 // Load data from localStorage or fallback to default template project
 const defaultProjectsData = {};
 
-// --- SUPABASE CONFIG ---
-const supabaseUrl = 'https://txglgkovojxvazbqxaac.supabase.co';
-const supabaseKey = 'sb_publishable_XYSvmVEwASmhS9RpJMuz9Q_EbCZ8JJe';
-const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+// --- RAILWAY POSTGRESQL CLOUD CLIENT ADAPTER ---
+function createRailwayClient() {
+    return {
+        auth: {
+            getSession: async () => ({ data: { session: { user: { id: "railway-user" } } } }),
+            signInAnonymously: async () => ({ data: { session: { user: { id: "railway-user" } } }, error: null })
+        },
+        from: (table) => {
+            return {
+                select: (columns = "*") => {
+                    let _code = null;
+                    const queryObj = {
+                        eq: (col, val) => {
+                            if (col === "code") _code = val;
+                            return queryObj;
+                        },
+                        not: (col, op, val) => queryObj,
+                        single: async () => {
+                            if (_code) {
+                                try {
+                                    const res = await fetch(`/api/db/record/${encodeURIComponent(_code)}`);
+                                    const json = await res.json();
+                                    return { data: json.data, error: json.error ? new Error(json.error) : null };
+                                } catch (e) {
+                                    return { data: null, error: e };
+                                }
+                            }
+                            return { data: null, error: new Error("No code specified") };
+                        },
+                        then: (resolve, reject) => {
+                            const execute = async () => {
+                                try {
+                                    if (_code) {
+                                        const res = await fetch(`/api/db/record/${encodeURIComponent(_code)}`);
+                                        const json = await res.json();
+                                        return { data: json.data ? [json.data] : [], error: json.error ? new Error(json.error) : null };
+                                    } else {
+                                        const res = await fetch('/api/db/projects');
+                                        const json = await res.json();
+                                        return { data: json.data || [], error: json.error ? new Error(json.error) : null };
+                                    }
+                                } catch (e) {
+                                    return { data: null, error: e };
+                                }
+                            };
+                            return execute().then(resolve, reject);
+                        }
+                    };
+                    return queryObj;
+                },
+                upsert: async (payload) => {
+                    try {
+                        const items = Array.isArray(payload) ? payload : [payload];
+                        if (items.length === 1) {
+                            const item = items[0];
+                            const res = await fetch('/api/db/upsert', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ code: item.code, data: item.data })
+                            });
+                            const json = await res.json();
+                            return { data: json, error: json.success ? null : new Error(json.error) };
+                        } else {
+                            const res = await fetch('/api/db/batch_sync', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ items: items.map(it => ({ code: it.code, data: it.data })) })
+                            });
+                            const json = await res.json();
+                            return { data: json, error: json.success ? null : new Error(json.error) };
+                        }
+                    } catch (e) {
+                        return { data: null, error: e };
+                    }
+                },
+                delete: () => {
+                    return {
+                        eq: async (col, val) => {
+                            if (col === "code") {
+                                try {
+                                    const res = await fetch(`/api/db/record/${encodeURIComponent(val)}`, { method: 'DELETE' });
+                                    const json = await res.json();
+                                    return { data: json, error: json.success ? null : new Error(json.error) };
+                                } catch (e) {
+                                    return { data: null, error: e };
+                                }
+                            }
+                            return { data: null, error: null };
+                        },
+                        neq: async () => ({ data: null, error: null }),
+                        in: async (col, vals) => {
+                            if (col === "code" && Array.isArray(vals)) {
+                                for (const v of vals) {
+                                    await fetch(`/api/db/record/${encodeURIComponent(v)}`, { method: 'DELETE' });
+                                }
+                            }
+                            return { data: null, error: null };
+                        },
+                        ilike: async () => ({ data: null, error: null })
+                    };
+                }
+            };
+        }
+    };
+}
+const supabaseClient = createRailwayClient();
 
 // Clean up large cached files in localStorage on startup to free up quota
 try {

@@ -28,6 +28,148 @@ async def index(request: Request):
 
 # Endpoint to serve the logo image at the root path expected by the monolithic template
 from fastapi.responses import FileResponse
+import json
+import logging
+from typing import Optional, Dict, Any, List
+from pydantic import BaseModel
+
+logger = logging.getLogger("railway_db")
+
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql://postgres:TMJZIlYdlvVPojLLfKkPZWbkUEJEhNfS@yamabiko.proxy.rlwy.net:27667/railway"
+)
+
+def get_db_connection():
+    import psycopg
+    return psycopg.connect(DATABASE_URL)
+
+def init_db():
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    CREATE TABLE IF NOT EXISTS projects (
+                        code TEXT PRIMARY KEY,
+                        data JSONB NOT NULL,
+                        updated_at TIMESTAMPTZ DEFAULT NOW()
+                    );
+                """)
+                conn.commit()
+        logger.info("Railway Postgres Database initialized successfully.")
+    except Exception as e:
+        logger.error(f"Failed to initialize database: {e}")
+
+@app.on_event("startup")
+async def startup_event():
+    init_db()
+
+class UpsertPayload(BaseModel):
+    code: str
+    data: Dict[str, Any]
+
+class BatchPayload(BaseModel):
+    items: List[UpsertPayload]
+
+@app.get("/api/db/status")
+async def db_status():
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT count(*) FROM projects;")
+                count = cur.fetchone()[0]
+        return {"status": "connected", "database": "railway_postgres", "project_count": count}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@app.get("/api/db/projects")
+async def get_all_projects():
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("""
+                    SELECT code, data, updated_at FROM projects 
+                    WHERE code NOT LIKE 'FILE:%' AND code NOT LIKE 'SHARE:%'
+                    ORDER BY updated_at DESC;
+                """)
+                rows = cur.fetchall()
+                results = []
+                for row in rows:
+                    results.append({
+                        "code": row[0],
+                        "data": row[1] if isinstance(row[1], dict) else json.loads(row[1]),
+                        "updated_at": row[2].isoformat() if row[2] else None
+                    })
+        return {"data": results, "error": None}
+    except Exception as e:
+        return {"data": None, "error": str(e)}
+
+@app.get("/api/db/record/{code:path}")
+async def get_record(code: str):
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT code, data, updated_at FROM projects WHERE code = %s;", (code,))
+                row = cur.fetchone()
+                if row:
+                    return {
+                        "data": {
+                            "code": row[0],
+                            "data": row[1] if isinstance(row[1], dict) else json.loads(row[1]),
+                            "updated_at": row[2].isoformat() if row[2] else None
+                        },
+                        "error": None
+                    }
+                return {"data": None, "error": "Not found"}
+    except Exception as e:
+        return {"data": None, "error": str(e)}
+
+@app.post("/api/db/upsert")
+async def upsert_record(payload: UpsertPayload):
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                data_json = json.dumps(payload.data)
+                cur.execute("""
+                    INSERT INTO projects (code, data, updated_at)
+                    VALUES (%s, %s::jsonb, NOW())
+                    ON CONFLICT (code) DO UPDATE 
+                    SET data = EXCLUDED.data, updated_at = NOW();
+                """, (payload.code, data_json))
+                conn.commit()
+        return {"success": True, "code": payload.code}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+@app.post("/api/db/batch_sync")
+async def batch_sync(payload: BatchPayload):
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                for item in payload.items:
+                    data_json = json.dumps(item.data)
+                    cur.execute("""
+                        INSERT INTO projects (code, data, updated_at)
+                        VALUES (%s, %s::jsonb, NOW())
+                        ON CONFLICT (code) DO UPDATE 
+                        SET data = EXCLUDED.data, updated_at = NOW();
+                    """, (item.code, data_json))
+                conn.commit()
+        return {"success": True, "count": len(payload.items)}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+@app.delete("/api/db/record/{code:path}")
+async def delete_record(code: str):
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("DELETE FROM projects WHERE code = %s;", (code,))
+                conn.commit()
+        return {"success": True}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
 @app.get("/logo.png")
 async def get_logo():
     logo_path = os.path.join(static_dir, "logo.png")
