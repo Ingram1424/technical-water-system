@@ -40,6 +40,13 @@ const defaultProjectsData = {};
 
 // --- RAILWAY POSTGRESQL CLOUD CLIENT ADAPTER ---
 function createRailwayClient() {
+    function getAuthHeaders(extra = {}) {
+        const h = { ...extra };
+        const token = localStorage.getItem("tw_token");
+        if (token) h["Authorization"] = "Bearer " + token;
+        return h;
+    }
+
     return {
         auth: {
             getSession: async () => ({ data: { session: { user: { id: "railway-user" } } } }),
@@ -58,7 +65,7 @@ function createRailwayClient() {
                         single: async () => {
                             if (_code) {
                                 try {
-                                    const res = await fetch(`/api/db/record/${encodeURIComponent(_code)}`);
+                                    const res = await fetch(`/api/db/record/${encodeURIComponent(_code)}`, { headers: getAuthHeaders() });
                                     const json = await res.json();
                                     return { data: json.data, error: json.error ? new Error(json.error) : null };
                                 } catch (e) {
@@ -71,11 +78,11 @@ function createRailwayClient() {
                             const execute = async () => {
                                 try {
                                     if (_code) {
-                                        const res = await fetch(`/api/db/record/${encodeURIComponent(_code)}`);
+                                        const res = await fetch(`/api/db/record/${encodeURIComponent(_code)}`, { headers: getAuthHeaders() });
                                         const json = await res.json();
                                         return { data: json.data ? [json.data] : [], error: json.error ? new Error(json.error) : null };
                                     } else {
-                                        const res = await fetch('/api/db/projects');
+                                        const res = await fetch('/api/db/projects', { headers: getAuthHeaders() });
                                         const json = await res.json();
                                         return { data: json.data || [], error: json.error ? new Error(json.error) : null };
                                     }
@@ -95,7 +102,7 @@ function createRailwayClient() {
                             const item = items[0];
                             const res = await fetch('/api/db/upsert', {
                                 method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
+                                headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
                                 body: JSON.stringify({ code: item.code, data: item.data })
                             });
                             const json = await res.json();
@@ -103,7 +110,7 @@ function createRailwayClient() {
                         } else {
                             const res = await fetch('/api/db/batch_sync', {
                                 method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
+                                headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
                                 body: JSON.stringify({ items: items.map(it => ({ code: it.code, data: it.data })) })
                             });
                             const json = await res.json();
@@ -118,7 +125,7 @@ function createRailwayClient() {
                         eq: async (col, val) => {
                             if (col === "code") {
                                 try {
-                                    const res = await fetch(`/api/db/record/${encodeURIComponent(val)}`, { method: 'DELETE' });
+                                    const res = await fetch(`/api/db/record/${encodeURIComponent(val)}`, { method: 'DELETE', headers: getAuthHeaders() });
                                     const json = await res.json();
                                     return { data: json, error: json.success ? null : new Error(json.error) };
                                 } catch (e) {

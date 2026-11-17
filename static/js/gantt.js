@@ -836,7 +836,7 @@ function updateScurveTotals(project) {
     }
 
     // Add manually editable cumulative plan progress row
-    const canEditPlan = (appState.currentRole === "pm" || appState.currentRole === "admin" || appState.currentRole === "pe") && appState.selectedDetailProject !== "all";
+    const canEditPlan = (appState.currentRole === "pm" || appState.currentRole === "admin") && appState.selectedDetailProject !== "all";
     const planReadonlyAttr = canEditPlan ? '' : 'readonly';
     const planEditInputStyle = `style="width: 100%; font-size: 10px; text-align: center; padding: 3px 2px; border: 1px solid var(--border-color); border-radius: 4px; background: #fff; color: #1e40af; font-weight: bold;"`;
     const planInputStyle = `style="width: 100%; font-size: 10px; text-align: center; padding: 3px 2px; border: 1px solid transparent; background: transparent; color: #1e40af; font-weight: bold;"`;

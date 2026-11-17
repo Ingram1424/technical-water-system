@@ -5550,6 +5550,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const openEditProjectBtn = document.getElementById("open-edit-project-btn");
 
     const openEditProjectModal = () => {
+        if (appState.currentRole === "pe" || appState.currentRole === "technician" || appState.currentRole === "tech" || appState.currentRole === "accounting" || appState.currentRole === "customer") {
+            showToast("คุณไม่มีสิทธิ์แก้ไขหรือลบโครงการ", "warning");
+            return;
+        }
         const code = appState.selectedDetailProject;
         if (!code || code === "all") {
             showToast("กรุณาเลือกรายการเฉพาะเจาะจงก่อนแก้ไข", "warning");

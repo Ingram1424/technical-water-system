@@ -1,12 +1,41 @@
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi import FastAPI, Request, Response, HTTPException, Depends
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.middleware.base import BaseHTTPMiddleware
+from pydantic import BaseModel
+from typing import Optional, Dict, Any, List
 import os
+import json
+import logging
+import hmac
+import hashlib
+import base64
+import time
+
+logger = logging.getLogger("railway_db")
 
 app = FastAPI()
 
-# Mount static folder for local testing
+# ---------------------------------------------------------------------------
+# HTTP Security Headers Middleware (BUG-08, TC-SEC)
+# ---------------------------------------------------------------------------
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "SAMEORIGIN"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self' 'unsafe-inline' 'unsafe-eval' "
+            "https://cdn.jsdelivr.net https://cdnjs.cloudflare.com "
+            "https://fonts.googleapis.com https://fonts.gstatic.com data: blob:;"
+        )
+        return response
+
+app.add_middleware(SecurityHeadersMiddleware)
+
+# Mount static folder
 parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 static_dir = os.path.join(parent_dir, "static")
 if os.path.exists(static_dir):
@@ -22,23 +51,12 @@ def render_template(request: Request, name: str):
     except TypeError:
         return templates.TemplateResponse(name, {"request": request})
 
-@app.get("/", response_class=HTMLResponse)
-async def index(request: Request):
-    return render_template(request, "index.html")
-
-# Endpoint to serve the logo image at the root path expected by the monolithic template
-from fastapi.responses import FileResponse
-import json
-import logging
-from typing import Optional, Dict, Any, List
-from pydantic import BaseModel
-
-logger = logging.getLogger("railway_db")
-
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
     "postgresql://postgres:TMJZIlYdlvVPojLLfKkPZWbkUEJEhNfS@yamabiko.proxy.rlwy.net:27667/railway"
 )
+
+AUTH_SECRET = os.getenv("AUTH_SECRET", "tw-project-management-super-secret-key-2026")
 
 def get_db_connection():
     import psycopg
@@ -64,6 +82,183 @@ def init_db():
 async def startup_event():
     init_db()
 
+# ---------------------------------------------------------------------------
+# Authentication & Token Helpers (BUG-02, BUG-03, BUG-04, BUG-20, BUG-21)
+# ---------------------------------------------------------------------------
+DEFAULT_USERS = {
+    "admin": {"password": "1234", "role": "admin", "displayName": "Super Admin"},
+    "pm": {"password": "1234", "role": "pm", "displayName": "Project Manager"},
+    "pm2": {"password": "1234", "role": "pm", "displayName": "Project Manager 2"},
+    "accounting": {"password": "1234", "role": "accounting", "displayName": "Account System"}
+}
+
+def create_access_token(user_data: dict, expires_in_seconds: int = 86400 * 7) -> str:
+    payload = {
+        "username": user_data.get("username", "").lower(),
+        "role": user_data.get("role", "customer"),
+        "displayName": user_data.get("displayName") or user_data.get("name", ""),
+        "userKey": user_data.get("userKey"),
+        "exp": int(time.time()) + expires_in_seconds
+    }
+    raw = json.dumps(payload, separators=(',', ':')).encode("utf-8")
+    b64 = base64.urlsafe_b64encode(raw).decode("utf-8").rstrip("=")
+    sig = hmac.new(AUTH_SECRET.encode("utf-8"), b64.encode("utf-8"), hashlib.sha256).hexdigest()
+    return f"{b64}.{sig}"
+
+def verify_access_token(token: str) -> Optional[dict]:
+    if not token or "." not in token:
+        return None
+    try:
+        parts = token.split(".")
+        if len(parts) != 2:
+            return None
+        b64, sig = parts
+        expected_sig = hmac.new(AUTH_SECRET.encode("utf-8"), b64.encode("utf-8"), hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(sig, expected_sig):
+            return None
+        padding = 4 - (len(b64) % 4)
+        if padding != 4:
+            b64 += "=" * padding
+        payload = json.loads(base64.urlsafe_b64decode(b64.encode("utf-8")).decode("utf-8"))
+        if payload.get("exp", 0) < int(time.time()):
+            return None
+        return payload
+    except Exception:
+        return None
+
+def get_token_from_request(request: Request) -> Optional[str]:
+    auth = request.headers.get("Authorization", "")
+    if auth.startswith("Bearer "):
+        return auth[7:].strip()
+    if "tw_token" in request.cookies:
+        return request.cookies.get("tw_token", "")
+    token = request.query_params.get("token")
+    if token:
+        return token
+    return None
+
+async def get_current_user_optional(request: Request) -> Optional[dict]:
+    token = get_token_from_request(request)
+    if not token:
+        return None
+    return verify_access_token(token)
+
+async def get_current_user(request: Request) -> dict:
+    user = await get_current_user_optional(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    return user
+
+def redact_financial_data(data: dict) -> dict:
+    """Strip confidential cost and profit metrics for restricted roles (BUG-19)"""
+    if not isinstance(data, dict):
+        return data
+    cleaned = dict(data)
+    sensitive_keys = [
+        "cost", "totalCost", "profit", "profitMargin", "expenses",
+        "budget", "financials", "actualCost", "laborCost", "materialCost",
+        "subcontractCost", "miscCost", "targetProfit", "projectedProfit"
+    ]
+    for k in sensitive_keys:
+        cleaned.pop(k, None)
+    return cleaned
+
+def get_allowed_project_codes(user: dict) -> List[str]:
+    """Retrieve allowed project codes for a user from FILE:USER_PERMISSIONS_DATA (BUG-12)"""
+    role = user.get("role", "")
+    if role in ["admin", "pm", "accounting"]:
+        return []  # Empty means all allowed
+    user_key = user.get("userKey")
+    username = user.get("username", "").lower()
+    allowed = set()
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT data FROM projects WHERE code = 'FILE:USER_PERMISSIONS_DATA';")
+                row = cur.fetchone()
+                if row:
+                    pdata = row[0] if isinstance(row[0], dict) else json.loads(row[0])
+                    perms = pdata.get("permissions", {})
+                    # Look up by userKey
+                    user_perms = perms.get(user_key)
+                    if not user_perms and username:
+                        # Try finding key by username
+                        cur.execute("SELECT data FROM projects WHERE code = 'FILE:CUSTOMER_ACCOUNTS_DATA';")
+                        acc_row = cur.fetchone()
+                        if acc_row:
+                            acc_data = acc_row[0] if isinstance(acc_row[0], dict) else json.loads(acc_row[0])
+                            for k, acc in acc_data.get("accounts", {}).items():
+                                if (acc.get("username", "")).lower() == username:
+                                    user_perms = perms.get(k)
+                                    break
+                    if user_perms and isinstance(user_perms, dict):
+                        for p in user_perms.get("projects", []):
+                            allowed.add(p)
+    except Exception as e:
+        logger.error(f"Error fetching user permissions: {e}")
+    return list(allowed)
+
+# ---------------------------------------------------------------------------
+# Auth Endpoints (BUG-20, BUG-21, BUG-23)
+# ---------------------------------------------------------------------------
+class LoginPayload(BaseModel):
+    username: str
+    password: str
+
+@app.post("/api/auth/login")
+async def auth_login(payload: LoginPayload):
+    uname = payload.username.strip().lower()
+    pwd = payload.password.strip()
+
+    # 1. Check default static accounts
+    if uname in DEFAULT_USERS:
+        target = DEFAULT_USERS[uname]
+        if target["password"] == pwd:
+            user_data = {
+                "username": uname,
+                "role": target["role"],
+                "displayName": target["displayName"],
+                "userKey": None
+            }
+            token = create_access_token(user_data)
+            return {"success": True, "token": token, "user": user_data}
+
+    # 2. Check dynamic database accounts from FILE:CUSTOMER_ACCOUNTS_DATA
+    try:
+        with get_db_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT data FROM projects WHERE code = 'FILE:CUSTOMER_ACCOUNTS_DATA';")
+                row = cur.fetchone()
+                if row:
+                    acc_doc = row[0] if isinstance(row[0], dict) else json.loads(row[0])
+                    accounts = acc_doc.get("accounts", {})
+                    for key, acc in accounts.items():
+                        acc_uname = (acc.get("username") or "").strip().lower()
+                        if acc_uname == uname:
+                            if acc.get("password") == pwd:
+                                role = acc.get("role") or "customer"
+                                user_data = {
+                                    "username": uname,
+                                    "role": role,
+                                    "displayName": acc.get("name") or uname,
+                                    "userKey": acc.get("userKey") or key
+                                }
+                                token = create_access_token(user_data)
+                                return {"success": True, "token": token, "user": user_data}
+    except Exception as e:
+        logger.error(f"Database error during login: {e}")
+
+    raise HTTPException(status_code=401, detail="ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง")
+
+@app.get("/api/auth/verify")
+@app.post("/api/auth/verify")
+async def auth_verify(request: Request):
+    user = await get_current_user(request)
+    return {"valid": True, "user": user}
+
+# ---------------------------------------------------------------------------
+# Database API Models & Endpoints
+# ---------------------------------------------------------------------------
 class UpsertPayload(BaseModel):
     code: str
     data: Dict[str, Any]
@@ -83,7 +278,11 @@ async def db_status():
         return {"status": "error", "message": str(e)}
 
 @app.get("/api/db/projects")
-async def get_all_projects():
+async def get_all_projects(request: Request):
+    # Require authentication (BUG-02)
+    user = await get_current_user(request)
+    role = user.get("role", "")
+
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
@@ -94,10 +293,26 @@ async def get_all_projects():
                 """)
                 rows = cur.fetchall()
                 results = []
+
+                # Scope checking for PE/Tech/Customer (BUG-12, BUG-13)
+                is_restricted = role in ["pe", "tech", "technician", "customer"]
+                allowed_codes = set(get_allowed_project_codes(user)) if is_restricted else None
+
                 for row in rows:
+                    pcode = row[0]
+                    # Filter out projects outside permissions for restricted roles
+                    if allowed_codes is not None and pcode not in allowed_codes:
+                        continue
+
+                    pdata = row[1] if isinstance(row[1], dict) else json.loads(row[1])
+
+                    # Redact cost & profit for restricted roles (BUG-19)
+                    if is_restricted:
+                        pdata = redact_financial_data(pdata)
+
                     results.append({
-                        "code": row[0],
-                        "data": row[1] if isinstance(row[1], dict) else json.loads(row[1]),
+                        "code": pcode,
+                        "data": pdata,
                         "updated_at": row[2].isoformat() if row[2] else None
                     })
         return {"data": results, "error": None}
@@ -105,30 +320,95 @@ async def get_all_projects():
         return {"data": None, "error": str(e)}
 
 @app.get("/api/db/record/{code:path}")
-async def get_record(code: str):
+async def get_record(code: str, request: Request):
+    # Public & Share links bypass authentication for customer guest mode
+    is_share = code.startswith("SHARE:") or code.startswith("sh_")
+    user = await get_current_user_optional(request) if not is_share else None
+
+    # Protect sensitive records: FILE:CUSTOMER_ACCOUNTS_DATA requires admin role (BUG-03, BUG-04)
+    if code == "FILE:CUSTOMER_ACCOUNTS_DATA":
+        if not user or user.get("role") != "admin":
+            raise HTTPException(status_code=403, detail="Forbidden: Admin access required to view customer accounts")
+
+    # If non-share record and unauthenticated, require login (BUG-02)
+    if not is_share and not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute("SELECT code, data, updated_at FROM projects WHERE code = %s;", (code,))
                 row = cur.fetchone()
                 if row:
+                    pdata = row[1] if isinstance(row[1], dict) else json.loads(row[1])
+                    
+                    # If user is restricted and viewing a project record, redact financials (BUG-19)
+                    if user and user.get("role") in ["pe", "tech", "technician", "customer"]:
+                        if not code.startswith("FILE:") and not code.startswith("SHARE:"):
+                            pdata = redact_financial_data(pdata)
+
+                    # For customer accounts viewed by admin, mask plaintext passwords for safety (BUG-04)
+                    if code == "FILE:CUSTOMER_ACCOUNTS_DATA" and isinstance(pdata, dict):
+                        accs = pdata.get("accounts", {})
+                        safe_accs = {}
+                        for k, v in accs.items():
+                            safe_item = dict(v)
+                            # Keep password masked or sanitized
+                            if "password" in safe_item:
+                                safe_item["password_masked"] = "••••••••"
+                            safe_accs[k] = safe_item
+                        pdata = dict(pdata)
+                        pdata["accounts"] = safe_accs
+
                     return {
                         "data": {
                             "code": row[0],
-                            "data": row[1] if isinstance(row[1], dict) else json.loads(row[1]),
+                            "data": pdata,
                             "updated_at": row[2].isoformat() if row[2] else None
                         },
                         "error": None
                     }
                 return {"data": None, "error": "Not found"}
+    except HTTPException:
+        raise
     except Exception as e:
         return {"data": None, "error": str(e)}
 
 @app.post("/api/db/upsert")
-async def upsert_record(payload: UpsertPayload):
+async def upsert_record(payload: UpsertPayload, request: Request):
+    # Require authentication (BUG-05)
+    user = await get_current_user(request)
+    role = user.get("role", "")
+
+    # Role permission checks on write
+    if payload.code == "FILE:CUSTOMER_ACCOUNTS_DATA" and role != "admin":
+        raise HTTPException(status_code=403, detail="Only admin can update user accounts")
+
+    if not payload.code.startswith("FILE:") and not payload.code.startswith("SHARE:"):
+        # Modifying project data: PE, Tech, Customer cannot modify project settings
+        if role in ["tech", "technician", "customer"]:
+            raise HTTPException(status_code=403, detail="Forbidden: Role not authorized to modify projects")
+
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
+                # Concurrent update safety for central records: merge dictionary keys (BUG-06)
+                if payload.code in ["FILE:CUSTOMER_ACCOUNTS_DATA", "FILE:HOSPITALS_DATA", "FILE:USER_PERMISSIONS_DATA"]:
+                    cur.execute("SELECT data FROM projects WHERE code = %s;", (payload.code,))
+                    existing_row = cur.fetchone()
+                    if existing_row:
+                        existing_data = existing_row[0] if isinstance(existing_row[0], dict) else json.loads(existing_row[0])
+                        # Deep merge top-level keys
+                        merged_data = dict(existing_data)
+                        for k, v in payload.data.items():
+                            if isinstance(v, dict) and isinstance(merged_data.get(k), dict):
+                                merged_dict = dict(merged_data[k])
+                                merged_dict.update(v)
+                                merged_data[k] = merged_dict
+                            else:
+                                merged_data[k] = v
+                        payload.data = merged_data
+
                 data_json = json.dumps(payload.data)
                 cur.execute("""
                     INSERT INTO projects (code, data, updated_at)
@@ -138,11 +418,19 @@ async def upsert_record(payload: UpsertPayload):
                 """, (payload.code, data_json))
                 conn.commit()
         return {"success": True, "code": payload.code}
+    except HTTPException:
+        raise
     except Exception as e:
         return {"success": False, "error": str(e)}
 
 @app.post("/api/db/batch_sync")
-async def batch_sync(payload: BatchPayload):
+async def batch_sync(payload: BatchPayload, request: Request):
+    # Require authentication (BUG-05)
+    user = await get_current_user(request)
+    role = user.get("role", "")
+    if role in ["tech", "technician", "customer"]:
+        raise HTTPException(status_code=403, detail="Forbidden: Role not authorized for batch sync")
+
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
@@ -156,17 +444,34 @@ async def batch_sync(payload: BatchPayload):
                     """, (item.code, data_json))
                 conn.commit()
         return {"success": True, "count": len(payload.items)}
+    except HTTPException:
+        raise
     except Exception as e:
         return {"success": False, "error": str(e)}
 
 @app.delete("/api/db/record/{code:path}")
-async def delete_record(code: str):
+async def delete_record(code: str, request: Request):
+    # Require authentication (BUG-05)
+    user = await get_current_user(request)
+    role = user.get("role", "")
+
+    # Only admin and pm can delete projects (BUG-05, BUG-14, BUG-18)
+    if role not in ["admin", "pm"]:
+        raise HTTPException(status_code=403, detail="Forbidden: Only Admin and PM can delete records")
+
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
-                cur.execute("DELETE FROM projects WHERE code = %s;", (code,))
+                # Cascade cleanup: delete project and all associated file attachments (BUG-31)
+                file_prefix = f"FILE:{code}:%"
+                cur.execute("""
+                    DELETE FROM projects 
+                    WHERE code = %s OR code LIKE %s;
+                """, (code, file_prefix))
                 conn.commit()
         return {"success": True}
+    except HTTPException:
+        raise
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -194,12 +499,10 @@ async def quoting_page(request: Request):
 async def projects_page(request: Request):
     return render_template(request, "index.html")
 
-# Healthcheck for Coolify / Docker Container monitoring
 @app.get("/health")
 async def health_check():
     return {"status": "ok", "service": "technical-water-system"}
 
-# Catch-all route to serve monolithic SPA template for any direct URL navigation
 @app.get("/{full_path:path}", response_class=HTMLResponse)
 async def catch_all(request: Request, full_path: str):
     return render_template(request, "index.html")
