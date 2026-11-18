@@ -3290,7 +3290,69 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
     margin-top: 1px;
 }
 
-
+/* ==========================================================================
+   MOBILE & TABLET RESPONSIVE FIXES (BUG-32)
+   Ensure Dashboard filter, progress, and financial columns stack into 1 column
+   ========================================================================== */
+@media (max-width: 768px) {
+    #dashboard-view {
+        width: 100% !important;
+        max-width: 100vw !important;
+        overflow-x: hidden !important;
+        box-sizing: border-box !important;
+    }
+    .analytics-grid {
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        gap: 16px !important;
+    }
+    .chart-container-card,
+    .chart-container-card.span-1,
+    .chart-container-card.span-2,
+    .chart-container-card.span-3,
+    .chart-container-card.span-4 {
+        width: 100% !important;
+        max-width: 100% !important;
+        grid-column: 1 !important;
+        box-sizing: border-box !important;
+    }
+    .dashboard-kpi-grid,
+    .role-pe .dashboard-kpi-grid,
+    body.role-pm .dashboard-kpi-grid,
+    body.role-admin .dashboard-kpi-grid,
+    body.role-accounting .dashboard-kpi-grid,
+    body .dashboard-kpi-grid {
+        display: flex !important;
+        flex-direction: column !important;
+        grid-template-columns: 1fr !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        gap: 20px !important;
+        box-sizing: border-box !important;
+    }
+    .dashboard-kpi-grid > div {
+        width: 100% !important;
+        max-width: 100% !important;
+        padding-right: 0 !important;
+        border-right: none !important;
+        border-bottom: 1px solid var(--border-color) !important;
+        padding-bottom: 16px !important;
+        box-sizing: border-box !important;
+    }
+    .dashboard-kpi-grid > div:last-child {
+        border-bottom: none !important;
+        padding-bottom: 0 !important;
+    }
+    .financial-summary-widget .fin-row {
+        flex-wrap: wrap !important;
+    }
+    .financial-summary-widget .fin-box {
+        flex: 1 1 120px !important;
+        min-width: 0 !important;
+    }
+}
 
 </style>
 </head>
@@ -3486,7 +3548,7 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                     </nav>
                 </div>
                 
-                <a href="#" class="nav-item hide-customer hide-pm hide-pe hide-technician" data-view="cost">
+                <a href="#" class="nav-item hide-customer hide-pe hide-technician hide-tech" data-view="cost">
                     <i class="fa-solid fa-hand-holding-dollar"></i>
                     <div class="nav-label">
                         <span class="main-label">Cost Management</span>
@@ -6345,6 +6407,7 @@ async function loadFromSupabase(isManualTrigger = false) {
                     if (row.data) {
                         row.data.code = row.code; // Force inner code to match database key
                         row.data.isSynced = true; // Mark as synced since it came from Supabase
+                        row.data._lastSyncedAt = row.updated_at || new Date().toISOString();
                     }
                     remoteData[row.code] = row.data;
                 }
@@ -6527,16 +6590,21 @@ async function syncProjectToSupabase(code) {
         // Conflict check (BUG-09): Verify server record is not newer
         try {
             const { data: serverRecord } = await supabaseClient.from('projects').select('updated_at').eq('code', code).single();
-            if (serverRecord && serverRecord.updated_at && localProj._lastSyncedAt) {
+            if (serverRecord && serverRecord.updated_at && localProj && localProj._lastSyncedAt) {
                 const serverTime = new Date(serverRecord.updated_at).getTime();
                 const localSyncedTime = new Date(localProj._lastSyncedAt).getTime();
                 if (serverTime > localSyncedTime + 3000) {
                     console.warn(`Conflict detected for ${code}: server record updated at ${serverRecord.updated_at}`);
                     showToast(`⚠️ โครงการ ${code} ถูกแก้ไขบนเซิร์ฟเวอร์โดยผู้ใช้อื่น กรุณากดซิงค์ข้อมูลล่าสุด`, "warning");
-                    return;
+                    updateCloudSyncStatus("error");
+                    throw new Error(`Conflict detected for ${code}: Server has newer updates`);
                 }
             }
-        } catch (conflictErr) {}
+        } catch (conflictErr) {
+            if (conflictErr.message && conflictErr.message.includes("Conflict detected")) {
+                throw conflictErr;
+            }
+        }
 
         const nowIso = new Date().toISOString();
         const { error } = await supabaseClient.from('projects').upsert({
@@ -7529,12 +7597,8 @@ window.initSignerRoleDropdown = function(selectEl, selectedValue) {
     });
 };
 
-// Define default customer user accounts with Username & Password
-const defaultCustomerAccounts = {
-    user1: { name: "Customer 1 : BKK Hospital Representative", username: "cust_bkk", password: "BkkPass2026", userKey: "user1" },
-    user2: { name: "Customer 2 : Paolo Representative", username: "cust_paolo", password: "PaoloPass2026", userKey: "user2" },
-    user3: { name: "Customer 3 : Phyathai Representative", username: "cust_phyathai", password: "PhyathaiPass2026", userKey: "user3" }
-};
+// Define default customer user accounts
+const defaultCustomerAccounts = {};
 
 try {
     const rawAcc = localStorage.getItem("technical_water_customer_accounts");
@@ -7835,7 +7899,7 @@ function showToast(message, type = "success") {
     
     toast.innerHTML = `
         <i class="fa-solid ${icon} toast-icon"></i>
-        <span class="toast-message">${message}</span>
+        <span class="toast-message">${window.escapeHtml ? window.escapeHtml(message) : message}</span>
     `;
     
     container.appendChild(toast);
@@ -7872,7 +7936,7 @@ function switchView(viewName) {
         showToast("คุณไม่มีสิทธิ์เข้าถึงหน้านี้", "warning");
         viewName = "projects-list";
     }
-    if (appState.currentRole === "pm" && (viewName === "cost" || viewName === "permissions-mgmt")) {
+    if (appState.currentRole === "pm" && viewName === "permissions-mgmt") {
         showToast("คุณไม่มีสิทธิ์เข้าถึงหน้านี้ (จำกัดเฉพาะ Admin เท่านั้น)", "warning");
         viewName = "projects-list";
     }
@@ -8278,16 +8342,16 @@ function renderHospitalsGrid(activeProjects) {
                 const statusBadgeHTML = getStatusBadgeHTML(p.status);
 
                 projectsHTML += `
-                    <div class="project-group-item" data-code="${p.code}" data-hospital="${hospital}" style="padding: 14px; border: 1.5px solid #cbd5e1; border-radius: var(--radius-md); background: var(--bg-white); cursor: pointer; transition: all 0.2s ease; display: flex; flex-direction: column; gap: 10px; box-shadow: var(--shadow-sm);">
+                    <div class="project-group-item" data-code="${window.escapeHtml(p.code)}" data-hospital="${window.escapeHtml(hospital)}" style="padding: 14px; border: 1.5px solid #cbd5e1; border-radius: var(--radius-md); background: var(--bg-white); cursor: pointer; transition: all 0.2s ease; display: flex; flex-direction: column; gap: 10px; box-shadow: var(--shadow-sm);">
                         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
                                 <span style="font-weight: 800; font-size: 13px; color: var(--primary-blue); display: inline-flex; align-items: center; gap: 6px;">
-                                    ${p.code}
+                                    ${window.escapeHtml(p.code)}
                                     <span style="font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: #e0f2fe; color: #0369a1;">ปี ${p.year}</span>
                                 </span>
                                 ${statusBadgeHTML}
                                 <span style="font-size: 11px; font-weight: 600; color: #475569; display: inline-flex; align-items: center; gap: 4px; background: #f8fafc; padding: 3px 9px; border-radius: 6px; border: 1px solid #cbd5e1;">
-                                    <i class="fa-solid fa-calendar-day text-blue"></i> วันที่ออก PO: ${poDateStr}
+                                    <i class="fa-solid fa-calendar-day text-blue"></i> วันที่ออก PO: ${window.escapeHtml(poDateStr)}
                                 </span>
                             </div>
                             <span style="font-size: 11.5px; font-weight: 800; color: var(--color-inprogress); background: #f0fdf4; padding: 3px 8px; border-radius: 6px; border: 1px solid #bbf7d0;">
@@ -8296,7 +8360,7 @@ function renderHospitalsGrid(activeProjects) {
                         </div>
                         
                         <div style="font-size: 13px; font-weight: 700; color: var(--navy-dark); line-height: 1.4;">
-                            ${p.name}
+                            ${window.escapeHtml(p.name)}
                         </div>
                         
                         <!-- Cost & Financials breakdown for this project -->
@@ -8314,7 +8378,7 @@ function renderHospitalsGrid(activeProjects) {
                 <!-- 1. Top Header: Hospital Name on Top-Left -->
                 <div class="hospital-card-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
                     <div style="display: flex; align-items: center; gap: 10px;">
-                        <h4 style="font-size: 16px; font-weight: 700; color: var(--navy-dark); margin: 0; line-height: 1;">${hospital}</h4>
+                        <h4 style="font-size: 16px; font-weight: 700; color: var(--navy-dark); margin: 0; line-height: 1;">${window.escapeHtml(hospital)}</h4>
                         <span style="background: #e0f2fe; color: #0369a1; font-size: 10.5px; font-weight: 700; padding: 2px 8px; border-radius: 4px;">
                             ${hospitalProjects.length} โครงการดำเนินการ
                         </span>
@@ -8396,7 +8460,7 @@ function renderHospitalsGrid(activeProjects) {
                 <!-- 1. Top Header: Hospital Name on Top-Left -->
                 <div class="hospital-card-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; margin-bottom: 16px;">
                     <div style="display: flex; align-items: center; gap: 10px;">
-                        <h4 style="font-size: 15px; font-weight: 700; color: var(--text-muted); margin: 0; line-height: 1;">${hospital}</h4>
+                        <h4 style="font-size: 15px; font-weight: 700; color: var(--text-muted); margin: 0; line-height: 1;">${window.escapeHtml(hospital)}</h4>
                         <span style="font-size: 9px; padding: 2px 6px; background-color: #e2e8f0; color: #64748b; border-radius: 4px; font-weight: 600;">ไม่มีโครงการดำเนินการ</span>
                     </div>
                 </div>
@@ -12918,22 +12982,26 @@ function renderCostManagement() {
     }
 
     // A. Bind Financial summary
-    const pct = project.value > 0 ? ((project.profit / project.value) * 100).toFixed(2) : "0.00";
+    const pVal = project.value || 0;
+    const pProfit = project.profit || 0;
+    const pCost = project.cost || 0;
+    const pct = pVal > 0 ? ((pProfit / pVal) * 100).toFixed(2) : "0.00";
     
-    document.getElementById("cost-v-value").textContent = formatNumber(project.value);
-    document.getElementById("cost-v-cost").textContent = formatNumber(project.cost);
-    document.getElementById("cost-v-profit").textContent = formatNumber(project.profit);
-    document.getElementById("cost-v-net").textContent = formatNumber(project.profit);
+    document.getElementById("cost-v-value").textContent = formatNumber(pVal);
+    document.getElementById("cost-v-cost").textContent = formatNumber(pCost);
+    document.getElementById("cost-v-profit").textContent = formatNumber(pProfit);
+    document.getElementById("cost-v-net").textContent = formatNumber(pProfit);
     document.getElementById("cost-v-percent").textContent = `${pct}%`;
 
     // B. Bind Latest expenses table
     const tbody = document.getElementById("transaction-table-body");
     tbody.innerHTML = "";
     
-    if (project.expenses.length === 0) {
+    const pExpenses = Array.isArray(project.expenses) ? project.expenses : [];
+    if (pExpenses.length === 0) {
         tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-4">ไม่มีรายการบันทึกค่าใช้จ่าย</td></tr>`;
     } else {
-        project.expenses.forEach((exp, idx) => {
+        pExpenses.forEach((exp, idx) => {
             const tr = document.createElement("tr");
             
             let expClass = "other";
@@ -13913,19 +13981,22 @@ document.addEventListener("DOMContentLoaded", () => {
             }
 
             const isPM = (appState.currentRole === "pm" || appState.currentRole === "admin" || appState.currentRole === "pe");
-            const infoText = isPM ? `มูลค่าโครงการ: <strong style="color: var(--navy-dark);">${p.value.toLocaleString()} บาท</strong>` : `รหัส PO: <strong>${p.code}</strong>`;
+            const safeCode = window.escapeHtml(p.code);
+            const safeName = window.escapeHtml(p.name.replace(/ \(\d{4}\)$/, ''));
+            const safeCustomer = window.escapeHtml(p.customer);
+            const infoText = isPM ? `มูลค่าโครงการ: <strong style="color: var(--navy-dark);">${(p.value || 0).toLocaleString()} บาท</strong>` : `รหัส PO: <strong>${safeCode}</strong>`;
 
             card.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
-                    <span style="font-size: 11px; font-weight: 700; background: var(--primary-light); color: var(--navy-dark); padding: 3px 8px; border-radius: 4px; font-family: monospace;">${p.code}</span>
+                    <span style="font-size: 11px; font-weight: 700; background: var(--primary-light); color: var(--navy-dark); padding: 3px 8px; border-radius: 4px; font-family: monospace;">${safeCode}</span>
                     <span style="font-size: 10px; font-weight: 700; background: ${badgeBg}; color: ${badgeColor}; padding: 3px 8px; border-radius: 4px;">${displayStatus}</span>
                 </div>
                 
                 <div style="flex-grow: 1;">
-                    <h4 style="margin: 0; font-size: 14.5px; font-weight: 700; color: var(--navy-dark); line-height: 1.4; min-height: 40px;">${p.name.replace(/ \(\d{4}\)$/, '')}</h4>
+                    <h4 style="margin: 0; font-size: 14.5px; font-weight: 700; color: var(--navy-dark); line-height: 1.4; min-height: 40px;">${safeName}</h4>
                     <div style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-muted); margin-top: 8px;">
                         <i class="fa-solid fa-hospital" style="color: var(--navy-medium);"></i>
-                        <span>${p.customer}</span>
+                        <span>${safeCustomer}</span>
                     </div>
                     <div style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-muted); margin-top: 4px;">
                         <i class="fa-solid fa-calendar-days" style="color: var(--navy-medium);"></i>
@@ -16896,6 +16967,11 @@ document.addEventListener("DOMContentLoaded", () => {
         ganttStartDate.addEventListener("change", function() {
             const proj = getActiveProj();
             if (proj) {
+                if (ganttEndDate && ganttEndDate.value && this.value && new Date(this.value) > new Date(ganttEndDate.value)) {
+                    showToast("⚠️ วันที่เริ่มต้นแผนงานต้องไม่เลยวันที่สิ้นสุดแผนงาน", "warning");
+                    this.value = proj.ganttData.startDate || "";
+                    return;
+                }
                 proj.ganttData.startDate = this.value;
                 window.ganttIsDirty = true;
                 renderSubnavPlanWork(proj);
@@ -16924,6 +17000,14 @@ document.addEventListener("DOMContentLoaded", () => {
         btnSaveGantt.addEventListener("click", function() {
             const proj = getActiveProj();
             if (!proj) return showToast("กรุณาเลือกโครงการเฉพาะก่อน", "warning");
+
+            // Validate start date <= end date before saving (BUG-25)
+            const sDate = ganttStartDate ? ganttStartDate.value : (proj.ganttData ? proj.ganttData.startDate : null);
+            const eDate = ganttEndDate ? ganttEndDate.value : (proj.ganttData ? proj.ganttData.endDate : null);
+            if (sDate && eDate && new Date(sDate) > new Date(eDate)) {
+                showToast("⚠️ ไม่สามารถบันทึกได้: วันที่เริ่มต้นแผนงานต้องไม่เลยวันที่สิ้นสุดแผนงาน", "warning");
+                return;
+            }
 
             // Read header info from DOM
             const docDateVal = document.getElementById("gantt-doc-date").value.trim();
@@ -19891,12 +19975,45 @@ function getSession() {
     try { return JSON.parse(localStorage.getItem(SESSION_KEY)) || null; } catch { return null; }
 }
 
-function saveSession(username, role) {
-    localStorage.setItem(SESSION_KEY, JSON.stringify({ username, role, ts: Date.now() }));
+function saveSession(username, role, displayName = null, userKey = null) {
+    localStorage.setItem(SESSION_KEY, JSON.stringify({ 
+        username, 
+        role, 
+        displayName: displayName || username,
+        userKey: userKey || null,
+        ts: Date.now() 
+    }));
 }
 
 function clearSession() {
-    localStorage.removeItem(SESSION_KEY);
+    const keysToRemove = [
+        SESSION_KEY,
+        "tw_token",
+        "technical_water_static_user_overrides",
+        "technical_water_customer_accounts",
+        "technical_water_user_permissions",
+        "technical_water_current_customer_user",
+        "FILE:CUSTOMER_ACCOUNTS_DATA",
+        "CUSTOMER_ACCOUNTS_DATA",
+        "FILE:USER_PERMISSIONS_DATA",
+        "USER_PERMISSIONS_DATA",
+        "technical_water_projects_data",
+        "technical_water_projects_data_v2",
+        "technical_water_last_detail_project"
+    ];
+    keysToRemove.forEach(k => localStorage.removeItem(k));
+    Object.keys(localStorage).forEach(k => {
+        if (k.startsWith("tw_pass_override_") || k.startsWith("cache_") || k.includes("permission") || k.includes("account")) {
+            localStorage.removeItem(k);
+        }
+    });
+    sessionStorage.clear();
+    projectsData = {};
+    if (window.appState) {
+        appState.customerAccounts = {};
+        appState.userPermissions = {};
+        appState.staticUserOverrides = {};
+    }
 }
 
 window.getUserDetails = function(username) {
@@ -19950,47 +20067,82 @@ function applyLoginSuccess(username, role, userKey = null) {
     const appContainer = document.querySelector(".app-container");
     if (appContainer) appContainer.style.display = "";
 
-    const user = window.getUserDetails(username);
-    if (user) {
-        if (user.userKey) {
-            appState.currentCustomerUser = user.userKey;
-            localStorage.setItem("technical_water_current_customer_user", user.userKey);
-        }
-        
-        switchRole(role);
-        
-        // Update display names
-        const usernameDisplay = document.getElementById("username-display");
-        if (usernameDisplay) usernameDisplay.textContent = user.displayName;
-        
-        const roleDisplay = document.getElementById("user-role-display");
-        if (roleDisplay) roleDisplay.textContent = user.roleLabel;
-        
-        const activeRoleBadge = document.getElementById("active-role-badge");
-        if (activeRoleBadge) {
-            if (role === "admin") {
-                activeRoleBadge.innerHTML = `<i class="fa-solid fa-shield-halved"></i> AD (Admin Manager)`;
-            } else if (role === "pm") {
-                activeRoleBadge.innerHTML = `<i class="fa-solid fa-user-lock"></i> PM (Project Manager)`;
-            } else if (role === "accounting") {
-                activeRoleBadge.innerHTML = `<i class="fa-solid fa-file-invoice-dollar"></i> AC (Accounting)`;
-            } else if (role === "pe") {
-                activeRoleBadge.innerHTML = `<i class="fa-solid fa-helmet-safety"></i> PE (Project Engineer)`;
-            } else if (role === "technician" || role === "tech") {
-                activeRoleBadge.innerHTML = `<i class="fa-solid fa-screwdriver-wrench"></i> Tech (Technician View)`;
-            } else {
-                activeRoleBadge.innerHTML = `<i class="fa-solid fa-user-tie"></i> CS (Customer View)`;
-            }
-        }
+    // Normalize role string
+    const normalizedRole = (role || "customer").toLowerCase();
 
-        // Update profile dropdown labels
-        const ddName = document.getElementById("dropdown-user-name");
-        if (ddName) ddName.textContent = user.displayName;
-        
-        const ddRole = document.getElementById("dropdown-user-role");
-        if (ddRole) ddRole.textContent = user.roleLabel;
+    // Determine user details or fallback cleanly
+    let user = window.getUserDetails(username);
+    if (!user) {
+        const session = getSession();
+        let dispName = (session && session.displayName) ? session.displayName : username;
+        if (normalizedRole === "admin") dispName = "Super Admin";
+        else if (normalizedRole === "pm") dispName = "Project Manager";
+        else if (normalizedRole === "accounting") dispName = "Account System";
+
+        let lbl = "Customer View";
+        if (normalizedRole === "admin") lbl = "Admin Manager";
+        else if (normalizedRole === "pm") lbl = "Project Manager";
+        else if (normalizedRole === "accounting") lbl = "Accountant";
+        else if (normalizedRole === "pe") lbl = "Project Engineer";
+        else if (normalizedRole === "technician" || normalizedRole === "tech") lbl = "Technician View";
+
+        user = {
+            username: username,
+            role: normalizedRole,
+            displayName: dispName,
+            roleLabel: lbl,
+            userKey: userKey
+        };
     }
-    saveSession(username, role);
+
+    if (user.userKey || userKey) {
+        const uk = user.userKey || userKey;
+        appState.currentCustomerUser = uk;
+        localStorage.setItem("technical_water_current_customer_user", uk);
+    }
+
+    // Unconditionally switch role so DOM classes and permissions reflect the authenticated user (BUG-34 fix)
+    switchRole(normalizedRole);
+
+    // Update display names
+    const usernameDisplay = document.getElementById("username-display");
+    if (usernameDisplay) usernameDisplay.textContent = user.displayName;
+
+    const roleDisplay = document.getElementById("user-role-display");
+    if (roleDisplay) roleDisplay.textContent = user.roleLabel;
+
+    const activeRoleBadge = document.getElementById("active-role-badge");
+    if (activeRoleBadge) {
+        if (normalizedRole === "admin") {
+            activeRoleBadge.innerHTML = `<i class="fa-solid fa-shield-halved"></i> AD (Admin Manager)`;
+        } else if (normalizedRole === "pm") {
+            activeRoleBadge.innerHTML = `<i class="fa-solid fa-user-lock"></i> PM (Project Manager)`;
+        } else if (normalizedRole === "accounting") {
+            activeRoleBadge.innerHTML = `<i class="fa-solid fa-file-invoice-dollar"></i> AC (Accounting)`;
+        } else if (normalizedRole === "pe") {
+            activeRoleBadge.innerHTML = `<i class="fa-solid fa-helmet-safety"></i> PE (Project Engineer)`;
+        } else if (normalizedRole === "technician" || normalizedRole === "tech") {
+            activeRoleBadge.innerHTML = `<i class="fa-solid fa-screwdriver-wrench"></i> Tech (Technician View)`;
+        } else {
+            activeRoleBadge.innerHTML = `<i class="fa-solid fa-user-tie"></i> CS (Customer View)`;
+        }
+    }
+
+    // Update profile dropdown labels
+    const ddName = document.getElementById("dropdown-user-name");
+    if (ddName) ddName.textContent = user.displayName;
+
+    const ddRole = document.getElementById("dropdown-user-role");
+    if (ddRole) ddRole.textContent = user.roleLabel;
+
+    saveSession(username, normalizedRole, user.displayName, user.userKey);
+
+    // Auto-fetch projects if empty on login (BUG-35 fix)
+    if (!projectsData || Object.keys(projectsData).length === 0) {
+        if (typeof loadFromSupabase === "function" && localStorage.getItem("tw_token")) {
+            loadFromSupabase(false);
+        }
+    }
 }
 
 function showLoginError(msg) {
@@ -20217,13 +20369,7 @@ function initPublicView(projectCode) {
     // Normal login flow
     const session = getSession();
     if (session) {
-        const user = window.getUserDetails(session.username);
-        if (user) {
-            applyLoginSuccess(session.username, session.role, user.userKey);
-        } else {
-            const overlay = document.getElementById("login-overlay");
-            if (overlay) overlay.style.display = "flex";
-        }
+        applyLoginSuccess(session.username, session.role, session.userKey);
     } else {
         // Show login overlay
         const overlay = document.getElementById("login-overlay");
@@ -20250,6 +20396,9 @@ function initPublicView(projectCode) {
                     localStorage.setItem("tw_session", JSON.stringify(data.user));
                     applyLoginSuccess(data.user.username, data.user.role, data.user.userKey);
                     showToast(`ยินดีต้อนรับคุณ ${data.user.displayName}!`, "success");
+                    if (typeof loadFromSupabase === "function") {
+                        await loadFromSupabase(false);
+                    }
                     history.pushState(null, "", "/dashboard");
                     if (typeof handleRouting === "function") handleRouting();
                 } else {
@@ -20447,7 +20596,8 @@ window.toggleShowPassword = function(key) {
 window.copyCustomerLogin = function(key) {
     const acc = appState.customerAccounts[key];
     if (!acc) return;
-    const text = `🏢 ระบบจัดการโครงการ (Project Management System)\n🌐 ลิงก์เข้าใช้งานระบบ: ${window.location.origin || 'https://technical-water-system.vercel.app'}\n👤 Username: ${acc.username}\n🔑 Password: ${acc.password}`;
+    const pwdText = (acc.password && acc.password !== "••••••••") ? acc.password : "•••••••• (กรุณาใช้รหัสผ่านส่วนตัว หรือติดต่อ Admin)";
+    const text = `🏢 ระบบจัดการโครงการ (Project Management System)\n🌐 ลิงก์เข้าใช้งานระบบ: ${window.location.origin || 'https://technical-water-app-production.up.railway.app'}\n👤 Username: ${acc.username}\n🔑 Password: ${pwdText}`;
     
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(() => {
@@ -22286,6 +22436,14 @@ function showDraftBadge(modalId) {
                 if (typeof switchView === "function") {
                     switchView("projects-list");
                 }
+            } else if (path === "/cost") {
+                if (typeof switchView === "function") {
+                    switchView("cost");
+                }
+            } else if (path === "/permissions") {
+                if (typeof switchView === "function") {
+                    switchView("permissions-mgmt");
+                }
             } else if (path.startsWith("/project/")) {
                 if (projectCode) {
                     appState.selectedDetailProject = projectCode;
@@ -22343,6 +22501,8 @@ function showDraftBadge(modalId) {
         if (viewName === "dashboard") targetPath = "/dashboard";
         else if (viewName === "quoting-projects-list") targetPath = "/quoting";
         else if (viewName === "projects-list" && appState.selectedDetailProject === "all") targetPath = "/projects";
+        else if (viewName === "cost") targetPath = "/cost";
+        else if (viewName === "permissions-mgmt") targetPath = "/permissions";
         
         if (targetPath && (path !== targetPath || window.location.search)) {
             history.pushState(null, "", targetPath);
@@ -22414,14 +22574,9 @@ function showDraftBadge(modalId) {
         const logoutBtn = e.target.closest("#logout-btn");
         if (logoutBtn) {
             e.preventDefault();
-            // Call original logout behavior which clears session
-            localStorage.removeItem("tw_session");
-            localStorage.removeItem("tw_token");
-            localStorage.removeItem("FILE:CUSTOMER_ACCOUNTS_DATA");
-            localStorage.removeItem("CUSTOMER_ACCOUNTS_DATA");
-            localStorage.removeItem("technical_water_customer_accounts");
-            localStorage.removeItem("technical_water_current_customer_user");
-            sessionStorage.clear();
+            if (typeof clearSession === "function") {
+                clearSession();
+            }
             window.location.href = "/login";
         }
     });

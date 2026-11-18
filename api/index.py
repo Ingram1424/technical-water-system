@@ -212,20 +212,7 @@ async def auth_login(payload: LoginPayload):
     uname = payload.username.strip().lower()
     pwd = payload.password.strip()
 
-    # 1. Check default static accounts
-    if uname in DEFAULT_USERS:
-        target = DEFAULT_USERS[uname]
-        if target["password"] == pwd:
-            user_data = {
-                "username": uname,
-                "role": target["role"],
-                "displayName": target["displayName"],
-                "userKey": None
-            }
-            token = create_access_token(user_data)
-            return {"success": True, "token": token, "user": user_data}
-
-    # 2. Check dynamic database accounts from FILE:CUSTOMER_ACCOUNTS_DATA
+    # 1. Check database accounts and static user overrides from FILE:CUSTOMER_ACCOUNTS_DATA
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
@@ -233,6 +220,21 @@ async def auth_login(payload: LoginPayload):
                 row = cur.fetchone()
                 if row:
                     acc_doc = row[0] if isinstance(row[0], dict) else json.loads(row[0])
+                    # Check static user password overrides (admin, pm, accounting)
+                    overrides = acc_doc.get("staticUserOverrides", {})
+                    if uname in DEFAULT_USERS:
+                        expected_pwd = overrides.get(uname) or DEFAULT_USERS[uname]["password"]
+                        if expected_pwd == pwd:
+                            user_data = {
+                                "username": uname,
+                                "role": DEFAULT_USERS[uname]["role"],
+                                "displayName": DEFAULT_USERS[uname]["displayName"],
+                                "userKey": None
+                            }
+                            token = create_access_token(user_data)
+                            return {"success": True, "token": token, "user": user_data}
+                    
+                    # Check dynamic database accounts (pe, tech, customer, etc.)
                     accounts = acc_doc.get("accounts", {})
                     for key, acc in accounts.items():
                         acc_uname = (acc.get("username") or "").strip().lower()
@@ -248,6 +250,20 @@ async def auth_login(payload: LoginPayload):
                                 token = create_access_token(user_data)
                                 return {"success": True, "token": token, "user": user_data}
     except Exception as e:
+        logger.error(f"Database error during login: {e}")
+
+    # Fallback to default static accounts if database doesn't have overrides
+    if uname in DEFAULT_USERS:
+        target = DEFAULT_USERS[uname]
+        if target["password"] == pwd:
+            user_data = {
+                "username": uname,
+                "role": target["role"],
+                "displayName": target["displayName"],
+                "userKey": None
+            }
+            token = create_access_token(user_data)
+            return {"success": True, "token": token, "user": user_data}
         logger.error(f"Database error during login: {e}")
 
     raise HTTPException(status_code=401, detail="ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง")
@@ -344,9 +360,12 @@ async def get_record(code: str, request: Request):
                 if row:
                     pdata = row[1] if isinstance(row[1], dict) else json.loads(row[1])
                     
-                    # If user is restricted and viewing a project record, redact financials (BUG-19)
+                    # If user is restricted and viewing a project record, enforce IDOR permission check and redact financials (BUG-12, BUG-19)
                     if user and user.get("role") in ["pe", "tech", "technician", "customer"]:
-                        if not code.startswith("FILE:") and not code.startswith("SHARE:"):
+                        if not code.startswith("FILE:") and not code.startswith("SHARE:") and not code.startswith("sh_"):
+                            allowed_codes = get_allowed_project_codes(user)
+                            if allowed_codes and code not in allowed_codes:
+                                raise HTTPException(status_code=403, detail="Forbidden: You do not have permission to access this project")
                             pdata = redact_financial_data(pdata)
 
                     # For customer accounts viewed by admin, mask plaintext passwords for safety (BUG-04)
@@ -355,9 +374,9 @@ async def get_record(code: str, request: Request):
                         safe_accs = {}
                         for k, v in accs.items():
                             safe_item = dict(v)
-                            # Keep password masked or sanitized
-                            if "password" in safe_item:
-                                safe_item["password_masked"] = "••••••••"
+                            # Never send plaintext password over API (BUG-04)
+                            safe_item["password"] = "••••••••"
+                            safe_item["password_masked"] = "••••••••"
                             safe_accs[k] = safe_item
                         pdata = dict(pdata)
                         pdata["accounts"] = safe_accs
@@ -400,6 +419,15 @@ async def upsert_record(payload: UpsertPayload, request: Request):
                     existing_row = cur.fetchone()
                     if existing_row:
                         existing_data = existing_row[0] if isinstance(existing_row[0], dict) else json.loads(existing_row[0])
+                        # Preserve existing password if updated with masked placeholder (BUG-04)
+                        if payload.code == "FILE:CUSTOMER_ACCOUNTS_DATA":
+                            old_accs = existing_data.get("accounts", {})
+                            new_accs = payload.data.get("accounts", {})
+                            for acc_k, acc_v in new_accs.items():
+                                if isinstance(acc_v, dict):
+                                    if acc_v.get("password") in ["••••••••", "********", "", None]:
+                                        if acc_k in old_accs and "password" in old_accs[acc_k]:
+                                            acc_v["password"] = old_accs[acc_k]["password"]
                         # Deep merge top-level keys
                         merged_data = dict(existing_data)
                         for k, v in payload.data.items():
