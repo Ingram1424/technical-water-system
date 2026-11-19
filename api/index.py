@@ -395,6 +395,49 @@ async def get_record(code: str, request: Request):
     except Exception as e:
         return {"data": None, "error": str(e)}
 
+def merge_payload_data(code: str, existing_data: dict, new_data: dict) -> dict:
+    if not isinstance(existing_data, dict):
+        return new_data
+    if not isinstance(new_data, dict):
+        return new_data
+
+    # Preserve existing password if updated with masked placeholder (BUG-04)
+    if code == "FILE:CUSTOMER_ACCOUNTS_DATA":
+        old_accs = existing_data.get("accounts", {})
+        new_accs = new_data.get("accounts", {})
+        if isinstance(old_accs, dict) and isinstance(new_accs, dict):
+            for acc_k, acc_v in new_accs.items():
+                if isinstance(acc_v, dict):
+                    if acc_v.get("password") in ["••••••••", "********", "", None]:
+                        if acc_k in old_accs and isinstance(old_accs[acc_k], dict) and "password" in old_accs[acc_k]:
+                            acc_v["password"] = old_accs[acc_k]["password"]
+
+    deleted_items = set(new_data.get("_deleted", [])) if isinstance(new_data.get("_deleted"), list) else set()
+
+    # Deep merge top-level keys & union lists (BUG-06)
+    merged = dict(existing_data)
+    for k, v in new_data.items():
+        if k == "_deleted":
+            continue
+        if isinstance(v, list) and isinstance(merged.get(k), list):
+            # Array union preserving order
+            combined = list(merged[k])
+            for item in v:
+                if item not in combined:
+                    combined.append(item)
+            if deleted_items:
+                combined = [x for x in combined if x not in deleted_items]
+            merged[k] = combined
+        elif isinstance(v, dict) and isinstance(merged.get(k), dict):
+            mdict = dict(merged[k])
+            mdict.update(v)
+            merged[k] = mdict
+        else:
+            merged[k] = v
+    if "_deleted" in merged:
+        del merged["_deleted"]
+    return merged
+
 @app.post("/api/db/upsert")
 async def upsert_record(payload: UpsertPayload, request: Request):
     # Require authentication (BUG-05)
@@ -413,31 +456,13 @@ async def upsert_record(payload: UpsertPayload, request: Request):
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cur:
-                # Concurrent update safety for central records: merge dictionary keys (BUG-06)
-                if payload.code in ["FILE:CUSTOMER_ACCOUNTS_DATA", "FILE:HOSPITALS_DATA", "FILE:USER_PERMISSIONS_DATA"]:
+                # Concurrent update safety for central records: merge dictionary keys & union arrays (BUG-06)
+                if payload.code.startswith("FILE:"):
                     cur.execute("SELECT data FROM projects WHERE code = %s;", (payload.code,))
                     existing_row = cur.fetchone()
                     if existing_row:
                         existing_data = existing_row[0] if isinstance(existing_row[0], dict) else json.loads(existing_row[0])
-                        # Preserve existing password if updated with masked placeholder (BUG-04)
-                        if payload.code == "FILE:CUSTOMER_ACCOUNTS_DATA":
-                            old_accs = existing_data.get("accounts", {})
-                            new_accs = payload.data.get("accounts", {})
-                            for acc_k, acc_v in new_accs.items():
-                                if isinstance(acc_v, dict):
-                                    if acc_v.get("password") in ["••••••••", "********", "", None]:
-                                        if acc_k in old_accs and "password" in old_accs[acc_k]:
-                                            acc_v["password"] = old_accs[acc_k]["password"]
-                        # Deep merge top-level keys
-                        merged_data = dict(existing_data)
-                        for k, v in payload.data.items():
-                            if isinstance(v, dict) and isinstance(merged_data.get(k), dict):
-                                merged_dict = dict(merged_data[k])
-                                merged_dict.update(v)
-                                merged_data[k] = merged_dict
-                            else:
-                                merged_data[k] = v
-                        payload.data = merged_data
+                        payload.data = merge_payload_data(payload.code, existing_data, payload.data)
 
                 data_json = json.dumps(payload.data)
                 cur.execute("""
@@ -465,7 +490,14 @@ async def batch_sync(payload: BatchPayload, request: Request):
         with get_db_connection() as conn:
             with conn.cursor() as cur:
                 for item in payload.items:
-                    data_json = json.dumps(item.data)
+                    item_data = item.data
+                    if item.code.startswith("FILE:"):
+                        cur.execute("SELECT data FROM projects WHERE code = %s;", (item.code,))
+                        existing_row = cur.fetchone()
+                        if existing_row:
+                            existing_data = existing_row[0] if isinstance(existing_row[0], dict) else json.loads(existing_row[0])
+                            item_data = merge_payload_data(item.code, existing_data, item_data)
+                    data_json = json.dumps(item_data)
                     cur.execute("""
                         INSERT INTO projects (code, data, updated_at)
                         VALUES (%s, %s::jsonb, NOW())

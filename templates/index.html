@@ -6286,6 +6286,7 @@ function createRailwayClient() {
 
 // Connect to Railway Database via FastAPI Adapter
 const supabaseClient = createRailwayClient();
+window.supabaseClient = supabaseClient;
 
 // Clean up large cached files in localStorage on startup to free up quota
 try {
@@ -6350,9 +6351,10 @@ window.formatDateToThaiBE = function(dateStr) {
 };
 
 let projectsData = {};
+const hasSession = !!(localStorage.getItem("tw_token") || localStorage.getItem("tw_session"));
 try {
     const savedData = localStorage.getItem("technical_water_projects_data_v2");
-    if (savedData) {
+    if (savedData && hasSession) {
         const parsed = JSON.parse(savedData);
         removeBase64FromObject(parsed);
         projectsData = {};
@@ -6368,14 +6370,12 @@ try {
                 projectsData[k] = parsed[k];
             }
         });
-
     } else {
-        projectsData = defaultProjectsData;
-        localStorage.setItem("technical_water_projects_data_v2", JSON.stringify(projectsData));
+        projectsData = {};
     }
 } catch (e) {
     console.error("Failed to load projectsData:", e);
-    projectsData = defaultProjectsData;
+    projectsData = {};
 }
 
 // Background sync from Supabase (Authoritative Single Source of Truth)
@@ -7158,7 +7158,16 @@ function renderOverallDashboard() {
     }
     document.getElementById("kpi-completed-jobs").textContent = completedJobs;
     document.getElementById("kpi-pending-approval-jobs").textContent = pendingApprovalJobs;
-    const totalBranchesCount = (appState.hospitalsList || []).filter(h => h !== "อื่นๆ").length;
+    
+    // Hospital count & branches filtering for restricted roles (BUG-13)
+    const isRestrictedRole = (appState.currentRole === "pe" || appState.currentRole === "tech" || appState.currentRole === "technician" || appState.currentRole === "customer");
+    let totalBranchesCount = 0;
+    if (isRestrictedRole) {
+        const userHospitalsSet = new Set(Object.values(projectsData || {}).map(p => p.customer).filter(Boolean));
+        totalBranchesCount = userHospitalsSet.size;
+    } else {
+        totalBranchesCount = (appState.hospitalsList || []).filter(h => h !== "อื่นๆ").length;
+    }
     document.getElementById("kpi-total-branches").textContent = totalBranchesCount;
     
     // Render Bottom Hospital Cards Grid (Show all projects that are not completed across all years)
@@ -7167,8 +7176,12 @@ function renderOverallDashboard() {
     );
     renderHospitalsGrid(gridProjects);
     
-    // Prepare bar chart data for all hospitals
-    const hospitalsList = appState.hospitalsList || defaultHospitals;
+    // Prepare bar chart data for all accessible hospitals
+    let hospitalsList = appState.hospitalsList || defaultHospitals;
+    if (isRestrictedRole) {
+        const userHospitalsSet = new Set(Object.values(projectsData || {}).map(p => p.customer).filter(Boolean));
+        hospitalsList = hospitalsList.filter(h => userHospitalsSet.has(h));
+    }
     
     const inprogressCounts = Array(hospitalsList.length).fill(0);
     const finishedCounts = Array(hospitalsList.length).fill(0);
@@ -7448,7 +7461,14 @@ window.populateKpiHospitalsDropdown = function() {
     const currentVal = selector.value || "all";
     selector.innerHTML = '<option value="all">ทั้งหมดทุกโรงพยาบาล</option>';
     
-    (appState.hospitalsList || []).forEach(hosp => {
+    let availableHospitals = appState.hospitalsList || [];
+    const isRestrictedRole = (appState.currentRole === "pe" || appState.currentRole === "tech" || appState.currentRole === "technician" || appState.currentRole === "customer");
+    if (isRestrictedRole) {
+        const allowedHospitalsSet = new Set(Object.values(projectsData || {}).map(p => p.customer).filter(Boolean));
+        availableHospitals = availableHospitals.filter(h => allowedHospitalsSet.has(h));
+    }
+    
+    availableHospitals.forEach(hosp => {
         if (hosp === "อื่นๆ") return;
         const opt = document.createElement("option");
         opt.value = hosp;
@@ -7457,6 +7477,9 @@ window.populateKpiHospitalsDropdown = function() {
     });
     
     selector.value = currentVal;
+    if (selector.selectedIndex === -1) {
+        selector.value = "all";
+    }
 };
 
 window.populateProjectFormHospitals = function() {
@@ -8239,7 +8262,12 @@ function renderHospitalsGrid(activeProjects) {
     
     gridContainer.innerHTML = "";
     
-    const allHospitalsList = appState.hospitalsList || defaultHospitals;
+    let allHospitalsList = appState.hospitalsList || defaultHospitals;
+    const isRestrictedRole = (appState.currentRole === "pe" || appState.currentRole === "tech" || appState.currentRole === "technician" || appState.currentRole === "customer");
+    if (isRestrictedRole) {
+        const allowedHospitalsSet = new Set(Object.values(projectsData || {}).map(p => p.customer).filter(Boolean));
+        allHospitalsList = allHospitalsList.filter(h => allowedHospitalsSet.has(h));
+    }
     
     // Build a set of known/predefined hospitals for "อื่นๆ" matching
     const knownHospitals = new Set(allHospitalsList.filter(h => h !== "อื่นๆ"));
@@ -19999,11 +20027,19 @@ function clearSession() {
         "USER_PERMISSIONS_DATA",
         "technical_water_projects_data",
         "technical_water_projects_data_v2",
-        "technical_water_last_detail_project"
+        "technical_water_last_detail_project",
+        "technical_water_hospitals_list",
+        "technical_water_years_list",
+        "technical_water_signer_roles_history",
+        "technical_water_signer_names_history",
+        "FILE:CUSTOM_HOSPITALS_LIST",
+        "FILE:CUSTOM_YEARS_LIST",
+        "FILE:SIGNER_ROLES_HISTORY",
+        "FILE:SIGNER_NAMES_HISTORY"
     ];
     keysToRemove.forEach(k => localStorage.removeItem(k));
     Object.keys(localStorage).forEach(k => {
-        if (k.startsWith("tw_pass_override_") || k.startsWith("cache_") || k.includes("permission") || k.includes("account")) {
+        if (k.startsWith("tw_") || k.startsWith("cache_") || k.startsWith("FILE:") || k.startsWith("SHARE:") || k.startsWith("technical_water_") || k.includes("permission") || k.includes("account")) {
             localStorage.removeItem(k);
         }
     });
@@ -20013,6 +20049,10 @@ function clearSession() {
         appState.customerAccounts = {};
         appState.userPermissions = {};
         appState.staticUserOverrides = {};
+        appState.hospitalsList = defaultHospitals;
+        appState.yearsList = [];
+        appState.signerRolesHistory = [];
+        appState.signerNamesHistory = [];
     }
 }
 
@@ -20396,11 +20436,11 @@ function initPublicView(projectCode) {
                     localStorage.setItem("tw_session", JSON.stringify(data.user));
                     applyLoginSuccess(data.user.username, data.user.role, data.user.userKey);
                     showToast(`ยินดีต้อนรับคุณ ${data.user.displayName}!`, "success");
-                    if (typeof loadFromSupabase === "function") {
-                        await loadFromSupabase(false);
-                    }
                     history.pushState(null, "", "/dashboard");
                     if (typeof handleRouting === "function") handleRouting();
+                    if (typeof loadFromSupabase === "function") {
+                        loadFromSupabase(false);
+                    }
                 } else {
                     showLoginError(data.detail || "⚠️ ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง กรุณาลองใหม่อีกครั้ง");
                 }
@@ -21164,16 +21204,20 @@ window.deleteHospital = function(name) {
     if (!confirm(`ยืนยันการลบโรงพยาบาล "${name}" ออกจากระบบ?`)) return;
     appState.hospitalsList = appState.hospitalsList.filter(h => h !== name);
     localStorage.setItem("technical_water_hospitals_list", JSON.stringify(appState.hospitalsList));
-    window.saveHospitalsListToSupabase();
+    window.saveHospitalsListToSupabase([name]);
     window.refreshHospitalsDependencies();
     showToast(`🗑️ ลบโรงพยาบาล "${name}" เรียบร้อยแล้ว`, "success");
 };
 
-window.saveHospitalsListToSupabase = async function() {
+window.saveHospitalsListToSupabase = async function(deletedNames = []) {
     try {
+        const payloadData = { hospitals: appState.hospitalsList };
+        if (Array.isArray(deletedNames) && deletedNames.length > 0) {
+            payloadData._deleted = deletedNames;
+        }
         const { error } = await supabaseClient.from("projects").upsert({
             code: "FILE:CUSTOM_HOSPITALS_LIST",
-            data: { hospitals: appState.hospitalsList },
+            data: payloadData,
             updated_at: new Date().toISOString()
         });
         if (error) throw error;
@@ -21305,7 +21349,7 @@ window.deleteYear = async function(year) {
 
     appState.yearsList = (appState.yearsList || []).filter(y => y !== yr);
     localStorage.setItem("technical_water_years_list", JSON.stringify(appState.yearsList));
-    window.saveYearsListToSupabase();
+    window.saveYearsListToSupabase([yr]);
     window.refreshYearsDependencies();
 
     if (typeof window.renderYearsManagementList === "function") {
@@ -21318,11 +21362,15 @@ window.deleteYear = async function(year) {
     return true;
 };
 
-window.saveYearsListToSupabase = async function() {
+window.saveYearsListToSupabase = async function(deletedYears = []) {
     try {
+        const payloadData = { years: appState.yearsList };
+        if (Array.isArray(deletedYears) && deletedYears.length > 0) {
+            payloadData._deleted = deletedYears;
+        }
         const { error } = await supabaseClient.from("projects").upsert({
             code: "FILE:CUSTOM_YEARS_LIST",
-            data: { years: appState.yearsList },
+            data: payloadData,
             updated_at: new Date().toISOString()
         });
         if (error) throw error;
@@ -21663,27 +21711,38 @@ window.renderYearsManagementList = function() {
         });
     };
 
-    window.approveDisbursement = function(projCode, expIdx) {
+    window.approveDisbursement = async function(projCode, expIdx) {
         const proj = projectsData[projCode];
         if (!proj || !proj.expenses || !proj.expenses[expIdx]) return;
 
         if (confirm(`คุณต้องการอนุมัติการเบิกจ่ายงบประมาณ "${proj.expenses[expIdx].title}" จำนวน ${formatNumber(proj.expenses[expIdx].amount)} บาท ใช่หรือไม่?`)) {
             proj.expenses[expIdx].status = "อนุมัติแล้ว";
+            proj.expenses[expIdx].approvedAt = new Date().toISOString();
             proj.updatedAt = new Date().toISOString();
-            proj.isSynced = true;
             
             recalculateCostStructure(proj);
             saveToLocalStorage();
             
             // Explicitly sync this project to the server (BUG-11 fix)
-            if (window.supabaseClient) {
-                window.supabaseClient.from('projects').upsert({
-                    code: projCode,
-                    data: proj,
-                    updated_at: new Date().toISOString()
-                }).then(res => {
-                    if (res && res.error) console.error("Failed to sync approved disbursement to server:", res.error);
+            try {
+                const nowIso = new Date().toISOString();
+                const res = await fetch('/api/db/upsert', {
+                    method: 'POST',
+                    headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+                    body: JSON.stringify({ code: projCode, data: proj })
                 });
+                const resJson = await res.json();
+                if (!res.ok || (resJson && resJson.error)) {
+                    throw new Error((resJson && resJson.error) || `HTTP error ${res.status}`);
+                }
+                proj.isSynced = true;
+                proj._lastSyncedAt = nowIso;
+                saveToLocalStorage();
+                console.log(`Disbursement approval synced for project ${projCode}`);
+            } catch (err) {
+                console.error("Failed to sync approved disbursement to server:", err);
+                showToast("⚠️ ไม่สามารถบันทึกผลอนุมัติไปยังเซิร์ฟเวอร์ได้: " + err.message, "error");
+                return;
             }
 
             window.renderDisbursementPendingTable();
@@ -21698,7 +21757,7 @@ window.renderYearsManagementList = function() {
         }
     };
 
-    window.rejectDisbursement = function(projCode, expIdx) {
+    window.rejectDisbursement = async function(projCode, expIdx) {
         const proj = projectsData[projCode];
         if (!proj || !proj.expenses || !proj.expenses[expIdx]) return;
 
@@ -21708,10 +21767,34 @@ window.renderYearsManagementList = function() {
         const finalReason = reason.trim() || "ไม่ผ่านการอนุมัติโดยบัญชี";
         proj.expenses[expIdx].status = "ปฏิเสธ";
         proj.expenses[expIdx].rejectReason = finalReason;
+        proj.expenses[expIdx].rejectedAt = new Date().toISOString();
+        proj.updatedAt = new Date().toISOString();
         
         recalculateCostStructure(proj);
         saveToLocalStorage();
         
+        // Explicitly sync rejection to the server
+        try {
+            const nowIso = new Date().toISOString();
+            const res = await fetch('/api/db/upsert', {
+                method: 'POST',
+                headers: getAuthHeaders({ 'Content-Type': 'application/json' }),
+                body: JSON.stringify({ code: projCode, data: proj })
+            });
+            const resJson = await res.json();
+            if (!res.ok || (resJson && resJson.error)) {
+                throw new Error((resJson && resJson.error) || `HTTP error ${res.status}`);
+            }
+            proj.isSynced = true;
+            proj._lastSyncedAt = nowIso;
+            saveToLocalStorage();
+            console.log(`Disbursement rejection synced for project ${projCode}`);
+        } catch (err) {
+            console.error("Failed to sync rejected disbursement to server:", err);
+            showToast("⚠️ ไม่สามารถบันทึกผลปฏิเสธไปยังเซิร์ฟเวอร์ได้: " + err.message, "error");
+            return;
+        }
+
         window.renderDisbursementPendingTable();
         if (appState.selectedDetailProject === projCode) {
             renderSubnavProjectWorkspace();
@@ -22561,7 +22644,7 @@ function showDraftBadge(modalId) {
             // Wait brief moment for original login submit listener to set session and apply success
             setTimeout(() => {
                 const session = localStorage.getItem("tw_session");
-                if (session) {
+                if (session && (window.location.pathname === "/login" || window.location.pathname === "/" || !window.location.pathname)) {
                     history.pushState(null, "", "/dashboard");
                     handleRouting();
                 }
