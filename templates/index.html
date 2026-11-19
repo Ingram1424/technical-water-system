@@ -6165,15 +6165,18 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
 // Load data from localStorage or fallback to default template project
 const defaultProjectsData = {};
 
+// --- AUTH HEADERS HELPER ---
+function getAuthHeaders(extra = {}) {
+    const h = { ...extra };
+    const token = localStorage.getItem("tw_token");
+    if (token) h["Authorization"] = "Bearer " + token;
+    return h;
+}
+window.getAuthHeaders = getAuthHeaders;
+
 // --- RAILWAY POSTGRESQL CLOUD CLIENT ADAPTER ---
 // Transparent drop-in replacement for Supabase client, routed through FastAPI Railway backend
 function createRailwayClient() {
-    function getAuthHeaders(extra = {}) {
-        const h = { ...extra };
-        const token = localStorage.getItem("tw_token");
-        if (token) h["Authorization"] = "Bearer " + token;
-        return h;
-    }
 
     return {
         auth: {
@@ -6380,6 +6383,9 @@ try {
 
 // Background sync from Supabase (Authoritative Single Source of Truth)
 async function loadFromSupabase(isManualTrigger = false) {
+    if (!localStorage.getItem("tw_token")) {
+        return;
+    }
     try {
         if (isManualTrigger) {
             updateCloudSyncStatus("syncing");
@@ -6802,14 +6808,16 @@ function saveToLocalStorage() {
     syncActiveProject();
 }
 
-// Load from Supabase on startup
-loadFromSupabase();
+// Load from Supabase on startup (only if authenticated)
+if (localStorage.getItem("tw_token")) {
+    loadFromSupabase();
+}
 
-// Auto-Sync in background every 30 seconds to keep all devices in sync (only when idle)
+// Auto-Sync in background every 30 seconds to keep all devices in sync (only when idle & authenticated)
 setInterval(() => {
     const isModalOpen = document.querySelector(".modal-overlay.active");
     const isUserTyping = document.activeElement && ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName);
-    if (!isSyncing && syncQueue.length === 0 && !window.ganttIsDirty && !isModalOpen && !isUserTyping && !document.hidden) {
+    if (localStorage.getItem("tw_token") && !isSyncing && syncQueue.length === 0 && !window.ganttIsDirty && !isModalOpen && !isUserTyping && !document.hidden) {
         loadFromSupabase(false);
     }
 }, 30000);
@@ -8157,9 +8165,11 @@ function switchRole(roleName) {
             projectSelector.disabled = false;
         }
 
-        // Boot customer to project workspace
-        switchView("projects-list");
-        return;
+        // Boot customer and technician to project workspace (roles forbidden from Dashboard)
+        if (roleName === "customer" || roleName === "technician" || roleName === "tech") {
+            switchView("projects-list");
+            return;
+        }
     }
 
     // Enable/disable project subnav selectors based on role
@@ -13362,20 +13372,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (appState.selectedDetailProject !== "all") {
                     appState.selectedDetailProject = "all";
                     sessionStorage.setItem("technical_water_last_detail_project", "all");
-                    switchView(viewName);
-                    if (appState.currentView !== "projects-list" && appState.currentView !== "quoting-projects-list") {
-                        closeMobileSidebar();
-                    }
-                    return;
                 }
             }
 
-            // If clicking on the currently active tab while already in portal view, collapse and return to dashboard
-            if (appState.currentView === viewName && (viewName === "quoting-projects-list" || viewName === "projects-list")) {
-                switchView("dashboard");
-            } else {
-                switchView(viewName);
-            }
+            // Always navigate to the selected view (BUG-38: do not bounce to dashboard on repeat clicks)
+            switchView(viewName);
 
             // On mobile, keep sidebar open for 'projects-list' or 'quoting-projects-list' so user can select project details
             if (appState.currentView !== "projects-list" && appState.currentView !== "quoting-projects-list") {
@@ -19999,8 +20000,95 @@ const USERS = {
 
 const SESSION_KEY = "tw_session";
 
+function decodeTokenPayload(token) {
+    if (!token || typeof token !== "string" || !token.includes(".")) return null;
+    try {
+        let b64 = token.split(".")[0];
+        b64 = b64.replace(/-/g, "+").replace(/_/g, "/");
+        const padding = b64.length % 4;
+        if (padding) {
+            b64 += "=".repeat(4 - padding);
+        }
+        const jsonStr = decodeURIComponent(escape(atob(b64)));
+        const payload = JSON.parse(jsonStr);
+        if (payload && payload.exp && payload.exp * 1000 < Date.now()) {
+            return null; // Expired
+        }
+        return payload;
+    } catch (e) {
+        return null;
+    }
+}
+
 function getSession() {
-    try { return JSON.parse(localStorage.getItem(SESSION_KEY)) || null; } catch { return null; }
+    try {
+        const token = localStorage.getItem("tw_token");
+        if (!token) return null;
+
+        const tokenUser = decodeTokenPayload(token);
+        if (!tokenUser || !tokenUser.username || !tokenUser.role) {
+            clearSession();
+            return null;
+        }
+
+        const rawSession = localStorage.getItem(SESSION_KEY);
+        let session = rawSession ? JSON.parse(rawSession) : null;
+        if (!session) {
+            session = {
+                username: tokenUser.username,
+                role: tokenUser.role,
+                displayName: tokenUser.displayName || tokenUser.username,
+                userKey: tokenUser.userKey || null
+            };
+            localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+        }
+
+        // STRICT SECURITY (BUG-20): Enforce role from cryptographically signed tw_token!
+        // If someone tampers with tw_session in DevTools, force it back to the token's authentic role!
+        if (session.role !== tokenUser.role || session.username.toLowerCase() !== tokenUser.username.toLowerCase()) {
+            console.warn("Security Alert: tw_session mismatch with signed tw_token! Reverting to token claims.");
+            session.role = tokenUser.role;
+            session.username = tokenUser.username;
+            session.userKey = tokenUser.userKey;
+            session.displayName = tokenUser.displayName || session.displayName;
+            localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+        }
+        return session;
+    } catch {
+        return null;
+    }
+}
+
+async function verifySessionWithBackend() {
+    const token = localStorage.getItem("tw_token");
+    if (!token) return;
+    try {
+        const res = await fetch("/api/auth/verify", {
+            headers: { "Authorization": "Bearer " + token }
+        });
+        if (!res.ok) {
+            console.warn("Backend auth token verification failed. Clearing session.");
+            clearSession();
+            if (window.location.pathname !== "/login" && window.location.pathname !== "/") {
+                window.location.href = "/login";
+            }
+            return;
+        }
+        const data = await res.json();
+        if (data && data.valid && data.user) {
+            const session = getSession();
+            if (session && (session.role !== data.user.role || session.username.toLowerCase() !== data.user.username.toLowerCase())) {
+                console.warn("Session role mismatch with backend! Syncing...");
+                session.role = data.user.role;
+                session.username = data.user.username;
+                session.userKey = data.user.userKey;
+                localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+                applyLoginSuccess(session.username, session.role, session.userKey);
+            }
+        }
+    } catch (err) {
+        console.warn("Failed to verify auth session:", err);
+    }
 }
 
 function saveSession(username, role, displayName = null, userKey = null) {
@@ -20410,6 +20498,7 @@ function initPublicView(projectCode) {
     const session = getSession();
     if (session) {
         applyLoginSuccess(session.username, session.role, session.userKey);
+        verifySessionWithBackend();
     } else {
         // Show login overlay
         const overlay = document.getElementById("login-overlay");
@@ -22453,14 +22542,8 @@ function showDraftBadge(modalId) {
                 return;
             }
             
-            // Check session
-            let session = null;
-            try {
-                const raw = localStorage.getItem("tw_session");
-                if (raw) session = JSON.parse(raw);
-            } catch (e) {
-                console.error("Failed to parse session:", e);
-            }
+            // Check session (strictly validates against tw_token claims)
+            const session = (typeof getSession === "function") ? getSession() : null;
             
             // 1. Redirect if not authenticated
             if (path === "/login" || path === "/" || !path) {
