@@ -539,38 +539,37 @@ async def delete_record(code: str, request: Request):
     except Exception as e:
         return {"success": False, "error": str(e)}
 
-@app.post("/api/db/migrate_railway_data")
-async def migrate_railway_data(request: Request):
+class BackupItem(BaseModel):
+    code: str
+    data: Any
+    updated_at: Optional[str] = None
+
+class BackupBatchPayload(BaseModel):
+    items: list[BackupItem]
+
+@app.post("/api/db/upload_backup_batch")
+async def upload_backup_batch(payload: BackupBatchPayload, request: Request):
     auth_header = request.headers.get("Authorization", "")
     expected = f"Bearer {AUTH_SECRET}"
     if auth_header != expected:
         raise HTTPException(status_code=401, detail="Unauthorized")
 
-    railway_url = os.getenv(
-        "RAILWAY_DATABASE_URL",
-        "postgresql://postgres:TMJZIlYdlvVPojLLfKkPZWbkUEJEhNfS@yamabiko.proxy.rlwy.net:27667/railway"
-    )
-    import psycopg
-    with psycopg.connect(railway_url) as r_conn:
-        with r_conn.cursor() as r_cur:
-            r_cur.execute("SELECT code, data, updated_at FROM projects;")
-            rows = r_cur.fetchall()
-
-    migrated = 0
-    with get_db_connection() as c_conn:
-        with c_conn.cursor() as c_cur:
-            for row in rows:
-                code, data, updated_at = row
-                c_cur.execute("""
+    count = 0
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            for item in payload.items:
+                raw_data = item.data
+                data_json = json.dumps(raw_data) if isinstance(raw_data, (dict, list)) else str(raw_data)
+                cur.execute("""
                     INSERT INTO projects (code, data, updated_at)
-                    VALUES (%s, %s, %s)
+                    VALUES (%s, %s::jsonb, COALESCE(%s::timestamptz, NOW()))
                     ON CONFLICT (code) DO UPDATE 
                     SET data = EXCLUDED.data, updated_at = EXCLUDED.updated_at;
-                """, (code, json.dumps(data) if isinstance(data, dict) else data, updated_at))
-                migrated += 1
-            c_conn.commit()
+                """, (item.code, data_json, item.updated_at))
+                count += 1
+            conn.commit()
 
-    return {"success": True, "migrated_count": migrated}
+    return {"success": True, "uploaded": count}
 
 @app.get("/logo.png")
 async def get_logo():
