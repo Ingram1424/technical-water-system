@@ -539,6 +539,39 @@ async def delete_record(code: str, request: Request):
     except Exception as e:
         return {"success": False, "error": str(e)}
 
+@app.post("/api/db/migrate_railway_data")
+async def migrate_railway_data(request: Request):
+    auth_header = request.headers.get("Authorization", "")
+    expected = f"Bearer {AUTH_SECRET}"
+    if auth_header != expected:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    railway_url = os.getenv(
+        "RAILWAY_DATABASE_URL",
+        "postgresql://postgres:TMJZIlYdlvVPojLLfKkPZWbkUEJEhNfS@yamabiko.proxy.rlwy.net:27667/railway"
+    )
+    import psycopg
+    with psycopg.connect(railway_url) as r_conn:
+        with r_conn.cursor() as r_cur:
+            r_cur.execute("SELECT code, data, updated_at FROM projects;")
+            rows = r_cur.fetchall()
+
+    migrated = 0
+    with get_db_connection() as c_conn:
+        with c_conn.cursor() as c_cur:
+            for row in rows:
+                code, data, updated_at = row
+                c_cur.execute("""
+                    INSERT INTO projects (code, data, updated_at)
+                    VALUES (%s, %s, %s)
+                    ON CONFLICT (code) DO UPDATE 
+                    SET data = EXCLUDED.data, updated_at = EXCLUDED.updated_at;
+                """, (code, json.dumps(data) if isinstance(data, dict) else data, updated_at))
+                migrated += 1
+            c_conn.commit()
+
+    return {"success": True, "migrated_count": migrated}
+
 @app.get("/logo.png")
 async def get_logo():
     logo_path = os.path.join(static_dir, "logo.png")
