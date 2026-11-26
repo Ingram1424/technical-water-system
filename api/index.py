@@ -266,7 +266,6 @@ async def auth_login(payload: LoginPayload):
             }
             token = create_access_token(user_data)
             return {"success": True, "token": token, "user": user_data}
-        logger.error(f"Database error during login: {e}")
 
     raise HTTPException(status_code=401, detail="ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง")
 
