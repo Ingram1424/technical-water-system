@@ -20910,8 +20910,8 @@ window.toggleShowPassword = function(key) {
 window.copyCustomerLogin = function(key) {
     const acc = appState.customerAccounts[key];
     if (!acc) return;
-    const pwdText = (acc.password && acc.password !== "••••••••") ? acc.password : "•••••••• (กรุณาใช้รหัสผ่านส่วนตัว หรือติดต่อ Admin)";
-    const text = `🏢 ระบบจัดการโครงการ (Project Management System)\n🌐 ลิงก์เข้าใช้งานระบบ: ${window.location.origin || 'https://technical-water-app-production.up.railway.app'}\n👤 Username: ${acc.username}\n🔑 Password: ${pwdText}`;
+    const pwdText = acc.password || "••••••••";
+    const text = `🏢 ระบบจัดการโครงการ (Project Management System)\n🌐 ลิงก์เข้าใช้งานระบบ: ${window.location.origin || 'https://project.technical-water.com'}\n👤 Username: ${acc.username}\n🔑 Password: ${pwdText}`;
     
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(() => {
@@ -21044,8 +21044,11 @@ function renderPermissionsManagement() {
                 <td style="font-weight: 700; color: var(--navy-dark);">${acc.name || '<span class="text-muted" style="font-size: 11px; font-weight: normal;">(ไม่ได้ระบุชื่อ)</span>'}</td>
                 <td><span style="font-family: monospace; font-weight: 700; color: #1e40af; background: #dbeafe; padding: 3px 8px; border-radius: 4px; border: 1px solid #93c5fd;">${acc.username}</span></td>
                 <td>
-                    <div style="display: flex; align-items: center; gap: 6px;">
-                        <input type="password" value="••••••••" id="pass-field-${key}" readonly style="width: 80px; font-family: monospace; font-size: 14px; font-weight: 700; border: none; background: transparent; color: var(--navy-dark);" autocomplete="off">
+                    <div style="display: flex; align-items: center; gap: 4px;">
+                        <input type="password" value="${window.escapeHtml ? window.escapeHtml(acc.password || '') : (acc.password || '')}" id="pass-field-${key}" readonly style="width: 100px; font-family: monospace; font-size: 13px; font-weight: 700; border: 1px solid #e2e8f0; background: #f8fafc; color: var(--navy-dark); padding: 3px 6px; border-radius: 4px;" autocomplete="off">
+                        <button type="button" class="btn btn-xs" onclick="window.toggleShowPassword('${key}')" title="แสดง/ซ่อนรหัสผ่าน" style="background: #ffffff; border: 1px solid #cbd5e1; border-radius: 4px; cursor: pointer; color: var(--navy-medium); padding: 4px 7px; font-size: 12px; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s;">
+                            <i class="fa-solid fa-eye" id="eye-icon-${key}"></i>
+                        </button>
                     </div>
                 </td>
                 <td style="text-align: center;">

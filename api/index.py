@@ -370,18 +370,7 @@ async def get_record(code: str, request: Request):
                                 raise HTTPException(status_code=403, detail="Forbidden: You do not have permission to access this project")
                             pdata = redact_financial_data(pdata)
 
-                    # For customer accounts viewed by admin, mask plaintext passwords for safety (BUG-04)
-                    if code == "FILE:CUSTOMER_ACCOUNTS_DATA" and isinstance(pdata, dict):
-                        accs = pdata.get("accounts", {})
-                        safe_accs = {}
-                        for k, v in accs.items():
-                            safe_item = dict(v)
-                            # Never send plaintext password over API (BUG-04)
-                            safe_item["password"] = "••••••••"
-                            safe_item["password_masked"] = "••••••••"
-                            safe_accs[k] = safe_item
-                        pdata = dict(pdata)
-                        pdata["accounts"] = safe_accs
+                    # Return record data (Admin and PM access FILE:CUSTOMER_ACCOUNTS_DATA to view and copy credentials)
 
                     return {
                         "data": {
