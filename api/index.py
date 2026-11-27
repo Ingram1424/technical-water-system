@@ -345,10 +345,10 @@ async def get_record(code: str, request: Request):
     is_share = code.startswith("SHARE:") or code.startswith("sh_")
     user = await get_current_user_optional(request) if not is_share else None
 
-    # Protect sensitive records: FILE:CUSTOMER_ACCOUNTS_DATA requires admin role (BUG-03, BUG-04)
+    # Protect sensitive records: FILE:CUSTOMER_ACCOUNTS_DATA requires admin or pm role
     if code == "FILE:CUSTOMER_ACCOUNTS_DATA":
-        if not user or user.get("role") != "admin":
-            raise HTTPException(status_code=403, detail="Forbidden: Admin access required to view customer accounts")
+        if not user or user.get("role") not in ["admin", "pm"]:
+            raise HTTPException(status_code=403, detail="Forbidden: Admin or PM access required to view customer accounts")
 
     # If non-share record and unauthenticated, require login (BUG-02)
     if not is_share and not user:
@@ -447,8 +447,8 @@ async def upsert_record(payload: UpsertPayload, request: Request):
     role = user.get("role", "")
 
     # Role permission checks on write
-    if payload.code == "FILE:CUSTOMER_ACCOUNTS_DATA" and role != "admin":
-        raise HTTPException(status_code=403, detail="Only admin can update user accounts")
+    if payload.code == "FILE:CUSTOMER_ACCOUNTS_DATA" and role not in ["admin", "pm"]:
+        raise HTTPException(status_code=403, detail="Only admin or PM can update user accounts")
 
     if not payload.code.startswith("FILE:") and not payload.code.startswith("SHARE:"):
         # Modifying project data: PE, Tech, Customer cannot modify project settings

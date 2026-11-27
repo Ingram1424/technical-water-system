@@ -3550,14 +3550,14 @@ body.gallery-select-mode .gallery-select-cb-wrapper {
                     </nav>
                 </div>
                 
-                <a href="#" class="nav-item hide-customer hide-pe hide-technician hide-tech" data-view="cost">
+                <a href="#" class="nav-item hide-customer hide-pe hide-technician hide-tech hide-pm" data-view="cost">
                     <i class="fa-solid fa-hand-holding-dollar"></i>
                     <div class="nav-label">
                         <span class="main-label">Cost Management</span>
                         <span class="sub-label">ค่าใช้จ่ายโครงการ</span>
                     </div>
                 </a>
-                <a href="#" class="nav-item hide-accounting hide-customer hide-pe hide-technician hide-pm" data-view="permissions-mgmt">
+                <a href="#" class="nav-item hide-accounting hide-customer hide-pe hide-technician" data-view="permissions-mgmt">
                     <i class="fa-solid fa-user-shield"></i>
                     <div class="nav-label">
                         <span class="main-label">Permissions</span>
@@ -7977,8 +7977,8 @@ function switchView(viewName) {
         showToast("คุณไม่มีสิทธิ์เข้าถึงหน้านี้", "warning");
         viewName = "projects-list";
     }
-    if (appState.currentRole === "pm" && viewName === "permissions-mgmt") {
-        showToast("คุณไม่มีสิทธิ์เข้าถึงหน้านี้ (จำกัดเฉพาะ Admin เท่านั้น)", "warning");
+    if (appState.currentRole === "pm" && viewName === "cost") {
+        showToast("คุณไม่มีสิทธิ์เข้าถึงหน้านี้ (จำกัดเฉพาะ Admin และฝ่ายบัญชี)", "warning");
         viewName = "projects-list";
     }
     if (appState.currentRole === "accounting" && viewName === "permissions-mgmt") {
@@ -22788,7 +22788,12 @@ function showDraftBadge(modalId) {
                     switchView("projects-list");
                 }
             } else if (path === "/cost") {
-                if (typeof switchView === "function") {
+                if (appState && appState.currentRole === "pm") {
+                    showToast("คุณไม่มีสิทธิ์เข้าถึงหน้านี้ (จำกัดเฉพาะ Admin และฝ่ายบัญชี)", "warning");
+                    if (typeof switchView === "function") {
+                        switchView("projects-list");
+                    }
+                } else if (typeof switchView === "function") {
                     switchView("cost");
                 }
             } else if (path === "/permissions") {
