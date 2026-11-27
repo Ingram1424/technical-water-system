@@ -14616,10 +14616,19 @@ document.addEventListener("DOMContentLoaded", () => {
     const costExportExpensesBtn = document.getElementById("cost-export-expenses-btn");
     if (costExportExpensesBtn) {
         costExportExpensesBtn.addEventListener("click", () => {
-            const select = document.getElementById("cost-project-select");
-            const code = select ? select.value : (appState ? appState.selectedDetailProject : null);
+            const selector = document.getElementById("cost-project-selector");
+            let selectedCode = selector ? selector.value : null;
+            if (!selectedCode && appState) {
+                selectedCode = appState.selectedCostProject;
+            }
+            if (!selectedCode || selectedCode === "all") {
+                if (typeof showToast === "function") {
+                    showToast("กรุณาเลือกโครงการที่ต้องการส่งออกข้อมูล", "warning");
+                }
+                return;
+            }
             if (window.exportProjectExpensesToExcel) {
-                window.exportProjectExpensesToExcel(code);
+                window.exportProjectExpensesToExcel(selectedCode);
             }
         });
     }
@@ -18679,18 +18688,30 @@ document.addEventListener("DOMContentLoaded", () => {
     // --- EXPORT PROJECT EXPENSES TO EXCEL ---
     window.exportProjectExpensesToExcel = function(projectCode) {
         let project = null;
-        const code = projectCode || (window.currentSubnavCostProject ? window.currentSubnavCostProject.code : null) || (appState ? appState.selectedDetailProject : null);
+        let code = projectCode;
         
-        if (code && appState && appState.projectsData && appState.projectsData[code]) {
+        // If not explicitly provided, only check current project-detail view
+        if (!code) {
+            if (appState && appState.currentView === "project-detail" && appState.selectedDetailProject && appState.selectedDetailProject !== "all") {
+                code = appState.selectedDetailProject;
+            } else if (window.currentSubnavCostProject && appState && appState.currentView === "project-detail") {
+                code = window.currentSubnavCostProject.code;
+            }
+        }
+
+        if (!code || code === "all") {
+            if (typeof showToast === "function") showToast("กรุณาเลือกโครงการที่ต้องการส่งออกข้อมูล", "warning");
+            return;
+        }
+
+        if (appState && appState.projectsData && appState.projectsData[code]) {
             project = appState.projectsData[code];
-        } else if (window.currentSubnavCostProject) {
-            project = window.currentSubnavCostProject;
-        } else if (code && typeof projectsData !== "undefined" && projectsData[code]) {
+        } else if (typeof projectsData !== "undefined" && projectsData[code]) {
             project = projectsData[code];
         }
 
         if (!project) {
-            if (typeof showToast === "function") showToast("กรุณาเลือกโครงการที่ต้องการส่งออกข้อมูล", "warning");
+            if (typeof showToast === "function") showToast("ไม่พบข้อมูลโครงการที่ระบุ หรือกรุณาเลือกโครงการที่ต้องการส่งออกข้อมูล", "warning");
             return;
         }
 
@@ -18773,6 +18794,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const ws = XLSX.utils.aoa_to_sheet(rows);
 
+        // Format number cells with #,##0.00
+        for (const cellAddress in ws) {
+            if (cellAddress.startsWith("!")) continue;
+            const cell = ws[cellAddress];
+            if (cell && typeof cell.v === "number") {
+                cell.t = "n";
+                cell.z = "#,##0.00";
+            }
+        }
+
         // Set Column Widths
         ws['!cols'] = [
             { wch: 8 },   // ลำดับ
@@ -18788,7 +18819,11 @@ document.addEventListener("DOMContentLoaded", () => {
         XLSX.utils.book_append_sheet(wb, ws, "รายการเบิกจ่าย");
 
         const safeCode = String(project.code || "Project").replace(/[\/\\:*?"<>|]/g, "_");
-        const today = new Date().toISOString().split("T")[0];
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const today = `${year}-${month}-${day}`;
         const filename = `รายการเบิกจ่ายต้นทุน_${safeCode}_${today}.xlsx`;
 
         XLSX.writeFile(wb, filename);
